@@ -87,7 +87,7 @@ test.describe('Dashboard – Panel główny', () => {
     await navigateToDashboard(page);
     await waitForIonicPage(page);
 
-    const fab = page.locator('ion-fab-button, ion-fab').first();
+    const fab = page.locator('[data-testid="fab-main"]');
     const fabVisible = await fab.isVisible().catch(() => false);
 
     if (!fabVisible) {
@@ -96,15 +96,14 @@ test.describe('Dashboard – Panel główny', () => {
       return;
     }
 
-    // Click FAB to expand it
-    await fab.click();
-    await page.waitForTimeout(500);
+    // Click FAB to expand it — use force to bypass Ionic stacking interception
+    await fab.click({ force: true });
+    await page.waitForTimeout(600);
 
-    // Should show refuel and repair options
+    // Should show refuel and repair options in the fab list
     const fabList = page.locator('ion-fab-list').first();
     const listVisible = await fabList.isVisible().catch(() => false);
     if (!listVisible) {
-      // Maybe the FAB doesn't expand but navigates — check for navigation
       console.log('⚠️ FAB list not visible — FAB may navigate directly instead of expanding');
       test.skip(true, 'FAB expansion not implemented yet');
       return;
@@ -112,21 +111,9 @@ test.describe('Dashboard – Panel główny', () => {
 
     await expect(fabList).toBeVisible();
 
-    // Check for refuel and repair labels in the FAB list
-    const hasRefuelOption = await page.locator(
-      'ion-fab-list ion-label:has-text("Tankowanie"), ion-fab-list ion-fab-button[aria-label*="Tankowanie"]'
-    ).first().isVisible().catch(() => false);
-
-    const hasRepairOption = await page.locator(
-      'ion-fab-list ion-label:has-text("Naprawa"), ion-fab-list ion-fab-button[aria-label*="Naprawa"]'
-    ).first().isVisible().catch(() => false);
-
-    if (!hasRefuelOption && !hasRepairOption) {
-      console.log('⚠️ FAB list visible but refuel/repair option labels not found');
-    }
-
-    // At least the FAB list should be visible
-    await expect(fabList).toBeVisible();
+    // Check for data-testid elements in the fab list
+    await expect(page.locator('[data-testid="fab-refuel"]')).toBeVisible();
+    await expect(page.locator('[data-testid="fab-repair"]')).toBeVisible();
   });
 
   test('should have a monthly spending section', async ({ page }) => {

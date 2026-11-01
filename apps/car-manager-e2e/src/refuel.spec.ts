@@ -101,7 +101,10 @@ test.describe('Refuel – Formularz tankowania', () => {
     const saveButton = page.locator(
       'ion-button:has-text("Zapisz"), ion-button[type="submit"], ion-button:has-text("Dodaj tankowanie")'
     ).first();
-    await saveButton.click();
+    // The submit button is disabled when form is invalid. Use force:true
+    // to bypass actionability checks — the <form> element may intercept
+    // pointer events on the disabled button in Ionic's rendering.
+    await saveButton.click({ force: true });
     await expect(page).toHaveURL(/refuel-form/, { timeout: 3000 });
   });
 

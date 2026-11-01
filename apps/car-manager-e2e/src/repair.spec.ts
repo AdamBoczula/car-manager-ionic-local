@@ -79,7 +79,7 @@ test.describe('Repair – Formularz naprawy', () => {
     const saveButton = page.locator(
       'ion-button:has-text("Zapisz"), ion-button[type="submit"], ion-button:has-text("Dodaj naprawę")'
     ).first();
-    await saveButton.click();
+    await saveButton.click({ force: true });
     await expect(page).toHaveURL(/repair-form/, { timeout: 3000 });
   });
 
