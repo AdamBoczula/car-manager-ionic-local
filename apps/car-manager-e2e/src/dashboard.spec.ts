@@ -45,7 +45,7 @@ test.describe('Dashboard – Panel główny', () => {
       page.getByRole('heading', { name: /Tankowania/i })
     ).toBeVisible();
       await expect(
-      page.getByText(/Dodaj swój pierwszy wpis tankowania/i)
+      page.getByText(/Przeglądaj i dodawaj tankowania/i)
     ).toBeVisible();
   });
 
@@ -57,7 +57,7 @@ test.describe('Dashboard – Panel główny', () => {
       page.getByRole('heading', { name: /Naprawy/i })
     ).toBeVisible();
     await expect(
-      page.getByText(/Zarejestruj naprawę lub serwis/i)
+      page.getByText(/Zarządzaj naprawami i serwisem/i)
     ).toBeVisible();
   });
 
@@ -150,7 +150,7 @@ test.describe('Dashboard – Panel główny', () => {
     await waitForIonicPage(page);
 
     // Status badge shows either "Online" or "Offline"
-    const statusBadge = page.locator('.status-badge').first();
+    const statusBadge = page.locator('.status-row').first();
     await expect(statusBadge).toBeVisible();
 
     const statusText = await statusBadge.innerText();
@@ -162,7 +162,7 @@ test.describe('Dashboard – Panel główny', () => {
     await waitForIonicPage(page);
 
     await expect(
-      page.getByText('Wyloguj się')
+      page.locator('[data-testid="logout-button"]')
     ).toBeVisible();
   });
 });

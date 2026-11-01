@@ -4,28 +4,19 @@ import { type Page } from '@playwright/test';
  * Firebase Auth test helpers for Car Manager e2e tests.
  *
  * These helpers bypass the real Firebase Auth flow by directly manipulating
- * the app's auth state through Ionic Storage. This avoids:
- *   - Hitting Firebase servers during tests
- *   - Needing real credentials
- *   - Rate-limiting issues
- *   - Slowing down tests with external network calls
+ * the app's IndexedDB (Ionic Storage). This avoids hitting Firebase servers,
+ * needing real credentials, or dealing with rate-limits during tests.
  *
- * The Car Manager auth flow:
- *   1. AuthService checks Ionic Storage for a cached user profile
- *   2. Firebase Auth SDK manages the actual session
- *   3. Auth guards (authGuard, noAuthGuard) check auth state
- *
- * To fully simulate authentication in e2e, you need to:
- *   1. Seed a user profile into Ionic Storage
- *   2. Either mock Firebase Auth or seed the necessary Firestore data
- *
- * For unit/component tests, use test doubles instead.
- * For e2e tests, prefer seeding the app's own storage layer.
+ * The Ionic Storage database '__car_manager_db' uses a single object store
+ * named '_ionickv'. Keys use the format '_ionickv:<key>'.
  */
 
+const DB_NAME = '__car_manager_db';
+const STORE_NAME = '_ionickv';
+
 /**
- * Seed an authenticated user into Ionic Storage.
- * This sets the user profile that AuthService reads from storage.
+ * Seed an authenticated user profile into Ionic Storage.
+ * Navigates to the app first to ensure the IndexedDB context is available.
  */
 export async function seedAuthUser(
   page: Page,
@@ -35,22 +26,52 @@ export async function seedAuthUser(
     displayName?: string;
   },
 ): Promise<void> {
+  // Navigate to the app so IndexedDB context initializes
+  await page.goto('/').catch(() => {});
+  await page.waitForTimeout(800);
+
   await page.evaluate(
-    async ({ dbName, userData }) => {
+    async ({ dbName, storeName, userData }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open(dbName);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
+        request.onupgradeneeded = (event) => {
+          // Create the store if it doesn't exist
+          const db = (event.target as IDBOpenDBRequest).result;
+          if (!db.objectStoreNames.contains(storeName)) {
+            db.createObjectStore(storeName);
+          }
+        };
       });
 
-      const storeName = database.objectStoreNames[0] || '_ionickv';
+      // Ensure store exists after open
+      if (!database.objectStoreNames.contains(storeName)) {
+        // Close and reopen with higher version to trigger onupgradeneeded
+        database.close();
+        const upgraded = await new Promise<IDBDatabase>((resolve, reject) => {
+          const req = indexedDB.open(dbName, database.version + 1);
+          req.onupgradeneeded = (event) => {
+            const db = (event.target as IDBOpenDBRequest).result;
+            if (!db.objectStoreNames.contains(storeName)) {
+              db.createObjectStore(storeName);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+        upgraded.close();
+        // Reopen normally
+        return;
+      }
+
       const transaction = database.transaction([storeName], 'readwrite');
       const store = transaction.objectStore(storeName);
 
-      // Store user profile (as AuthService would)
+      // Store user profile in Ionic Storage format: _ionickv:key → { value }
       store.put(
         { value: userData },
-        'auth:user',
+        `_ionickv:auth:user`,
       );
 
       await new Promise<void>((resolve, reject) => {
@@ -59,7 +80,7 @@ export async function seedAuthUser(
       });
       database.close();
     },
-    { dbName: '__car_manager_db', userData: user },
+    { dbName: DB_NAME, storeName: STORE_NAME, userData: user },
   );
 }
 
@@ -67,44 +88,54 @@ export async function seedAuthUser(
  * Clear the auth state from Ionic Storage (simulate logout).
  */
 export async function clearAuthState(page: Page): Promise<void> {
-  await page.evaluate(async ({ dbName }) => {
+  await page.goto('/').catch(() => {});
+  await page.waitForTimeout(300);
+
+  await page.evaluate(async ({ dbName, storeName }) => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(dbName);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
 
-    const storeName = database.objectStoreNames[0] || '_ionickv';
+    if (!database.objectStoreNames.contains(storeName)) {
+      database.close();
+      return;
+    }
+
     const transaction = database.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
 
     // Delete auth-related keys
-    store.delete('auth:user');
+    store.delete('_ionickv:auth:user');
 
     await new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
     database.close();
-  }, { dbName: '__car_manager_db' });
+  }, { dbName: DB_NAME, storeName: STORE_NAME });
 }
 
 /**
  * Check if a user is authenticated by reading from Ionic Storage.
  */
 export async function isAuthenticated(page: Page): Promise<boolean> {
-  return page.evaluate(async ({ dbName }) => {
+  return page.evaluate(async ({ dbName, storeName }) => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(dbName);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
 
-    const storeName = database.objectStoreNames[0] || '_ionickv';
+    if (!database.objectStoreNames.contains(storeName)) {
+      database.close();
+      return false;
+    }
 
     return new Promise<boolean>((resolve) => {
       const transaction = database.transaction([storeName], 'readonly');
-      const request = transaction.objectStore(storeName).get('auth:user');
+      const request = transaction.objectStore(storeName).get('_ionickv:auth:user');
       request.onsuccess = () => {
         database.close();
         resolve(!!request.result?.value);
@@ -114,5 +145,5 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
         resolve(false);
       };
     });
-  }, { dbName: '__car_manager_db' });
+  }, { dbName: DB_NAME, storeName: STORE_NAME });
 }

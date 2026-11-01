@@ -122,7 +122,7 @@ describe('RefuelService', () => {
         },
       ];
 
-      (onSnapshot as ReturnType<typeof vi.fn>).mockImplementation((_q, cb, errCb) => {
+      (onSnapshot as ReturnType<typeof vi.fn>).mockImplementation((_q, cb, _errCb) => {
         setTimeout(() => cb({ docs: firestoreRefuels }), 0);
         return vi.fn();
       });

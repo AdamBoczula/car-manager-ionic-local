@@ -7,6 +7,7 @@ import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
+import { Timestamp } from 'firebase/firestore';
 import { RefuelListPage } from './refuel-list.page';
 import { RefuelService } from '../../core/services/refuel.service';
 import type { Refuel } from '../../core/models/refuel.model';
@@ -23,7 +24,7 @@ const mockRefuel: Refuel = {
   isSkipped: false,
   consumption: 6.25,
   createdBy: 'user-1',
-  createdAt: { seconds: 1767211200, nanoseconds: 0 } as any,
+  createdAt: { seconds: 1767211200, nanoseconds: 0 } as Timestamp,
 };
 
 const mockRefuel2: Refuel = {

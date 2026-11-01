@@ -4,17 +4,6 @@ import { RefuelService } from './refuel.service';
 import { RepairService } from './repair.service';
 import { AuthService } from './auth.service';
 
-interface SyncTask {
-  id: string;
-  type: 'refuel' | 'repair';
-  operation: 'add' | 'update' | 'delete';
-  carId: string;
-  itemId: string;
-  queuedAt: string; // ISO 8601
-}
-
-const SYNC_QUEUE_KEY = 'sync:queue';
-
 /**
  * Manages offline sync queue.
  * When the app is offline, failed Firestore writes are queued.

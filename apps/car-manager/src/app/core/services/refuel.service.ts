@@ -12,7 +12,6 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
-  getDocs,
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -267,7 +266,8 @@ export class RefuelService {
   private toFirestoreData(
     refuel: Refuel
   ): Omit<Refuel, 'id'> {
-    const { id, ...data } = refuel;
+    const { id: _id, ...data } = refuel;
+    void _id; // explicitly unused — stripped before Firestore write
     return data;
   }
 }

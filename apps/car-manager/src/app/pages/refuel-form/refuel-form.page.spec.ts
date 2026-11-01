@@ -39,7 +39,7 @@ function mockNavController() {
 }
 
 const baseRoutes: Routes = [
-  { path: 'refuel-list', component: {} as any },
+  { path: 'refuel-list', component: class Dummy {} },
 ];
 
 describe('RefuelFormPage', () => {

@@ -1,185 +1,120 @@
-// spec: docs/specs/dashboard/02-dashboard.md
+// spec: docs/specs/02-login-screen.md
+
+// Ensure ion-content has proper padding on mobile
+ion-content {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 16px;
+  --padding-bottom: 120px; // extra bottom space below cards so FAB doesn't overlap content
+}
+
 .dashboard-content {
   display: flex;
   flex-direction: column;
-  min-height: 60vh;
-  padding-top: 0.5rem;
-  padding-bottom: 5rem; // space for FAB
+  gap: 1.5rem;
 }
 
-// ── Welcome section ──
+// ── Header section ──
 
-.welcome-section {
+.dashboard-header {
   text-align: center;
-  margin-bottom: 0.75rem;
-}
+  padding-top: 0.5rem;
 
-.welcome-section h1 {
-  font-size: 1.5rem;
-  color: var(--ion-color-dark);
-  margin-bottom: 0.25rem;
+  h1 {
+    font-size: 1.75rem;
+    color: var(--ion-color-dark);
+    margin: 0 0 0.25rem;
+  }
 }
 
 .user-email {
   color: var(--ion-color-medium);
-  font-size: 0.85rem;
-  margin: 0;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
 }
 
-// ── Status badge ──
-
-.status-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.25rem;
-}
-
-.status-badge {
-  display: flex;
+.status-row {
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   padding: 0.35rem 0.9rem;
   border-radius: 20px;
-  font-size: 0.8rem;
-}
-
-.status-badge.online {
-  background: var(--ion-color-success-tint, #e6f9e6);
-  color: var(--ion-color-success, #2dd36f);
-}
-
-.status-badge.offline {
-  background: var(--ion-color-warning-tint, #fff3e0);
-  color: var(--ion-color-warning, #ffc409);
-}
-
-// ── Section headings ──
-
-.section-heading {
-  font-size: 1rem;
-  color: var(--ion-color-medium);
-  margin: 0 0 0.5rem;
-  padding: 0 0.25rem;
+  font-size: 0.85rem;
   font-weight: 500;
+  background: var(--ion-color-step-50, #f5f5f5);
+}
+
+.status-icon {
+  font-size: 1.1rem;
 }
 
 // ── Cards ──
 
-.cards-section {
-  margin-bottom: 1rem;
-}
-
 .card {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.card:active {
-  transform: scale(0.98);
-}
-
-.card-icon {
-  font-size: 2rem;
-  flex-shrink: 0;
-  margin-top: 0.125rem;
-}
-
-.card-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.card-date {
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
-  margin: 0 0 0.25rem;
-}
-
-.card-amount {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--ion-color-dark);
-  margin: 0 0 0.125rem;
-}
-
-.card-mileage {
-  font-size: 0.85rem;
-  color: var(--ion-color-medium);
-  margin: 0 0 0.25rem;
-}
-
-.card-consumption {
-  font-size: 0.9rem;
-  color: var(--ion-color-primary, #3880ff);
-  font-weight: 500;
-  margin: 0;
-}
-
-.card-verva {
-  font-size: 0.8rem;
-  color: var(--ion-color-tertiary, #5260ff);
-  margin: 0.125rem 0 0;
-}
-
-// ── Card variants ──
-
-.card-refuel {
-  background: var(--ion-color-primary-tint, #e6f0ff);
-}
-
-.card-refuel .card-icon {
-  color: var(--ion-color-primary, #3880ff);
-}
-
-.card-spending {
-  background: var(--ion-color-success-tint, #e6f9e6);
-}
-
-.card-spending .card-icon {
-  color: var(--ion-color-success, #2dd36f);
-}
-
-.card--empty {
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  color: var(--ion-color-medium);
+  width: 100%;
   padding: 1.5rem;
+  border: none;
+  border-radius: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  font-family: inherit;
+  background: var(--ion-card-background, #fff);
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  .card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    margin: 0 0 0.2rem;
+    font-size: 1.1rem;
+    color: var(--ion-color-dark);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+  }
 }
 
-.card--empty p {
-  margin: 0.25rem 0;
+.card-refuel {
+  background: var(--ion-color-primary-tint, #e0f0e8);
+  border: 1px solid var(--ion-color-primary, #1b6b4a);
+
+  .card-icon {
+    color: var(--ion-color-primary, #1b6b4a);
+  }
 }
 
-.card-hint {
-  font-size: 0.8rem;
-  color: var(--ion-color-medium-shade, #92949c);
+.card-repair {
+  background: var(--ion-color-tertiary-tint, #fdf0e5);
+  border: 1px solid var(--ion-color-tertiary, #e67e22);
+
+  .card-icon {
+    color: var(--ion-color-tertiary, #e67e22);
+  }
 }
 
-.card-total {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--ion-color-dark);
-  margin: 0 0 0.5rem;
+// ── FAB ──
+
+ion-fab {
+  // Move FAB up so it's fully visible above the bottom edge
+  margin-bottom: 130px;
+  margin-right: 8px;
 }
 
-// ── Spending breakdown ──
-
-.spending-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.spending-refuel,
-.spending-repair {
-  font-size: 0.85rem;
-  color: var(--ion-color-medium);
+ion-fab-button[data-testid='fab-main'] {
+  --box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
 // ── Loading ──
@@ -189,11 +124,6 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  margin-top: 3rem;
+  padding-top: 4rem;
   color: var(--ion-color-medium);
-}
-
-.loading-container p {
-  margin: 0;
-  font-size: 0.9rem;
 }

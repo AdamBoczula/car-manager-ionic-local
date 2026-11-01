@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
+import { Timestamp } from 'firebase/firestore';
 import { RepairListPage } from './repair-list.page';
 import { RepairService } from '../../core/services/repair.service';
 import type { Repair } from '../../core/models/repair.model';
@@ -19,7 +20,7 @@ const mockRepair: Repair = {
   description: 'Wymiana klocków i tarcz hamulcowych — przód + tył',
   mechanicNote: 'Zalecana wymiana płynu hamulcowego',
   createdBy: 'u1',
-  createdAt: { seconds: 1, nanoseconds: 0 } as any,
+  createdAt: { seconds: 1, nanoseconds: 0 } as Timestamp,
 };
 
 const mockRepair2: Repair = {

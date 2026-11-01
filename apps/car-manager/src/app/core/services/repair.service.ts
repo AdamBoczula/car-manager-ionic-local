@@ -192,7 +192,8 @@ export class RepairService {
   }
 
   private toFirestoreData(repair: Repair): Omit<Repair, 'id'> {
-    const { id, ...data } = repair;
+    const { id: _id, ...data } = repair;
+    void _id; // explicitly unused — stripped before Firestore write
     return data;
   }
 }
