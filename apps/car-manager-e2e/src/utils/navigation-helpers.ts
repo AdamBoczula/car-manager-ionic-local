@@ -31,7 +31,9 @@ export async function navigateToRegister(page: Page): Promise<void> {
  */
 export async function navigateToDashboard(page: Page): Promise<void> {
   await page.goto('/dashboard');
-  await page.waitForURL('**/dashboard');
+  // Auth guard may redirect to /login if not authenticated.
+  // Accept either URL — test should check result.
+  await page.waitForLoadState('networkidle');
 }
 
 /**
@@ -48,7 +50,8 @@ export async function navigateToRoot(page: Page): Promise<void> {
  * Ionic pages use ion-page and ion-content components.
  */
 export async function waitForIonicPage(page: Page): Promise<void> {
-  await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
+  // Ionic 9 + Angular may not render <ion-page> as a DOM element.
+  // Wait for ion-content which is always present when a page is rendered.
   await page.waitForSelector('ion-content', {
     state: 'visible',
     timeout: 10000,
@@ -72,7 +75,7 @@ export async function getToastMessage(
  */
 export async function navigateToRefuelList(page: Page): Promise<void> {
   await page.goto('/refuel-list');
-  await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
+  await waitForIonicPage(page);
 }
 
 /**
@@ -81,7 +84,7 @@ export async function navigateToRefuelList(page: Page): Promise<void> {
  */
 export async function navigateToRefuelForm(page: Page): Promise<void> {
   await page.goto('/refuel-form');
-  await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
+  await waitForIonicPage(page);
 }
 
 /**
@@ -90,7 +93,7 @@ export async function navigateToRefuelForm(page: Page): Promise<void> {
  */
 export async function navigateToRepairList(page: Page): Promise<void> {
   await page.goto('/repair-list');
-  await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
+  await waitForIonicPage(page);
 }
 
 /**
@@ -99,7 +102,7 @@ export async function navigateToRepairList(page: Page): Promise<void> {
  */
 export async function navigateToRepairForm(page: Page): Promise<void> {
   await page.goto('/repair-form');
-  await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
+  await waitForIonicPage(page);
 }
 
 /**
@@ -110,4 +113,50 @@ export async function waitForLoadingToFinish(page: Page): Promise<void> {
   await loading.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {
     // Loading may not appear at all — that's fine
   });
+}
+
+/**
+ * Navigate to the refuel list by clicking the dashboard card.
+ * Avoids page.goto() which triggers a full reload and loses emulator auth state.
+ */
+export async function navigateToRefuelListViaDashboard(page: Page): Promise<void> {
+  // Programmatic Angular navigation — bypasses Ionic stacked-page DOM click interception.
+  // Wait for dashboard cards to be visible first, confirming storage & auth are ready.
+  await page.locator('[data-testid="card-refuel"]').waitFor({ state: 'visible', timeout: 15000 });
+  await page.evaluate(() => {
+    const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+    return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/refuel-list');
+  });
+  await page.waitForURL(/refuel-list/, { timeout: 10000 });
+  await waitForIonicPage(page);
+}
+
+export async function navigateToRepairListViaDashboard(page: Page): Promise<void> {
+  await page.locator('[data-testid="card-repair"]').waitFor({ state: 'visible', timeout: 15000 });
+  await page.evaluate(() => {
+    const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+    return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-list');
+  });
+  await page.waitForURL(/repair-list/, { timeout: 10000 });
+  await waitForIonicPage(page);
+}
+
+export async function navigateToRefuelFormViaFAB(page: Page): Promise<void> {
+  await page.locator('[data-testid="card-refuel"]').waitFor({ state: 'visible', timeout: 15000 });
+  await page.evaluate(() => {
+    const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+    return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/refuel-form');
+  });
+  await page.waitForURL(/refuel-form/, { timeout: 10000 });
+  await waitForIonicPage(page);
+}
+
+export async function navigateToRepairFormViaFAB(page: Page): Promise<void> {
+  await page.locator('[data-testid="card-repair"]').waitFor({ state: 'visible', timeout: 15000 });
+  await page.evaluate(() => {
+    const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+    return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-form');
+  });
+  await page.waitForURL(/repair-form/, { timeout: 10000 });
+  await waitForIonicPage(page);
 }

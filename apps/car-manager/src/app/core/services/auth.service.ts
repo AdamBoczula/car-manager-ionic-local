@@ -28,6 +28,14 @@ export class AuthService {
     // Handle redirect result (for Google sign-in with redirect)
     this.handleRedirectResult();
 
+    // Expose Angular Router navigation on window.__e2e__ for E2E tests.
+    // Allows tests to programmatically navigate without DOM click interception
+    // from Ionic's stacked page system.
+    const e2e = (window as unknown as Record<string, unknown>)['__e2e__'] as Record<string, unknown> | undefined;
+    if (e2e) {
+      e2e['navigateTo'] = (path: string) => this.router.navigate([path]);
+    }
+
     onAuthStateChanged(this.firebaseAuth, (user) => {
       this.currentUser.set(user);
       this.isLoggedIn.set(!!user);

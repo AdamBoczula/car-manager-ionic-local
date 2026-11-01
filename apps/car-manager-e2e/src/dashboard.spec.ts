@@ -9,13 +9,16 @@ import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 test.describe('Dashboard – Panel główny', () => {
+  // Run sequentially — each test seeds its own auth state
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     await clearAuthState(page).catch(() => {});
     await clearStorage(page).catch(() => {});
     await seedAuthUser(page, {
-      uid: 'test-user-1',
-      email: 'test@example.com',
-      displayName: 'Test User',
+      email: 'dash-test@carmanager.local',
+      password: 'Password123!',
+      displayName: 'Dash Test User',
     });
   });
 
@@ -33,7 +36,7 @@ test.describe('Dashboard – Panel główny', () => {
     await waitForIonicPage(page);
 
     await expect(
-      page.getByText('test@example.com')
+      page.getByText('dash-test@carmanager.local')
     ).toBeVisible();
   });
 

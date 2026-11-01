@@ -14,4 +14,10 @@ export const environment: Environment = {
     appId: '1:851248035684:web:99224ebb831a9930cd6c71',
     measurementId: 'G-2XKNELD8WR',
   },
+  // Use Firebase Auth + Firestore emulators in dev & E2E
+  useEmulators: {
+    host: 'localhost',
+    authPort: 9099,
+    firestorePort: 8080,
+  },
 };

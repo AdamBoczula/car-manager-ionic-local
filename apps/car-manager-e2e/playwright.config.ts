@@ -16,13 +16,23 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm exec nx run car-manager:serve',
-    url: 'http://localhost:4200',
-    reuseExistingServer: !process.env['CI'],
-    cwd: workspaceRoot,
-  },
+  /* Run Firebase emulators + Angular dev server before starting the tests */
+  webServer: [
+    {
+      command:
+        'npx firebase emulators:start --only auth,firestore --project carmanager-local',
+      url: 'http://localhost:4000',
+      reuseExistingServer: !process.env['CI'],
+      cwd: workspaceRoot,
+      timeout: 60_000,
+    },
+    {
+      command: 'npm exec nx run car-manager:serve',
+      url: 'http://localhost:4200',
+      reuseExistingServer: !process.env['CI'],
+      cwd: workspaceRoot,
+    },
+  ],
   projects: [
     {
       name: 'chromium',
