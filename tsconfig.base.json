@@ -1,0 +1,23 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "importHelpers": true,
+    "target": "es2022",
+    "module": "esnext",
+    "lib": ["es2022", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": true,
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@car-manager/models": ["./libs/shared/models/src/index.ts"],
+      "@car-manager/services": ["./libs/shared/services/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

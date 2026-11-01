@@ -1,0 +1,82 @@
+<!-- spec: docs/specs/auth/auth.md -->
+<ion-content class="ion-padding">
+  <div class="login-container">
+    <div class="login-header">
+      <h1>🚗 Car Manager</h1>
+      <p>Zaloguj się, aby zarządzać kosztami auta</p>
+    </div>
+
+    @if (authService.authReady()) {
+      <form (ngSubmit)="handleLogin()" #loginForm="ngForm">
+        <ion-item>
+          <ion-label position="stacked">Email</ion-label>
+          <ion-input
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            required
+            autocomplete="email"
+            placeholder="twoj@email.com"
+          />
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Hasło</ion-label>
+          <ion-input
+            type="password"
+            [(ngModel)]="password"
+            name="password"
+            required
+            autocomplete="current-password"
+            placeholder="Twoje hasło"
+          />
+        </ion-item>
+
+        <ion-button
+          expand="block"
+          type="submit"
+          [disabled]="isLoading() || !email() || !password()"
+          class="login-button"
+        >
+          @if (isLoading()) {
+            <ion-spinner name="dots" />
+          } @else {
+            🔑 Zaloguj się
+          }
+        </ion-button>
+      </form>
+
+      <div class="divider">
+        <span>lub</span>
+      </div>
+
+      <ion-button
+        expand="block"
+        fill="outline"
+        (click)="handleGoogleLogin()"
+        [disabled]="isLoading()"
+      >
+        <ion-icon name="logo-google" slot="start" />
+        Kontynuuj z Google
+      </ion-button>
+
+      <div class="register-link">
+        <ion-text>Nie masz konta?</ion-text>
+        <a routerLink="/register">Zarejestruj się →</a>
+      </div>
+    } @else {
+      <div class="loading-container">
+        <ion-spinner name="crescent" />
+        <p>Ładowanie...</p>
+      </div>
+    }
+  </div>
+
+  <ion-toast
+    [isOpen]="errorMessage() !== null"
+    [message]="errorMessage() ?? ''"
+    [duration]="4000"
+    color="danger"
+    (didDismiss)="errorMessage.set(null)"
+  />
+</ion-content>

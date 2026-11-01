@@ -1,0 +1,78 @@
+{
+  "name": "car-manager",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "root": "apps/car-manager",
+  "sourceRoot": "apps/car-manager/src",
+  "tags": ["type:app"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/car-manager",
+        "index": "apps/car-manager/src/index.html",
+        "browser": "apps/car-manager/src/main.ts",
+        "tsConfig": "apps/car-manager/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/car-manager/public"
+          }
+        ],
+        "styles": ["apps/car-manager/src/styles.scss"]
+      },
+      "configurations": {
+        "production": {
+          "fileReplacements": [
+            {
+              "replace": "apps/car-manager/src/environments/environment.ts",
+              "with": "apps/car-manager/src/environments/environment.prod.ts"
+            }
+          ],
+          "budgets": [
+            { "type": "initial", "maximumWarning": "1.2mb", "maximumError": "2mb" }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "car-manager:build"
+      },
+      "configurations": {
+        "production": { "buildTarget": "car-manager:build:production" },
+        "development": { "buildTarget": "car-manager:build:development" }
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "cwd": "apps/car-manager",
+        "command": "npx vitest run"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "car-manager:build",
+        "port": 4200,
+        "staticFilePath": "dist/car-manager/browser",
+        "spa": true
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+// spec: docs/specs/repair/02-repair-crud.md
+.repair-form {
+  &__textarea-item {
+    --min-height: 120px;
+  }
+
+  &__error-note {
+    display: block;
+    padding: 0 16px 8px;
+    font-size: 0.75rem;
+  }
+
+  &__mic-button {
+    margin-left: 8px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+    vertical-align: middle;
+  }
+
+  ion-textarea {
+    min-height: 80px;
+    font-size: 0.9rem;
+  }
+
+  ion-label {
+    ion-button {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
+  }
+}
