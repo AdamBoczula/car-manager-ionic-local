@@ -3,6 +3,12 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
+import {
+  navigateToDashboard,
+  navigateToRefuelListViaDashboard,
+  navigateToRepairListViaDashboard,
+  waitForIonicPage,
+} from './utils/navigation-helpers';
 
 const SCREENSHOT_DIR = path.resolve('qa-screenshots');
 
@@ -20,13 +26,11 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
   test('01 - Dashboard with welcome and cards', async ({ page }) => {
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/dashboard');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
+    await navigateToDashboard(page);
 
     // Verify key elements are visible
     await expect(page.getByText('Witaj!')).toBeVisible();
@@ -46,15 +50,13 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
   test('02 - Refuel list — empty state', async ({ page }) => {
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/refuel-list');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
+    await navigateToRefuelListViaDashboard(page);
 
-    // Verify empty state message (if page exists)
+    // Verify empty state message
     const emptyMsg = page.getByText(/Brak tankowań/i);
     const emptyVisible = await emptyMsg.isVisible().catch(() => false);
     if (!emptyVisible) {
@@ -74,19 +76,18 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
   test('03 - Refuel form with all fields', async ({ page }) => {
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/refuel-form');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
-
-    // Check if the form page loaded
-    const pageLoaded = await page.locator('ion-page').isVisible();
-    if (!pageLoaded) {
-      console.log('⚠️ Refuel form page not available yet');
-    }
+    // Navigate programmatically via Angular Router (avoids full reload)
+    await page.locator('[data-testid="card-refuel"]').waitFor({ state: 'visible', timeout: 15000 });
+    await page.evaluate(() => {
+      const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/refuel-form');
+    });
+    await page.waitForURL(/refuel-form/, { timeout: 10000 });
+    await waitForIonicPage(page);
 
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/phase2-03-refuel-form.png`,
@@ -101,13 +102,11 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
   test('04 - Repair list — empty state', async ({ page }) => {
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/repair-list');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
+    await navigateToRepairListViaDashboard(page);
 
     const emptyMsg = page.getByText(/Brak napraw/i);
     const emptyVisible = await emptyMsg.isVisible().catch(() => false);
@@ -128,18 +127,18 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
   test('05 - Repair form with all fields', async ({ page }) => {
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/repair-form');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
-
-    const pageLoaded = await page.locator('ion-page').isVisible();
-    if (!pageLoaded) {
-      console.log('⚠️ Repair form page not available yet');
-    }
+    // Navigate programmatically via Angular Router
+    await page.locator('[data-testid="card-repair"]').waitFor({ state: 'visible', timeout: 15000 });
+    await page.evaluate(() => {
+      const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-form');
+    });
+    await page.waitForURL(/repair-form/, { timeout: 10000 });
+    await waitForIonicPage(page);
 
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/phase2-05-repair-form.png`,
@@ -154,20 +153,18 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
   test('06 - Dashboard FAB expanded (refuel/repair options)', async ({ page }) => {
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/dashboard');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
+    await navigateToDashboard(page);
 
-    // Try to expand the FAB
-    const fab = page.locator('ion-fab-button, ion-fab').first();
+    // Try to expand the FAB (data-testid on FAB button)
+    const fab = page.locator('[data-testid="fab-main"]');
     const fabVisible = await fab.isVisible().catch(() => false);
 
     if (fabVisible) {
-      await fab.click();
+      await fab.click({ force: true });
       await page.waitForTimeout(600);
     } else {
       console.log('⚠️ FAB button not available — skipping FAB expanded screenshot');
@@ -188,13 +185,11 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
 
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/dashboard');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
+    await navigateToDashboard(page);
 
     await expect(page.getByText('Witaj!')).toBeVisible();
     await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
@@ -215,13 +210,11 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
 
     await seedAuthUser(page, {
       uid: 'test-qa-phase2',
-      email: 'qa@example.com',
+      email: 'qa-phase2@carmanager.local',
       displayName: 'QA User',
     });
 
-    await page.goto('/dashboard');
-    await page.waitForSelector('ion-page', { state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle');
+    await navigateToDashboard(page);
 
     await expect(page.getByText('Witaj!')).toBeVisible();
 
