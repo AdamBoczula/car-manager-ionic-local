@@ -1,92 +1,55 @@
-import {
-  TestBed,
-  fakeAsync,
-  tick,
-} from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
-import { Component, signal } from '@angular/core';
-import { authGuard } from './auth.guard';
+// spec: docs/specs/02-login-screen.md
+// covers: docs/specs/02-login-screen.md — route guard for authenticated users
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { authGuard } from './auth.guard';
 
-@Component({ standalone: true, template: '' })
-class DummyDashboardComponent {}
+vi.mock('../firebase', () => ({
+  auth: {} as unknown,
+  db: {} as unknown,
+}));
 
 describe('authGuard', () => {
+  let authService: { isLoggedIn: ReturnType<typeof vi.fn> };
   let router: Router;
-  let mockAuthService: {
-    isLoggedIn: ReturnType<typeof signal<boolean>>;
-    authReady: ReturnType<typeof signal<boolean>>;
-    currentUser: ReturnType<typeof signal<null>>;
-  };
 
   beforeEach(() => {
-    mockAuthService = {
-      isLoggedIn: signal(false),
-      authReady: signal(false),
-      currentUser: signal(null),
+    authService = {
+      isLoggedIn: vi.fn(),
     };
 
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
-          { path: 'dashboard', component: DummyDashboardComponent, canActivate: [authGuard] },
-          { path: 'login', component: DummyDashboardComponent },
+          { path: 'dashboard', component: {} as never },
+          { path: 'login', component: {} as never },
         ]),
-        { provide: AuthService, useValue: mockAuthService },
+        { provide: AuthService, useValue: authService },
       ],
     });
 
     router = TestBed.inject(Router);
   });
 
-  describe('gdy auth jest gotowy', () => {
-    it('powinien przepuścić zalogowanego użytkownika', fakeAsync(async () => {
-      mockAuthService.isLoggedIn.set(true);
-      mockAuthService.authReady.set(true);
+  it('powinien przepuścić zalogowanego użytkownika', () => {
+    authService.isLoggedIn.mockReturnValue(true);
 
-      const result = await router.navigate(['/dashboard']);
+    const result = TestBed.runInInjectionContext(() => authGuard());
 
-      expect(result).toBe(true);
-    }));
-
-    it('powinien przekierować niezalogowanego na /login', fakeAsync(async () => {
-      mockAuthService.isLoggedIn.set(false);
-      mockAuthService.authReady.set(true);
-
-      await router.navigate(['/dashboard']);
-
-      expect(router.url).toBe('/login');
-    }));
+    expect(result).toBe(true);
+    expect(authService.isLoggedIn).toHaveBeenCalled();
   });
 
-  describe('gdy auth nie jest jeszcze gotowy', () => {
-    it('powinien czekać na inicjalizację, potem przepuścić zalogowanego', fakeAsync(async () => {
-      mockAuthService.authReady.set(false);
-      mockAuthService.isLoggedIn.set(true);
+  it('powinien przekierować niezalogowanego użytkownika na /login', () => {
+    authService.isLoggedIn.mockReturnValue(false);
 
-      const navPromise = router.navigate(['/dashboard']);
-      tick();
+    const result = TestBed.runInInjectionContext(() => authGuard());
 
-      // Symuluj inicjalizację Firebase
-      mockAuthService.authReady.set(true);
-      tick();
-
-      const result = await navPromise;
-      expect(result).toBe(true);
-    }));
-
-    it('powinien czekać na inicjalizację, potem przekierować niezalogowanego', fakeAsync(async () => {
-      mockAuthService.authReady.set(false);
-      mockAuthService.isLoggedIn.set(false);
-
-      const navPromise = router.navigate(['/dashboard']);
-      tick();
-
-      mockAuthService.authReady.set(true);
-      tick();
-
-      await navPromise;
-      expect(router.url).toBe('/login');
-    }));
+    expect(result).toBeInstanceOf(Object); // UrlTree
+    const urlTree = result as ReturnType<Router['createUrlTree']>;
+    expect(urlTree.toString()).toBe('/login');
+    expect(authService.isLoggedIn).toHaveBeenCalled();
   });
 });

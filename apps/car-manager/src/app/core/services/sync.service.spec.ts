@@ -5,6 +5,11 @@ import { RefuelService } from './refuel.service';
 import { RepairService } from './repair.service';
 import { AuthService } from './auth.service';
 
+vi.mock('../firebase', () => ({
+  auth: {} as unknown,
+  db: {} as unknown,
+}));
+
 const mockRefuelService = {
   syncToFirestore: vi.fn().mockResolvedValue(undefined),
 };

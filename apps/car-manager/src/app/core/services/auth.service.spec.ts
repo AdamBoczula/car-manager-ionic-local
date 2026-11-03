@@ -3,10 +3,10 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import type { User } from 'firebase/auth';
 
-// Mock Firebase Auth
+// Mock firebase/auth (direct SDK)
 vi.mock('firebase/auth', () => ({
+  onAuthStateChanged: vi.fn(),
   signInWithEmailAndPassword: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
   signOut: vi.fn(),
@@ -14,31 +14,29 @@ vi.mock('firebase/auth', () => ({
   signInWithPopup: vi.fn(),
   signInWithRedirect: vi.fn(),
   getRedirectResult: vi.fn(),
-  onAuthStateChanged: vi.fn(),
-  getAuth: vi.fn(),
-  connectAuthEmulator: vi.fn(),
 }));
 
+// Mock the ../firebase module to provide a mock auth instance
 vi.mock('../firebase', () => ({
-  auth: {} as unknown,
+  auth: {} as import('firebase/auth').Auth,
 }));
 
 import {
+  onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
   getRedirectResult,
-  onAuthStateChanged,
 } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 
-const mockUser: Partial<User> = {
+const mockUser: User = {
   uid: 'test-uid-123',
   email: 'test@example.com',
   displayName: 'Test User',
-};
+} as User;
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -48,11 +46,21 @@ describe('AuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Default: onAuthStateChanged emits null (not logged in)
+    (onAuthStateChanged as ReturnType<typeof vi.fn>).mockImplementation(
+      (_auth: unknown, callback: (user: User | null) => void) => {
+        callback(null);
+        return vi.fn(); // unsubscribe
+      }
+    );
     // Default: getRedirectResult returns null (no pending redirect)
     (getRedirectResult as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
     TestBed.configureTestingModule({
-      providers: [AuthService, provideRouter([])],
+      providers: [
+        AuthService,
+        provideRouter([]),
+      ],
     });
 
     service = TestBed.inject(AuthService);
@@ -66,14 +74,24 @@ describe('AuthService', () => {
     });
 
     it('powinien przekierować na dashboard gdy redirect result zawiera usera', async () => {
+      // Re-create with different getRedirectResult mock
+      vi.clearAllMocks();
+      (onAuthStateChanged as ReturnType<typeof vi.fn>).mockImplementation(
+        (_auth: unknown, callback: (user: User | null) => void) => {
+          callback(null);
+          return vi.fn();
+        }
+      );
       (getRedirectResult as ReturnType<typeof vi.fn>).mockResolvedValue({
         user: mockUser,
       });
 
-      // Re-create service to trigger constructor with redirect result
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        providers: [AuthService, provideRouter([])],
+        providers: [
+          AuthService,
+          provideRouter([]),
+        ],
       });
       service = TestBed.inject(AuthService);
       router = TestBed.inject(Router);
@@ -148,23 +166,36 @@ describe('AuthService', () => {
     });
   });
 
-  describe('onAuthStateChanged', () => {
-    it('powinien zaktualizować stan po otrzymaniu użytkownika', () => {
-      const callback = (onAuthStateChanged as ReturnType<typeof vi.fn>).mock.calls[0][1];
-      callback(mockUser);
-
-      expect(service.authReady()).toBe(true);
-      expect(service.isLoggedIn()).toBe(true);
-      expect(service.currentUser()).toEqual(mockUser);
-    });
-
-    it('powinien zaktualizować stan po wylogowaniu', () => {
-      const callback = (onAuthStateChanged as ReturnType<typeof vi.fn>).mock.calls[0][1];
-      callback(null);
-
+  describe('auth state', () => {
+    it('powinien ustawić authReady na true po pierwszej emisji onAuthStateChanged', () => {
       expect(service.authReady()).toBe(true);
       expect(service.isLoggedIn()).toBe(false);
       expect(service.currentUser()).toBeNull();
+    });
+
+    it('powinien zaktualizować stan gdy onAuthStateChanged emituje usera', () => {
+      // Re-create with user emitted
+      vi.clearAllMocks();
+      (onAuthStateChanged as ReturnType<typeof vi.fn>).mockImplementation(
+        (_auth: unknown, callback: (user: User | null) => void) => {
+          callback(mockUser);
+          return vi.fn();
+        }
+      );
+      (getRedirectResult as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          AuthService,
+          provideRouter([]),
+        ],
+      });
+      service = TestBed.inject(AuthService);
+
+      expect(service.authReady()).toBe(true);
+      expect(service.isLoggedIn()).toBe(true);
+      expect(service.currentUser()?.uid).toBe('test-uid-123');
     });
   });
 });

@@ -1,18 +1,25 @@
+// spec: docs/specs/05-car-management.md
 // covers: docs/specs/repair/02-repair-crud.md#AC-1, docs/specs/repair/02-repair-crud.md#AC-2
-// spec: docs/specs/repair/02-repair-crud.md
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { Timestamp } from 'firebase/firestore';
+import { signal } from '@angular/core';
 import { RepairListPage } from './repair-list.page';
 import { RepairService } from '../../core/services/repair.service';
+import { CarService } from '../../core/services/car.service';
 import type { Repair } from '../../core/models/repair.model';
-import { signal } from '@angular/core';
+import type { Car } from '../../core/models/car.model';
+
+vi.mock('../../core/firebase', () => ({
+  auth: {} as unknown,
+  db: {} as unknown,
+}));
 
 const mockRepair: Repair = {
   id: 'r1',
-  carId: 'default-car',
+  carId: 'car-abc',
   date: '2026-10-15',
   amount: 500,
   mileage: 65000,
@@ -34,6 +41,13 @@ const mockRepair2: Repair = {
   mechanicNote: '',
 };
 
+const mockCar: Car = {
+  id: 'car-abc',
+  name: 'Toyota Corolla',
+  ownerId: 'u1',
+  createdAt: Timestamp.now(),
+};
+
 function createMockRepairService(overrides?: Partial<RepairService>) {
   return {
     repairs: signal<Repair[]>([]),
@@ -45,17 +59,37 @@ function createMockRepairService(overrides?: Partial<RepairService>) {
   } as unknown as RepairService;
 }
 
+function createMockCarService(overrides?: {
+  activeCarId?: string | null;
+  cars?: Car[];
+  activeCar?: Car | null;
+}) {
+  return {
+    cars: signal<Car[]>(overrides?.cars ?? [mockCar]),
+    activeCar: signal<Car | null>(overrides?.activeCar ?? mockCar),
+    activeCarId: signal<string | null>(
+      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc'
+    ),
+    hasCars: signal(true),
+    isLoading: signal(false),
+    addCar: vi.fn().mockResolvedValue(mockCar),
+    setActiveCar: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 describe('RepairListPage', () => {
   // ── AC-1: Pusty stan ──
   it('powinien wyświetlić pusty stan gdy brak napraw', async () => {
     // covers: docs/specs/repair/02-repair-crud.md#AC-1
-    const mockService = createMockRepairService();
+    const mockRepairSvc = createMockRepairService();
+    const mockCarSvc = createMockCarService();
 
     await render(RepairListPage, {
       providers: [
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RepairService, useValue: mockService },
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
       ],
     });
 
@@ -67,35 +101,28 @@ describe('RepairListPage', () => {
   // ── AC-1: Lista napraw ──
   it('powinien wyświetlić listę napraw z formatowanymi danymi', async () => {
     // covers: docs/specs/repair/02-repair-crud.md#AC-1
-    const mockService = createMockRepairService({
+    const mockRepairSvc = createMockRepairService({
       repairs: signal([mockRepair, mockRepair2]),
     });
+    const mockCarSvc = createMockCarService();
 
     await render(RepairListPage, {
       providers: [
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RepairService, useValue: mockService },
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
       ],
     });
 
-    // Dates
     expect(screen.getByText('15.10.2026')).toBeInTheDocument();
     expect(screen.getByText('01.09.2026')).toBeInTheDocument();
-
-    // Amounts
     expect(screen.getByText('500,00 zł')).toBeInTheDocument();
     expect(screen.getByText('1200,00 zł')).toBeInTheDocument();
-
-    // Mileage (formatted with thousands separator based on locale)
     expect(screen.getByText(/65[,.\s]?000 km/)).toBeInTheDocument();
     expect(screen.getByText(/62[,.\s]?000 km/)).toBeInTheDocument();
-
-    // Locations
     expect(screen.getByText('AutoSerwis Kraków')).toBeInTheDocument();
     expect(screen.getByText('ASO Toyota')).toBeInTheDocument();
-
-    // Descriptions (truncated at 50 chars with ellipsis)
     expect(
       screen.getByText('Wymiana klocków i tarcz hamulcowych — przód + tył')
     ).toBeInTheDocument();
@@ -109,56 +136,59 @@ describe('RepairListPage', () => {
       description:
         'Bardzo długi opis naprawy który powinien zostać obcięty do pięćdziesięciu znaków',
     };
-    const mockService = createMockRepairService({
+    const mockRepairSvc = createMockRepairService({
       repairs: signal([longDescRepair]),
     });
+    const mockCarSvc = createMockCarService();
 
     await render(RepairListPage, {
       providers: [
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RepairService, useValue: mockService },
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
       ],
     });
 
-    // Should show truncated text with ellipsis
     const expected =
       'Bardzo długi opis naprawy który powinien zostać ob…';
     expect(screen.getByText(expected)).toBeInTheDocument();
   });
 
-  // ── AC-2: Usuwanie naprawy ──
-  it('powinien wywołać delete() po kliknięciu Usuń', async () => {
-    // covers: docs/specs/repair/02-repair-crud.md#AC-2
-    const mockService = createMockRepairService({
+  // covers: docs/specs/05-car-management.md#AC-13
+  it('powinien wywołać delete() z carId z CarService', async () => {
+    const mockRepairSvc = createMockRepairService({
       repairs: signal([mockRepair]),
     });
+    const mockCarSvc = createMockCarService({ activeCarId: 'car-abc' });
     const user = userEvent.setup();
 
     await render(RepairListPage, {
       providers: [
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RepairService, useValue: mockService },
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
       ],
     });
 
     const deleteButton = screen.getByTestId('delete-repair-button');
     await user.click(deleteButton);
 
-    expect(mockService.delete).toHaveBeenCalledWith('r1', 'default-car');
+    expect(mockRepairSvc.delete).toHaveBeenCalledWith('r1', 'car-abc');
   });
 
   // ── AC-1: Przycisk + ──
   it('powinien mieć przycisk do nawigacji do formularza dodawania', async () => {
-    // covers: docs/specs/repair/02-repair-crud.md#AC-1
-    const mockService = createMockRepairService();
+    const mockRepairSvc = createMockRepairService();
+    const mockCarSvc = createMockCarService();
 
     await render(RepairListPage, {
       providers: [
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RepairService, useValue: mockService },
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
       ],
     });
 
@@ -167,20 +197,38 @@ describe('RepairListPage', () => {
   });
 
   // ── OnInit / OnDestroy ──
-  it('powinien wywołać startListening przy inicjalizacji i stopListening przy niszczeniu', async () => {
-    const mockService = createMockRepairService();
+  it('powinien wywołać startListening z activeCarId przy inicjalizacji', async () => {
+    const mockRepairSvc = createMockRepairService();
+    const mockCarSvc = createMockCarService({ activeCarId: 'car-abc' });
 
     const { fixture } = await render(RepairListPage, {
       providers: [
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RepairService, useValue: mockService },
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
       ],
     });
 
-    expect(mockService.startListening).toHaveBeenCalledWith('default-car');
+    expect(mockRepairSvc.startListening).toHaveBeenCalledWith('car-abc');
 
     fixture.destroy();
-    expect(mockService.stopListening).toHaveBeenCalled();
+    expect(mockRepairSvc.stopListening).toHaveBeenCalled();
+  });
+
+  it('powinien wyrenderować car-switcher w headerze', async () => {
+    const mockRepairSvc = createMockRepairService();
+    const mockCarSvc = createMockCarService();
+
+    const { container } = await render(RepairListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
+      ],
+    });
+
+    expect(container.querySelector('app-car-switcher')).toBeTruthy();
   });
 });

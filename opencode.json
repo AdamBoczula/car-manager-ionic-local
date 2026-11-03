@@ -5,29 +5,34 @@
       "nx-mcp": {
         "type": "local",
         "command": ["npx", "-y", "nx-mcp@latest"],
-        "enabled": true
+        "enabled": true,
+        "timeout": 30000
       },
       "angular-cli": {
         "type": "local",
         "command": ["npx", "-y", "@angular/cli", "mcp"],
-        "enabled": true
+        "enabled": false,
+        "comment": "Disabled: Nx workspace (no angular.json). Use nx-mcp for workspace operations."
       },
       "playwright": {
         "type": "local",
         "command": ["npx", "-y", "@playwright/mcp@latest"],
         "enabled": true,
+        "timeout": 30000,
         "comment": "Playwright MCP — browser automation: navigation, screenshots, viewport testing"
       },
       "chrome-devtools": {
         "type": "local",
         "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
         "enabled": true,
+        "timeout": 30000,
         "comment": "Chrome DevTools MCP — accessibility audits (Axe-core), performance, CSS coverage"
       },
       "github": {
         "type": "local",
         "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
         "enabled": true,
+        "timeout": 30000,
         "env": {
           "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
         },
@@ -37,12 +42,14 @@
         "type": "local",
         "command": ["npx", "-y", "firebase-tools@latest", "mcp"],
         "enabled": true,
-        "comment": "Firebase MCP — Firestore, Auth, emulators, security rules"
+        "timeout": 60000,
+        "comment": "Firebase MCP — Firestore, Auth, emulators, security rules (firebase-tools is large, needs extra time)"
       },
       "sonarqube": {
         "type": "local",
         "command": ["npx", "-y", "sonarqube-mcp-server@latest"],
         "enabled": true,
+        "timeout": 30000,
         "env": {
           "SONARQUBE_URL": "${SONARQUBE_URL}",
           "SONARQUBE_TOKEN": "${SONARQUBE_TOKEN}"

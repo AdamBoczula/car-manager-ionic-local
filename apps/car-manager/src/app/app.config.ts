@@ -9,17 +9,12 @@ import { IonicRouteStrategy } from '@ionic/angular';
 import { RouteReuseStrategy } from '@angular/router';
 import { Drivers, Storage } from '@ionic/storage';
 
+// ── Firebase: side-effect import initializes the SDK before DI starts ──
+import './core/firebase';
+
 import { appRoutes } from './app.routes';
 import { StorageService } from './core/services/storage.service';
 
-// Import wywołuje inicjalizację Firebase (side-effect import)
-// To musi być zaimportowane przed użyciem db/auth w serwisach
-import './core/firebase';
-
-/**
- * Initialize Ionic Storage before the app renders.
- * Ensures offline-first services can read/write immediately.
- */
 function initializeStorage(storageService: StorageService): () => Promise<void> {
   return () => storageService.init();
 }
@@ -30,6 +25,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideIonicAngular({ mode: 'md' }),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+
+    // ── Ionic Storage ──
     {
       provide: Storage,
       useFactory: () =>

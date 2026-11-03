@@ -2,7 +2,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import {
   collection,
-  Firestore,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -24,7 +23,7 @@ const STORAGE_KEY = 'refuels';
 
 @Injectable({ providedIn: 'root' })
 export class RefuelService {
-  private readonly firestore: Firestore = db;
+  private readonly firestore = db;
   private readonly storage = inject(StorageService);
   private readonly auth = inject(AuthService);
 
@@ -62,10 +61,10 @@ export class RefuelService {
       q,
       (snapshot) => {
         const remote = snapshot.docs.map(
-          (doc) =>
+          (docSnap) =>
             ({
-              id: doc.id,
-              ...doc.data(),
+              id: docSnap.id,
+              ...docSnap.data(),
             }) as Refuel
         );
 

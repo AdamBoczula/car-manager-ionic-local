@@ -76,12 +76,12 @@ Alternatywa prostsza: standardowy projekt Ionic-Angular bez Nx (szybszy start).
 interface Car {
   id: string;
   name: string;           // np. "Toyota Corolla"
-  ownerId: string;        // uid użytkownika
-  sharedWith: string[];   // uid żony/męża do współdzielenia
+  ownerId: string;        // uid użytkownika (garaż)
   createdAt: Timestamp;
 }
 ```
-> Na start: jeden samochód, później możliwość dodania kolejnych.
+> **ADR-002**: Jeden garaż na konto. Mąż i żona używają tego samego konta (współdzielone logowanie).
+> Pole `sharedWith` usunięte – zbędne przy tym modelu. Patrz `docs/specs/05-car-management.md`.
 
 ### 4.2 Tankowanie (`refuels`)
 ```typescript
@@ -266,8 +266,9 @@ Gdy zajdzie potrzeba:
 - [ ] Speech-to-text dla napraw
 
 ### Faza 3 – Szlify
+- [ ] **Car Wizard + Car Service** – dodawanie aut w wizardzie (pierwsze użycie), car-switcher w headerze, zastąpienie `default-car`
 - [ ] Filtrowanie i sortowanie list
-- [ ] Współdzielenie auta między użytkownikami
+- [ ] ~~Współdzielenie auta między użytkownikami~~ (usunięte – ADR-002: jeden garaż na konto)
 - [ ] PWA + deployment
 - [ ] Testy na Android/iOS (Capacitor build)
 
@@ -300,4 +301,4 @@ Gdy zajdzie potrzeba:
 
 ---
 
-*Ostatnia aktualizacja: 01.11.2026*
+*Ostatnia aktualizacja: 02.11.2026*

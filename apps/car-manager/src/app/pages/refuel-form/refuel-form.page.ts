@@ -1,4 +1,4 @@
-// spec: docs/specs/refuel/02-refuel-crud.md
+// spec: docs/specs/05-car-management.md
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -20,8 +20,8 @@ import {
   IonToast,
 } from '@ionic/angular';
 import { RefuelService } from '../../core/services/refuel.service';
-
-const DEFAULT_CAR_ID = 'default-car';
+import { CarService } from '../../core/services/car.service';
+import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
 
 @Component({
   selector: 'app-refuel-form',
@@ -43,6 +43,7 @@ const DEFAULT_CAR_ID = 'default-car';
     IonButton,
     IonFooter,
     IonToast,
+    CarSwitcherComponent,
   ],
   template: `
     <ion-header>
@@ -50,7 +51,12 @@ const DEFAULT_CAR_ID = 'default-car';
         <ion-buttons slot="start">
           <ion-back-button defaultHref="/refuel-list" />
         </ion-buttons>
-        <ion-title>Dodaj tankowanie</ion-title>
+        <app-car-switcher
+          [cars]="carService.cars()"
+          [activeCar]="carService.activeCar()"
+          (carSelected)="carService.setActiveCar($event)"
+          (carAdded)="handleCarAdded($event)"
+        />
       </ion-toolbar>
     </ion-header>
 
@@ -167,6 +173,7 @@ const DEFAULT_CAR_ID = 'default-car';
 })
 export class RefuelFormPage {
   private readonly refuelService = inject(RefuelService);
+  readonly carService = inject(CarService);
   private readonly router = inject(Router);
 
   // Form fields — plain class properties for ngModel binding
@@ -188,9 +195,17 @@ export class RefuelFormPage {
       return;
     }
 
+    const carId = this.carService.activeCarId();
+    if (!carId) {
+      this.toastColor = 'danger';
+      this.toastMessage = 'Brak aktywnego auta. Dodaj auto w kreatorze.';
+      this.isToastOpen = true;
+      return;
+    }
+
     try {
       await this.refuelService.add({
-        carId: DEFAULT_CAR_ID,
+        carId,
         date: this.date,
         amount: this.amount,
         mileage: this.mileage,
@@ -209,6 +224,25 @@ export class RefuelFormPage {
       this.toastColor = 'danger';
       this.toastMessage = 'Błąd zapisywania tankowania.';
       this.isToastOpen = true;
+    }
+  }
+
+  /** Handle a new car added from the car-switcher modal. */
+  async handleCarAdded(data: {
+    name: string;
+    currentMileage?: number;
+    year?: number;
+    vin?: string;
+  }): Promise<void> {
+    try {
+      const car = await this.carService.addCar(data.name, {
+        currentMileage: data.currentMileage,
+        year: data.year,
+        vin: data.vin,
+      });
+      await this.carService.setActiveCar(car.id);
+    } catch (err) {
+      console.error('Failed to add car from refuel form:', err);
     }
   }
 }

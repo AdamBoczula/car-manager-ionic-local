@@ -3,8 +3,6 @@ import { TestBed } from '@angular/core/testing';
 import { RepairService } from './repair.service';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
-import type { User } from 'firebase/auth';
-import { Timestamp } from 'firebase/firestore';
 import type { Repair } from '../models/repair.model';
 
 // ── Mocks ──
@@ -27,15 +25,10 @@ vi.mock('firebase/firestore', () => ({
   connectFirestoreEmulator: vi.fn(),
 }));
 
+// Mock the ../firebase module to provide a mock db instance
 vi.mock('../firebase', () => ({
-  db: {} as unknown,
-  auth: {} as unknown,
+  db: {} as import('firebase/firestore').Firestore,
 }));
-
-const mockUser: Partial<User> = {
-  uid: 'test-uid-123',
-  email: 'test@example.com',
-};
 
 const storageData = new Map<string, unknown>();
 
@@ -49,7 +42,10 @@ const mockStorageService = {
 };
 
 const mockAuthService = {
-  currentUser: vi.fn(() => mockUser as User),
+  currentUser: vi.fn(() => ({
+    uid: 'test-uid-123',
+    email: 'test@example.com',
+  })),
   isLoggedIn: vi.fn(() => true),
   authReady: vi.fn(() => true),
 };
@@ -133,6 +129,7 @@ describe('RepairService', () => {
 
   describe('update()', () => {
     it('powinien zaktualizować lokalnie i w Firestore', async () => {
+      const { Timestamp } = await import('firebase/firestore');
       const existing: Repair = {
         id: 'r1',
         carId: 'car1',
@@ -160,6 +157,7 @@ describe('RepairService', () => {
 
   describe('delete()', () => {
     it('powinien usunąć z lokalnego storage i Firestore', async () => {
+      const { Timestamp } = await import('firebase/firestore');
       const existing: Repair = {
         id: 'r1',
         carId: 'car1',

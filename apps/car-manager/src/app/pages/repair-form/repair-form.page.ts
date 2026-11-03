@@ -1,4 +1,4 @@
-// spec: docs/specs/repair/02-repair-crud.md
+// spec: docs/specs/05-car-management.md
 import { Component, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import {
@@ -22,7 +22,9 @@ import {
 import { addIcons } from 'ionicons';
 import { mic } from 'ionicons/icons';
 import { RepairService } from '../../core/services/repair.service';
+import { CarService } from '../../core/services/car.service';
 import { SpeechService } from '../../core/services/speech.service';
+import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
 
 addIcons({ mic });
 
@@ -46,6 +48,7 @@ addIcons({ mic });
     IonToast,
     IonFooter,
     IonNote,
+    CarSwitcherComponent,
   ],
   template: `
     <ion-header>
@@ -53,7 +56,12 @@ addIcons({ mic });
         <ion-buttons slot="start">
           <ion-back-button defaultHref="/repair-list" />
         </ion-buttons>
-        <ion-title>Dodaj naprawę</ion-title>
+        <app-car-switcher
+          [cars]="carService.cars()"
+          [activeCar]="carService.activeCar()"
+          (carSelected)="carService.setActiveCar($event)"
+          (carAdded)="handleCarAdded($event)"
+        />
       </ion-toolbar>
     </ion-header>
 
@@ -194,6 +202,7 @@ addIcons({ mic });
 })
 export class RepairFormPage {
   private readonly repairService = inject(RepairService);
+  readonly carService = inject(CarService);
   private readonly router = inject(Router);
   readonly speechService = inject(SpeechService);
 
@@ -240,9 +249,15 @@ export class RepairFormPage {
 
     if (!this.isFormValid()) return;
 
+    const carId = this.carService.activeCarId();
+    if (!carId) {
+      this.showToast('Brak aktywnego auta. Dodaj auto w kreatorze.', 'danger');
+      return;
+    }
+
     try {
       await this.repairService.add({
-        carId: 'default-car',
+        carId,
         date: this.date(),
         amount: this.amount(),
         mileage: this.mileage(),
@@ -272,6 +287,25 @@ export class RepairFormPage {
         console.warn('Speech recognition error:', err);
       },
     });
+  }
+
+  /** Handle a new car added from the car-switcher modal. */
+  async handleCarAdded(data: {
+    name: string;
+    currentMileage?: number;
+    year?: number;
+    vin?: string;
+  }): Promise<void> {
+    try {
+      const car = await this.carService.addCar(data.name, {
+        currentMileage: data.currentMileage,
+        year: data.year,
+        vin: data.vin,
+      });
+      await this.carService.setActiveCar(car.id);
+    } catch (err) {
+      console.error('Failed to add car from repair form:', err);
+    }
   }
 
   private showToast(message: string, color: 'success' | 'danger'): void {

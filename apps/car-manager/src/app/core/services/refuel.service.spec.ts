@@ -3,8 +3,6 @@ import { TestBed } from '@angular/core/testing';
 import { RefuelService } from './refuel.service';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
-import type { User } from 'firebase/auth';
-import { Timestamp } from 'firebase/firestore';
 import type { Refuel } from '../models/refuel.model';
 
 // ── Mocks ──
@@ -27,15 +25,10 @@ vi.mock('firebase/firestore', () => ({
   connectFirestoreEmulator: vi.fn(),
 }));
 
+// Mock the ../firebase module to provide a mock db instance
 vi.mock('../firebase', () => ({
-  db: {} as unknown,
-  auth: {} as unknown,
+  db: {} as import('firebase/firestore').Firestore,
 }));
-
-const mockUser: Partial<User> = {
-  uid: 'test-uid-123',
-  email: 'test@example.com',
-};
 
 const storageData = new Map<string, unknown>();
 
@@ -49,7 +42,10 @@ const mockStorageService = {
 };
 
 const mockAuthService = {
-  currentUser: vi.fn(() => mockUser as User),
+  currentUser: vi.fn(() => ({
+    uid: 'test-uid-123',
+    email: 'test@example.com',
+  })),
   isLoggedIn: vi.fn(() => true),
   authReady: vi.fn(() => true),
 };
@@ -74,6 +70,7 @@ describe('RefuelService', () => {
 
   describe('startListening()', () => {
     it('powinien załadować dane z cache przed Firestore', async () => {
+      const { Timestamp } = await import('firebase/firestore');
       const cachedRefuels: Refuel[] = [
         {
           id: 'r1',
@@ -92,18 +89,17 @@ describe('RefuelService', () => {
 
       const { onSnapshot } = await import('firebase/firestore');
       (onSnapshot as ReturnType<typeof vi.fn>).mockImplementation((_q, cb) => {
-        // Simulate: Firestore returns empty initially
         setTimeout(() => cb({ docs: [] }), 0);
         return vi.fn(); // unsubscribe
       });
 
       await service.startListening('car1');
 
-      // Should have loaded cached data immediately
       expect(service.refuels()).toEqual(cachedRefuels);
     });
 
     it('powinien zaktualizować dane z Firestore gdy snapshot emituje', async () => {
+      const { Timestamp } = await import('firebase/firestore');
       const { onSnapshot } = await import('firebase/firestore');
       const firestoreRefuels = [
         {
@@ -129,7 +125,6 @@ describe('RefuelService', () => {
 
       await service.startListening('car1');
 
-      // Fast forward — need to wait for the async callback
       await new Promise((r) => setTimeout(r, 10));
 
       expect(service.refuels().length).toBe(1);
@@ -169,7 +164,6 @@ describe('RefuelService', () => {
       expect(refuel.createdBy).toBe('test-uid-123');
       expect(addDoc).toHaveBeenCalled();
 
-      // Should have saved to local storage
       const stored = storageData.get('refuels:car1') as Refuel[];
       expect(stored).toBeDefined();
       expect(stored.length).toBe(1);
@@ -205,7 +199,6 @@ describe('RefuelService', () => {
         isSkipped: false,
       });
 
-      // Should still be saved locally
       expect(refuel.carId).toBe('car1');
       const stored = storageData.get('refuels:car1') as Refuel[];
       expect(stored).toBeDefined();
@@ -215,7 +208,7 @@ describe('RefuelService', () => {
 
   describe('delete()', () => {
     it('powinien usunąć z lokalnego storage i Firestore', async () => {
-      // Pre-populate storage
+      const { Timestamp } = await import('firebase/firestore');
       storageData.set('refuels:car1', [
         {
           id: 'r1',

@@ -1,0 +1,93 @@
+// spec: docs/specs/05-car-management.md
+.add-car {
+  &__content {
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 32px 16px 0;
+  }
+
+  &__welcome {
+    text-align: center;
+    margin-bottom: 32px;
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 16px 0 8px;
+      color: var(--ion-color-dark);
+    }
+  }
+
+  &__welcome-icon {
+    font-size: 4rem;
+    color: var(--ion-color-primary);
+  }
+
+  &__subtitle {
+    font-size: 0.95rem;
+    color: var(--ion-color-medium);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__form {
+    margin-bottom: 24px;
+  }
+
+  &__field {
+    margin-top: 16px;
+  }
+
+  &__field--vin {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  &__vin-input {
+    flex: 1;
+  }
+
+  &__vin-copy-btn {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    flex-shrink: 0;
+  }
+
+  &__vin-copied {
+    font-size: 0.8rem;
+    color: var(--ion-color-success);
+    white-space: nowrap;
+    align-self: center;
+    padding-bottom: 4px;
+  }
+
+  &__add-btn {
+    margin-top: 16px;
+  }
+
+  &__list-section {
+    margin-top: 24px;
+  }
+
+  &__list-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ion-color-medium);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  &__cta {
+    margin-top: 32px;
+  }
+
+  &__cta-divider {
+    height: 1px;
+    background: var(--ion-color-step-150, #d7d8da);
+    margin-bottom: 24px;
+  }
+}

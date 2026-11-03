@@ -1,7 +1,8 @@
 import { Environment } from './environment.interface';
 
 /**
- * 🔧 DEVELOPMENT – `carmanager-local` Firebase project
+ * 🔧 DEVELOPMENT – `carmanager-local` Firebase project.
+ * Connects to real Firebase (no emulators). For E2E tests, see environment.e2e.ts.
  */
 export const environment: Environment = {
   production: false,
@@ -13,11 +14,5 @@ export const environment: Environment = {
     messagingSenderId: '851248035684',
     appId: '1:851248035684:web:99224ebb831a9930cd6c71',
     measurementId: 'G-2XKNELD8WR',
-  },
-  // Use Firebase Auth + Firestore emulators in dev & E2E
-  useEmulators: {
-    host: 'localhost',
-    authPort: 9099,
-    firestorePort: 8080,
   },
 };

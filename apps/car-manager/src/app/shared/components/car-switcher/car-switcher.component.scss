@@ -1,0 +1,57 @@
+// spec: docs/specs/05-car-management.md
+.car-switcher {
+  &__button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    font-weight: 600;
+    text-transform: none;
+    max-width: 200px;
+    font-size: 1rem;
+  }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+  }
+
+  &__popover {
+    --width: 250px;
+  }
+
+  &__divider {
+    height: 1px;
+    background: var(--ion-color-step-150, #d7d8da);
+    margin: 4px 0;
+  }
+
+  &__field {
+    margin-top: 16px;
+  }
+
+  &__field--vin {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  &__vin-input {
+    flex: 1;
+  }
+
+  &__vin-copy-btn {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    flex-shrink: 0;
+  }
+
+  &__vin-copied {
+    font-size: 0.8rem;
+    color: var(--ion-color-success);
+    white-space: nowrap;
+    align-self: center;
+    padding-bottom: 4px;
+  }
+}

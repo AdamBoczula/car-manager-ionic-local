@@ -1,5 +1,5 @@
-// spec: docs/specs/refuel/02-refuel-crud.md
-import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
+// spec: docs/specs/05-car-management.md
+import { Component, inject, OnInit, OnDestroy, computed, effect, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import {
@@ -23,9 +23,9 @@ import {
 import { addIcons } from 'ionicons';
 import { add, trash } from 'ionicons/icons';
 import { RefuelService } from '../../core/services/refuel.service';
+import { CarService } from '../../core/services/car.service';
+import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
 import { formatPln } from '../../core/utils/consumption.util';
-
-const DEFAULT_CAR_ID = 'default-car';
 
 @Component({
   selector: 'app-refuel-list',
@@ -48,6 +48,7 @@ const DEFAULT_CAR_ID = 'default-car';
     IonLabel,
     IonSpinner,
     IonText,
+    CarSwitcherComponent,
   ],
   template: `
     <ion-header>
@@ -55,7 +56,12 @@ const DEFAULT_CAR_ID = 'default-car';
         <ion-buttons slot="start">
           <ion-back-button defaultHref="/dashboard" />
         </ion-buttons>
-        <ion-title>Tankowania</ion-title>
+        <app-car-switcher
+          [cars]="carService.cars()"
+          [activeCar]="carService.activeCar()"
+          (carSelected)="carService.setActiveCar($event)"
+          (carAdded)="handleCarAdded($event)"
+        />
         <ion-buttons slot="end">
           <ion-button (click)="navigateToForm()" aria-label="Dodaj tankowanie" data-testid="add-refuel-button">
             <ion-icon name="add" slot="icon-only" />
@@ -118,7 +124,9 @@ const DEFAULT_CAR_ID = 'default-car';
 })
 export class RefuelListPage implements OnInit, OnDestroy {
   private readonly refuelService = inject(RefuelService);
+  readonly carService = inject(CarService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly refuels = this.refuelService.refuels;
   readonly isLoading = this.refuelService.isLoading;
@@ -127,10 +135,26 @@ export class RefuelListPage implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({ add, trash });
+
+    // React to active car changes
+    const carListener = effect(() => {
+      const carId = this.carService.activeCarId();
+      if (carId) {
+        this.refuelService.startListening(carId);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      carListener.destroy();
+    });
   }
 
   ngOnInit(): void {
-    this.refuelService.startListening(DEFAULT_CAR_ID);
+    // Initial load — if active car already set, start listening
+    const carId = this.carService.activeCarId();
+    if (carId) {
+      this.refuelService.startListening(carId);
+    }
   }
 
   ngOnDestroy(): void {
@@ -145,7 +169,29 @@ export class RefuelListPage implements OnInit, OnDestroy {
     return formatPln(amount);
   }
 
-  deleteRefuel(id: string): void {
-    this.refuelService.delete(id, DEFAULT_CAR_ID);
+  async deleteRefuel(id: string): Promise<void> {
+    const carId = this.carService.activeCarId();
+    if (carId) {
+      this.refuelService.delete(id, carId);
+    }
+  }
+
+  /** Handle a new car added from the car-switcher modal. */
+  async handleCarAdded(data: {
+    name: string;
+    currentMileage?: number;
+    year?: number;
+    vin?: string;
+  }): Promise<void> {
+    try {
+      const car = await this.carService.addCar(data.name, {
+        currentMileage: data.currentMileage,
+        year: data.year,
+        vin: data.vin,
+      });
+      await this.carService.setActiveCar(car.id);
+    } catch (err) {
+      console.error('Failed to add car from refuel list:', err);
+    }
   }
 }

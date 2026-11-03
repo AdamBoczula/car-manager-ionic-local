@@ -13,6 +13,8 @@ import {
   IonToast,
   IonIcon,
 } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { logoGoogle } from 'ionicons/icons';
 import { AuthService } from '../../core/services/auth.service';
 import { FirebaseError } from 'firebase/app';
 
@@ -44,6 +46,10 @@ export class RegisterPage {
   readonly confirmPassword = signal('');
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+
+  constructor() {
+    addIcons({ logoGoogle });
+  }
 
   async handleRegister(): Promise<void> {
     if (this.isLoading()) return;
@@ -95,9 +101,6 @@ export class RegisterPage {
           console.error('Firebase auth error:', err.code, err.message);
           return 'Wystąpił błąd rejestracji. Spróbuj ponownie. (' + err.code + ')';
       }
-    }
-    if (err instanceof Error && err.message === 'REDIRECT_INITIATED') {
-      return ''; // no error — redirect is in progress
     }
     return 'Wystąpił nieoczekiwany błąd.';
   }

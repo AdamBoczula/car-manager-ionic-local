@@ -5,7 +5,7 @@ import {
   enableIndexedDbPersistence,
   connectFirestoreEmulator,
 } from 'firebase/firestore';
-import { getAuth, Auth, connectAuthEmulator, signInWithEmailAndPassword, signOut as fbSignOut } from 'firebase/auth';
+import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { environment } from '../../environments/environment';
 
 /**
@@ -16,33 +16,6 @@ import { environment } from '../../environments/environment';
 const app: FirebaseApp = initializeApp(environment.firebase);
 const db: Firestore = getFirestore(app);
 const auth: Auth = getAuth(app);
-
-/**
- * Connect to Firebase emulators when configured (dev & E2E tests).
- * Must be called BEFORE any Firestore/Auth operations.
- */
-if (environment.useEmulators) {
-  const { host, authPort, firestorePort } = environment.useEmulators;
-  connectAuthEmulator(auth, `http://${host}:${authPort}`, {
-    disableWarnings: true,
-  });
-  connectFirestoreEmulator(db, host, firestorePort);
-  console.log(
-    `🔧 Firebase emulators connected: Auth(${host}:${authPort}), Firestore(${host}:${firestorePort})`
-  );
-}
-
-/**
- * Expose auth helpers on window for E2E tests when using emulators.
- * Tests call __e2e__.signIn() / signOut() after creating users via emulator REST API.
- */
-if (!environment.production && typeof window !== 'undefined') {
-  (window as unknown as Record<string, unknown>)['__e2e__'] = {
-    signIn: (email: string, password: string) =>
-      signInWithEmailAndPassword(auth, email, password),
-    signOut: () => fbSignOut(auth),
-  };
-}
 
 /**
  * Włącz offline persistence dla Firestore (kluczowe dla offline-first).

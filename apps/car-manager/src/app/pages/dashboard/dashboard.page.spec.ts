@@ -1,13 +1,22 @@
-// spec: docs/specs/02-login-screen.md
-// covers: docs/specs/02-login-screen.md#AC-1, AC-2, AC-3
+// spec: docs/specs/05-car-management.md
+// covers: docs/specs/05-car-management.md#AC-8, AC-9, AC-18, AC-20
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
+import { signal } from '@angular/core';
 import { DashboardPage } from './dashboard.page';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { SyncService } from '../../core/services/sync.service';
+import { CarService } from '../../core/services/car.service';
+import type { Car } from '../../core/models/car.model';
 import type { User } from 'firebase/auth';
+import { Timestamp } from 'firebase/firestore';
+
+vi.mock('../../core/firebase', () => ({
+  auth: {} as unknown,
+  db: {} as unknown,
+}));
 
 const mockUser: Partial<User> = {
   uid: 'test-uid',
@@ -38,6 +47,22 @@ describe('DashboardPage', () => {
         isOnline: vi.fn(() => overrides?.isOnline ?? true),
         processQueue: vi.fn().mockResolvedValue(undefined),
       },
+      carService: {
+        cars: signal<Car[]>([]),
+        activeCar: signal<Car | null>(null),
+        activeCarId: signal<string | null>(null),
+        hasCars: signal(false),
+        isLoading: signal(false),
+        addCar: vi.fn().mockResolvedValue({
+          id: 'car-1',
+          name: 'New Car',
+          ownerId: 'u1',
+          createdAt: Timestamp.now(),
+        } as Car),
+        setActiveCar: vi.fn().mockResolvedValue(undefined),
+        startListening: vi.fn().mockResolvedValue(undefined),
+        stopListening: vi.fn(),
+      },
     };
   }
 
@@ -52,6 +77,7 @@ describe('DashboardPage', () => {
         { provide: AuthService, useValue: mocks.authService },
         { provide: StorageService, useValue: mocks.storageService },
         { provide: SyncService, useValue: mocks.syncService },
+        { provide: CarService, useValue: mocks.carService },
       ],
     }).compileComponents();
 
@@ -67,7 +93,6 @@ describe('DashboardPage', () => {
 
   async function renderAndWait(): Promise<void> {
     fixture.detectChanges();
-    // Wait for async ngOnInit to finish
     await fixture.whenStable();
     fixture.detectChanges();
   }
@@ -81,11 +106,12 @@ describe('DashboardPage', () => {
       expect(fixture.componentInstance).toBeTruthy();
     });
 
-    it('powinien wyświetlić nagłówek "Car Manager 🚗"', async () => {
+    it('powinien wyświetlić car-switcher w headerze', async () => {
       await setup();
-      render();
+      await renderAndWait();
       const el = fixture.nativeElement as HTMLElement;
-      expect(el.textContent).toContain('Car Manager');
+      const switcher = el.querySelector('app-car-switcher');
+      expect(switcher).toBeTruthy();
     });
 
     it('powinien wyświetlić powitanie "Witaj!"', async () => {
@@ -231,6 +257,43 @@ describe('DashboardPage', () => {
       await fixture.whenStable();
 
       expect(mocks.authService.logout).toHaveBeenCalled();
+    });
+  });
+
+  // ── Car added handler ──
+
+  describe('handleCarAdded', () => {
+    // covers: docs/specs/05-car-management.md#AC-18
+    it('powinien wywołać carService.addCar z opcjonalnymi polami', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      await fixture.componentInstance.handleCarAdded({
+        name: 'New Car',
+        currentMileage: 123000,
+        year: 2020,
+        vin: 'WBA123',
+      });
+
+      expect(mocks.carService.addCar).toHaveBeenCalledWith('New Car', {
+        currentMileage: 123000,
+        year: 2020,
+        vin: 'WBA123',
+      });
+      expect(mocks.carService.setActiveCar).toHaveBeenCalledWith('car-1');
+    });
+
+    // covers: docs/specs/05-car-management.md#AC-20
+    it('powinien wywołać carService.addCar bez opcjonalnych pól gdy są puste', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      await fixture.componentInstance.handleCarAdded({
+        name: 'Basic Car',
+      });
+
+      expect(mocks.carService.addCar).toHaveBeenCalledWith('Basic Car', {});
+      expect(mocks.carService.setActiveCar).toHaveBeenCalledWith('car-1');
     });
   });
 

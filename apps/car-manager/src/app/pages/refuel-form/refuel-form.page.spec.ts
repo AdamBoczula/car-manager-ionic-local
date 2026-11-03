@@ -1,23 +1,40 @@
-// spec: docs/specs/refuel/02-refuel-crud.md
+// spec: docs/specs/05-car-management.md
 // covers: docs/specs/refuel/02-refuel-crud.md#AC-5 (form renders with all fields)
 // covers: docs/specs/refuel/02-refuel-crud.md#AC-6 (validation)
 // covers: docs/specs/refuel/02-refuel-crud.md#AC-7 (submit calls service and navigates)
 // covers: docs/specs/refuel/02-refuel-crud.md#AC-8 (skip toggle reveals reason field)
+// covers: docs/specs/05-car-management.md#AC-13
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { provideRouter, Routes } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { NavController } from '@ionic/angular';
+import { signal } from '@angular/core';
+import { Timestamp } from 'firebase/firestore';
 import { RefuelFormPage } from './refuel-form.page';
 import { RefuelService } from '../../core/services/refuel.service';
+import { CarService } from '../../core/services/car.service';
 import { Router } from '@angular/router';
 import type { Refuel } from '../../core/models/refuel.model';
+import type { Car } from '../../core/models/car.model';
+
+vi.mock('../../core/firebase', () => ({
+  auth: {} as unknown,
+  db: {} as unknown,
+}));
+
+const mockCar: Car = {
+  id: 'car-abc',
+  name: 'Toyota Corolla',
+  ownerId: 'user-1',
+  createdAt: Timestamp.now(),
+};
 
 function createMockRefuelService(overrides?: Partial<RefuelService>) {
   return {
     add: vi.fn().mockResolvedValue({
       id: 'new-refuel-1',
-      carId: 'default-car',
+      carId: 'car-abc',
       date: '2026-01-15',
       amount: 250,
       mileage: 125000,
@@ -28,6 +45,20 @@ function createMockRefuelService(overrides?: Partial<RefuelService>) {
     } as Refuel),
     ...overrides,
   } as unknown as RefuelService;
+}
+
+function createMockCarService(overrides?: { activeCarId?: string | null }) {
+  return {
+    cars: signal<Car[]>(overrides?.activeCarId !== undefined ? [mockCar] : [mockCar]),
+    activeCar: signal<Car | null>(mockCar),
+    activeCarId: signal<string | null>(
+      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc'
+    ),
+    hasCars: signal(true),
+    isLoading: signal(false),
+    addCar: vi.fn().mockResolvedValue(mockCar),
+    setActiveCar: vi.fn().mockResolvedValue(undefined),
+  };
 }
 
 function mockNavController() {
@@ -43,20 +74,21 @@ const baseRoutes: Routes = [
 ];
 
 describe('RefuelFormPage', () => {
-  it('should render all form fields with Polish labels', async () => {
+  it('should render all form fields', async () => {
     // covers: docs/specs/refuel/02-refuel-crud.md#AC-5
-    const mockService = createMockRefuelService();
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService();
 
     await render(RefuelFormPage, {
       providers: [
         provideRouter(baseRoutes),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RefuelService, useValue: mockService },
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
         { provide: NavController, useValue: mockNavController() },
       ],
     });
 
-    expect(screen.getByText('Dodaj tankowanie')).toBeInTheDocument();
     expect(screen.getByLabelText('Data')).toBeInTheDocument();
     expect(screen.getByLabelText('Kwota (PLN)')).toBeInTheDocument();
     expect(screen.getByLabelText('Przebieg (km)')).toBeInTheDocument();
@@ -69,28 +101,28 @@ describe('RefuelFormPage', () => {
   });
 
   it('should keep submit button disabled when form is invalid', async () => {
-    // covers: docs/specs/refuel/02-refuel-crud.md#AC-6
-    const mockService = createMockRefuelService();
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService();
     const user = userEvent.setup();
 
     await render(RefuelFormPage, {
       providers: [
         provideRouter(baseRoutes),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RefuelService, useValue: mockService },
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
         { provide: NavController, useValue: mockNavController() },
       ],
     });
 
-    // Click submit with empty form — add() should NOT be called
     await user.click(screen.getByText('Zapisz tankowanie'));
-
-    expect(mockService.add).not.toHaveBeenCalled();
+    expect(mockRefuelSvc.add).not.toHaveBeenCalled();
   });
 
-  it('should submit refuel data and navigate on success', async () => {
-    // covers: docs/specs/refuel/02-refuel-crud.md#AC-7
-    const mockService = createMockRefuelService();
+  // covers: docs/specs/05-car-management.md#AC-13
+  it('should submit refuel with active carId and navigate on success', async () => {
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService({ activeCarId: 'car-abc' });
     const user = userEvent.setup();
 
     const navigateSpy = vi.fn();
@@ -100,7 +132,8 @@ describe('RefuelFormPage', () => {
       providers: [
         provideRouter(baseRoutes),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RefuelService, useValue: mockService },
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
         { provide: Router, useValue: mockRouter },
         { provide: NavController, useValue: mockNavController() },
       ],
@@ -112,9 +145,9 @@ describe('RefuelFormPage', () => {
 
     await user.click(screen.getByText('Zapisz tankowanie'));
 
-    expect(mockService.add).toHaveBeenCalledWith(
+    expect(mockRefuelSvc.add).toHaveBeenCalledWith(
       expect.objectContaining({
-        carId: 'default-car',
+        carId: 'car-abc',
         amount: 250,
         mileage: 125000,
         liters: 40,
@@ -123,72 +156,66 @@ describe('RefuelFormPage', () => {
       })
     );
 
-    // Navigation happens after add resolves
     await vi.waitFor(() => {
       expect(navigateSpy).toHaveBeenCalledWith(['/refuel-list']);
     });
   });
 
   it('should show skippedReason textarea when isSkipped is checked', async () => {
-    // covers: docs/specs/refuel/02-refuel-crud.md#AC-8
-    const mockService = createMockRefuelService();
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService();
     const user = userEvent.setup();
 
     await render(RefuelFormPage, {
       providers: [
         provideRouter(baseRoutes),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RefuelService, useValue: mockService },
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
         { provide: NavController, useValue: mockNavController() },
       ],
     });
 
-    // Skipped reason should not be visible initially
     expect(
       screen.queryByLabelText('Powód pominięcia')
     ).not.toBeInTheDocument();
 
-    // Click the skip checkbox
     const skipCheckbox = screen.getByText('Pomiń wpis');
     await user.click(skipCheckbox);
 
-    // Now the reason field should appear
     expect(screen.getByLabelText('Powód pominięcia')).toBeInTheDocument();
   });
 
   it('should include Verva flag and skip reason when submitted', async () => {
-    // covers: docs/specs/refuel/02-refuel-crud.md#AC-7
-    const mockService = createMockRefuelService();
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService();
     const user = userEvent.setup();
 
     await render(RefuelFormPage, {
       providers: [
         provideRouter(baseRoutes),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RefuelService, useValue: mockService },
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
         { provide: NavController, useValue: mockNavController() },
       ],
     });
 
-    // Fill required
     await user.type(screen.getByLabelText('Kwota (PLN)'), '300');
     await user.type(screen.getByLabelText('Przebieg (km)'), '130000');
 
-    // Toggle Verva
     const vervaToggle = screen.getByText('Verva?');
     await user.click(vervaToggle);
 
-    // Check skip
     const skipCheckbox = screen.getByText('Pomiń wpis');
     await user.click(skipCheckbox);
 
-    // Type skip reason
     const reasonInput = screen.getByLabelText('Powód pominięcia');
     await user.type(reasonInput, 'Ktoś inny zatankował');
 
     await user.click(screen.getByText('Zapisz tankowanie'));
 
-    expect(mockService.add).toHaveBeenCalledWith(
+    expect(mockRefuelSvc.add).toHaveBeenCalledWith(
       expect.objectContaining({
         isVerva: true,
         isSkipped: true,
@@ -198,10 +225,10 @@ describe('RefuelFormPage', () => {
   });
 
   it('should show error toast when add fails', async () => {
-    // covers: docs/specs/refuel/02-refuel-crud.md#AC-7
-    const mockService = createMockRefuelService({
+    const mockRefuelSvc = createMockRefuelService({
       add: vi.fn().mockRejectedValue(new Error('Firestore offline')),
     });
+    const mockCarSvc = createMockCarService();
     const user = userEvent.setup();
 
     const navigateSpy = vi.fn();
@@ -210,7 +237,8 @@ describe('RefuelFormPage', () => {
       providers: [
         provideRouter(baseRoutes),
         provideIonicAngular({ mode: 'md' }),
-        { provide: RefuelService, useValue: mockService },
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
         { provide: Router, useValue: { navigate: navigateSpy } },
         { provide: NavController, useValue: mockNavController() },
       ],
@@ -222,10 +250,33 @@ describe('RefuelFormPage', () => {
     await user.click(screen.getByText('Zapisz tankowanie'));
 
     await vi.waitFor(() => {
-      expect(mockService.add).toHaveBeenCalled();
+      expect(mockRefuelSvc.add).toHaveBeenCalled();
     });
 
-    // Should not navigate on error
     expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should show error toast when no active car', async () => {
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService({ activeCarId: null });
+    const user = userEvent.setup();
+
+    await render(RefuelFormPage, {
+      providers: [
+        provideRouter(baseRoutes),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: NavController, useValue: mockNavController() },
+      ],
+    });
+
+    await user.type(screen.getByLabelText('Kwota (PLN)'), '250');
+    await user.type(screen.getByLabelText('Przebieg (km)'), '125000');
+
+    await user.click(screen.getByText('Zapisz tankowanie'));
+
+    // Should not call add when there's no active car
+    expect(mockRefuelSvc.add).not.toHaveBeenCalled();
   });
 });

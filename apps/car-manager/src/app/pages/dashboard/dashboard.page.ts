@@ -1,5 +1,5 @@
-// spec: docs/specs/02-login-screen.md
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+// spec: docs/specs/05-car-management.md
+import { Component, inject, signal, OnInit, OnDestroy, effect, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   IonHeader,
@@ -28,6 +28,8 @@ import {
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { SyncService } from '../../core/services/sync.service';
+import { CarService } from '../../core/services/car.service';
+import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -46,11 +48,17 @@ import { SyncService } from '../../core/services/sync.service';
     IonToolbar,
     IonSpinner,
     IonText,
+    CarSwitcherComponent,
   ],
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>Car Manager 🚗</ion-title>
+        <app-car-switcher
+          [cars]="carService.cars()"
+          [activeCar]="carService.activeCar()"
+          (carSelected)="carService.setActiveCar($event)"
+          (carAdded)="handleCarAdded($event)"
+        />
         <ion-buttons slot="end">
           <ion-button (click)="handleLogout()" aria-label="Wyloguj się" data-testid="logout-button">
             <ion-icon name="log-out" slot="icon-only" />
@@ -132,7 +140,9 @@ export class DashboardPage implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
   private readonly storage = inject(StorageService);
   readonly sync = inject(SyncService);
+  readonly carService = inject(CarService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly storageReady = signal(false);
 
@@ -166,6 +176,25 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     // Cleanup handled by services
+  }
+
+  /** Handle a new car added from the car-switcher modal. */
+  async handleCarAdded(data: {
+    name: string;
+    currentMileage?: number;
+    year?: number;
+    vin?: string;
+  }): Promise<void> {
+    try {
+      const car = await this.carService.addCar(data.name, {
+        currentMileage: data.currentMileage,
+        year: data.year,
+        vin: data.vin,
+      });
+      await this.carService.setActiveCar(car.id);
+    } catch (err) {
+      console.error('Failed to add car from dashboard:', err);
+    }
   }
 
   navigateTo(path: string): void {

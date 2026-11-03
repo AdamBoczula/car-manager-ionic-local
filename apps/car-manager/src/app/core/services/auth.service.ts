@@ -1,9 +1,9 @@
 // spec: docs/specs/02-login-screen.md
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
-  Auth,
-  User,
+  onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -11,44 +11,46 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
-  onAuthStateChanged,
+  type User,
 } from 'firebase/auth';
+import { Observable } from 'rxjs';
 import { auth } from '../firebase';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly firebaseAuth: Auth = auth;
+  private readonly firebaseAuth = auth;
   private readonly router = inject(Router);
 
+  /** Current Firebase user (null if not logged in). */
   readonly currentUser = signal<User | null>(null);
-  readonly isLoggedIn = signal(false);
+
+  /** Whether the user is currently logged in. */
+  readonly isLoggedIn = computed(() => !!this.currentUser());
+
+  /**
+   * Whether Firebase Auth has emitted its first state.
+   * Becomes true after the first onAuthStateChanged emission.
+   */
   readonly authReady = signal(false);
 
   constructor() {
-    // Handle redirect result (for Google sign-in with redirect)
+    const destroyRef = inject(DestroyRef);
+
+    // Subscribe to auth state changes
+    new Observable<User | null>((subscriber) => {
+      const unsubscribe = onAuthStateChanged(this.firebaseAuth, (user) => {
+        subscriber.next(user);
+      });
+      return unsubscribe;
+    })
+      .pipe(takeUntilDestroyed(destroyRef))
+      .subscribe((user) => {
+        this.currentUser.set(user);
+        this.authReady.set(true);
+      });
+
+    // Handle redirect result (for Google sign-in with redirect on mobile)
     this.handleRedirectResult();
-
-    // Expose Angular Router navigation on window.__e2e__ for E2E tests.
-    // Allows tests to programmatically navigate without DOM click interception
-    // from Ionic's stacked page system.
-    const e2e = (window as unknown as Record<string, unknown>)['__e2e__'] as Record<string, unknown> | undefined;
-    if (e2e) {
-      e2e['navigateTo'] = (path: string) => this.router.navigate([path]);
-    }
-
-    onAuthStateChanged(this.firebaseAuth, (user) => {
-      this.currentUser.set(user);
-      this.isLoggedIn.set(!!user);
-      this.authReady.set(true);
-
-      // Auto-navigate logged-in user to dashboard if on auth pages
-      if (user) {
-        const currentUrl = this.router.url;
-        if (currentUrl === '/login' || currentUrl === '/register' || currentUrl === '/') {
-          this.router.navigate(['/dashboard']);
-        }
-      }
-    });
   }
 
   /**
@@ -62,52 +64,55 @@ export class AuthService {
         await this.router.navigate(['/dashboard']);
       }
     } catch (err) {
-      // Error handled silently — onAuthStateChanged will still fire with null
       console.warn('Auth redirect result error:', err);
     }
   }
 
-  async login(email: string, password: string): Promise<User> {
+  async login(email: string, password: string): Promise<void> {
     const result = await signInWithEmailAndPassword(
       this.firebaseAuth,
       email,
       password
     );
-    await this.router.navigate(['/dashboard']);
-    return result.user;
+    // onAuthStateChanged will emit automatically, updating signals.
+    if (result.user) {
+      await this.router.navigate(['/dashboard']);
+    }
   }
 
-  async register(email: string, password: string): Promise<User> {
+  async register(email: string, password: string): Promise<void> {
     const result = await createUserWithEmailAndPassword(
       this.firebaseAuth,
       email,
       password
     );
-    await this.router.navigate(['/dashboard']);
-    return result.user;
+    if (result.user) {
+      await this.router.navigate(['/dashboard']);
+    }
   }
 
-  async loginWithGoogle(): Promise<User> {
+  async loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
 
     try {
       // Prefer redirect on mobile (Capacitor WebView doesn't support popup)
-      // Popup works on desktop during development
       const isMobile = /android|iphone|ipad/i.test(navigator.userAgent);
 
       if (isMobile) {
         await signInWithRedirect(this.firebaseAuth, provider);
-        // Return is not used for redirect flow — handleRedirectResult picks it up
-        throw new Error('REDIRECT_INITIATED');
+        // Result will be picked up by handleRedirectResult on page reload
+        return;
       }
 
       const result = await signInWithPopup(this.firebaseAuth, provider);
-      await this.router.navigate(['/dashboard']);
-      return result.user;
-    } catch (err) {
-      if (err instanceof Error && err.message === 'REDIRECT_INITIATED') {
-        // Redirect was initiated, user will come back via getRedirectResult
-        throw err;
+      if (result.user) {
+        await this.router.navigate(['/dashboard']);
+      }
+    } catch (err: unknown) {
+      // Swallow popup-closed-by-user — user intentionally cancelled
+      const firebaseErr = err as { code?: string };
+      if (firebaseErr?.code === 'auth/popup-closed-by-user') {
+        return;
       }
       throw err;
     }

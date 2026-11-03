@@ -27,7 +27,7 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: 'npm exec nx run car-manager:serve',
+      command: 'npm exec nx run car-manager:serve:e2e',
       url: 'http://localhost:4200',
       reuseExistingServer: !process.env['CI'],
       cwd: workspaceRoot,

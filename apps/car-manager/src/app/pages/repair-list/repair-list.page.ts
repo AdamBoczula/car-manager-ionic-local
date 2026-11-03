@@ -1,5 +1,5 @@
-// spec: docs/specs/repair/02-repair-crud.md
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+// spec: docs/specs/05-car-management.md
+import { Component, inject, OnInit, OnDestroy, effect, DestroyRef } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -18,6 +18,8 @@ import {
   IonLabel,
 } from '@ionic/angular';
 import { RepairService } from '../../core/services/repair.service';
+import { CarService } from '../../core/services/car.service';
+import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
 import { formatPln } from '../../core/utils/consumption.util';
 import type { Repair } from '../../core/models/repair.model';
 
@@ -40,11 +42,17 @@ import type { Repair } from '../../core/models/repair.model';
     IonItemOptions,
     IonItemOption,
     IonLabel,
+    CarSwitcherComponent,
   ],
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>Naprawy</ion-title>
+        <app-car-switcher
+          [cars]="carService.cars()"
+          [activeCar]="carService.activeCar()"
+          (carSelected)="carService.setActiveCar($event)"
+          (carAdded)="handleCarAdded($event)"
+        />
         <ion-buttons slot="end">
           <ion-button
             (click)="navigateToForm()"
@@ -100,12 +108,31 @@ import type { Repair } from '../../core/models/repair.model';
 })
 export class RepairListPage implements OnInit, OnDestroy {
   private readonly repairService = inject(RepairService);
+  readonly carService = inject(CarService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly repairs = this.repairService.repairs;
 
+  constructor() {
+    // React to active car changes
+    const carListener = effect(() => {
+      const carId = this.carService.activeCarId();
+      if (carId) {
+        this.repairService.startListening(carId);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      carListener.destroy();
+    });
+  }
+
   ngOnInit(): void {
-    this.repairService.startListening('default-car');
+    const carId = this.carService.activeCarId();
+    if (carId) {
+      this.repairService.startListening(carId);
+    }
   }
 
   ngOnDestroy(): void {
@@ -116,8 +143,11 @@ export class RepairListPage implements OnInit, OnDestroy {
     this.router.navigate(['/repair-form']);
   }
 
-  deleteRepair(id: string): void {
-    this.repairService.delete(id, 'default-car');
+  async deleteRepair(id: string): Promise<void> {
+    const carId = this.carService.activeCarId();
+    if (carId) {
+      this.repairService.delete(id, carId);
+    }
   }
 
   formatAmount(amount: number): string {
@@ -130,5 +160,24 @@ export class RepairListPage implements OnInit, OnDestroy {
 
   trackById(_index: number, repair: Repair): string {
     return repair.id;
+  }
+
+  /** Handle a new car added from the car-switcher modal. */
+  async handleCarAdded(data: {
+    name: string;
+    currentMileage?: number;
+    year?: number;
+    vin?: string;
+  }): Promise<void> {
+    try {
+      const car = await this.carService.addCar(data.name, {
+        currentMileage: data.currentMileage,
+        year: data.year,
+        vin: data.vin,
+      });
+      await this.carService.setActiveCar(car.id);
+    } catch (err) {
+      console.error('Failed to add car from repair list:', err);
+    }
   }
 }

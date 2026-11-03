@@ -2,7 +2,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import {
   collection,
-  Firestore,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -24,7 +23,7 @@ const STORAGE_KEY = 'repairs';
 
 @Injectable({ providedIn: 'root' })
 export class RepairService {
-  private readonly firestore: Firestore = db;
+  private readonly firestore = db;
   private readonly storage = inject(StorageService);
   private readonly auth = inject(AuthService);
 

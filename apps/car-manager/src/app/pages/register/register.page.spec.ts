@@ -194,9 +194,9 @@ describe('RegisterPage', () => {
       expect(msg).toContain('Firebase');
     });
 
-    it('REDIRECT_INITIATED → pusty string (bez błędu)', () => {
+    it('REDIRECT_INITIATED → nieoczekiwany błąd (już nie wspierany)', () => {
       const msg = RegisterPage.prototype['getErrorMessage'](new Error('REDIRECT_INITIATED'));
-      expect(msg).toBe('');
+      expect(msg).toBe('Wystąpił nieoczekiwany błąd.');
     });
 
     it('nie-FirebaseError → nieoczekiwany błąd', () => {

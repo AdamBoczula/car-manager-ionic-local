@@ -195,14 +195,50 @@ describe('LoginPage', () => {
       expect(msg).toContain('Firebase');
     });
 
-    it('REDIRECT_INITIATED → pusty string (bez błędu)', () => {
+    it('REDIRECT_INITIATED → nieoczekiwany błąd (już nie wspierany)', () => {
       const msg = LoginPage.prototype['getErrorMessage'](new Error('REDIRECT_INITIATED'));
-      expect(msg).toBe('');
+      expect(msg).toBe('Wystąpił nieoczekiwany błąd.');
     });
 
     it('nie-FirebaseError → nieoczekiwany błąd', () => {
       const msg = LoginPage.prototype['getErrorMessage'](new Error('oops'));
       expect(msg).toBe('Wystąpił nieoczekiwany błąd.');
+    });
+  });
+
+  describe('integracja – pełny flow błędu', () => {
+    it('powinien ustawić errorMessage po network-request-failed', async () => {
+      // REGRESSION: When Firebase auth fails with network error,
+      // the component's errorMessage signal should be set.
+      const { fixture } = await setup();
+
+      // mock must be configured AFTER setup(), which creates a fresh mock
+      mockAuth.login.mockRejectedValue(
+        Object.assign(new FirebaseError('auth/network-request-failed', ''))
+      );
+
+      fixture.componentInstance.email.set('test@user.com');
+      fixture.componentInstance.password.set('123');
+      await fixture.componentInstance.handleLogin();
+
+      expect(fixture.componentInstance.errorMessage()).toBe(
+        'Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.'
+      );
+    });
+
+    it('powinien ustawić errorMessage po auth/operation-not-allowed', async () => {
+      const { fixture } = await setup();
+
+      mockAuth.login.mockRejectedValue(
+        Object.assign(new FirebaseError('auth/operation-not-allowed', ''))
+      );
+
+      fixture.componentInstance.email.set('test@user.com');
+      fixture.componentInstance.password.set('123');
+      await fixture.componentInstance.handleLogin();
+
+      expect(fixture.componentInstance.errorMessage()).toContain('Firebase');
+      expect(fixture.componentInstance.errorMessage()).toContain('Authentication');
     });
   });
 });
