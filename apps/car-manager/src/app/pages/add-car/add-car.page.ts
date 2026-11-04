@@ -1,6 +1,5 @@
 // spec: docs/specs/05-car-management.md
 import { Component, inject, signal, computed } from '@angular/core';
-import { Router } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
@@ -10,19 +9,17 @@ import {
   IonButton,
   IonContent,
   IonInput,
-  IonList,
-  IonItem,
   IonIcon,
-  IonLabel,
   IonText,
+  NavController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { close, carSport, copyOutline } from 'ionicons/icons';
+import { carSport, copyOutline } from 'ionicons/icons';
 import { CarService } from '../../core/services/car.service';
-import type { Car } from '../../core/models/car.model';
 
 @Component({
   selector: 'app-add-car',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     IonHeader,
@@ -33,10 +30,7 @@ import type { Car } from '../../core/models/car.model';
     IonButton,
     IonContent,
     IonInput,
-    IonList,
-    IonItem,
     IonIcon,
-    IonLabel,
     IonText,
   ],
   template: `
@@ -143,47 +137,6 @@ import type { Car } from '../../core/models/car.model';
             Dodaj auto
           </ion-button>
         </div>
-
-        <!-- Added cars list -->
-        @if (pendingCars().length > 0) {
-          <div class="add-car__list-section">
-            <p class="add-car__list-title">Twoje auta</p>
-            <ion-list>
-              @for (car of pendingCars(); track car.id) {
-                <ion-item>
-                  <ion-icon name="car-sport" slot="start" aria-hidden="true" />
-                  <ion-label>{{ car.name }}</ion-label>
-                  <ion-button
-                    slot="end"
-                    fill="clear"
-                    color="danger"
-                    (click)="removePendingCar(car.id)"
-                    aria-label="Usuń auto"
-                    data-testid="remove-car-button"
-                  >
-                    <ion-icon name="close" slot="icon-only" />
-                  </ion-button>
-                </ion-item>
-              }
-            </ion-list>
-          </div>
-        }
-
-        <!-- CTA: Start using the app (wizard only, shown when 1+ car) -->
-        @if (isWizardMode() && pendingCars().length > 0) {
-          <div class="add-car__cta">
-            <div class="add-car__cta-divider"></div>
-            <ion-button
-              expand="block"
-              color="primary"
-              size="large"
-              (click)="handleStartUsing()"
-              data-testid="start-using-button"
-            >
-              ✅ Zacznij korzystać z aplikacji
-            </ion-button>
-          </div>
-        }
       </div>
     </ion-content>
   `,
@@ -191,62 +144,36 @@ import type { Car } from '../../core/models/car.model';
 })
 export class AddCarPage {
   private readonly carService = inject(CarService);
-  private readonly router = inject(Router);
+  private readonly navController = inject(NavController);
 
   readonly newCarName = signal('');
   readonly newCarMileage = signal<number | undefined>(undefined);
   readonly newCarYear = signal<number | undefined>(undefined);
   readonly newCarVin = signal('');
   readonly vinCopied = signal(false);
-  readonly pendingCars = signal<Car[]>([]);
 
   /** Wizard mode: shown when the garage is empty (first use). */
   readonly isWizardMode = computed(() => !this.carService.hasCars());
 
   constructor() {
-    addIcons({ close, carSport, copyOutline });
+    addIcons({ carSport, copyOutline });
   }
 
   /**
-   * Add a car. In wizard mode, adds to the pending list.
-   * In add mode, saves directly and navigates back.
+   * Add a car. Saves to storage + Firestore, sets as active, and navigates
+   * to dashboard. Works identically in wizard and add modes.
    */
   async handleAddCar(): Promise<void> {
     const name = this.newCarName().trim();
     if (!name) return;
 
     const options = this.buildCarOptions();
-
-    if (this.isWizardMode()) {
-      // Wizard mode: add to pending list (save to storage + Firestore later)
-      try {
-        const car = await this.carService.addCar(name, options);
-        this.pendingCars.update((cars) => [...cars, car]);
-        this.resetForm();
-      } catch (err) {
-        console.error('Failed to add car in wizard:', err);
-      }
-    } else {
-      // Add mode: save and navigate back
-      try {
-        const car = await this.carService.addCar(name, options);
-        await this.carService.setActiveCar(car.id);
-        this.router.navigate(['/dashboard']);
-      } catch (err) {
-        console.error('Failed to add car:', err);
-      }
-    }
-  }
-
-  /** Remove a car from the pending list. */
-  async removePendingCar(id: string): Promise<void> {
-    this.pendingCars.update((cars) => cars.filter((c) => c.id !== id));
-
-    // Also remove from CarService storage
     try {
-      await this.carService.deleteCar(id);
+      const car = await this.carService.addCar(name, options);
+      await this.carService.setActiveCar(car.id);
+      await this.navController.navigateRoot('/dashboard', { animated: false });
     } catch (err) {
-      console.error('Failed to remove car:', err);
+      console.error('Failed to add car:', err);
     }
   }
 
@@ -270,15 +197,6 @@ export class AddCarPage {
     return options;
   }
 
-  /** Reset all form fields. */
-  private resetForm(): void {
-    this.newCarName.set('');
-    this.newCarMileage.set(undefined);
-    this.newCarYear.set(undefined);
-    this.newCarVin.set('');
-    this.vinCopied.set(false);
-  }
-
   /** Copy VIN to clipboard and show "Skopiowano!" feedback. */
   async copyVin(): Promise<void> {
     const vin = this.newCarVin().trim();
@@ -300,20 +218,5 @@ export class AddCarPage {
     if (!value) return undefined;
     const num = Number(value);
     return isNaN(num) ? undefined : num;
-  }
-
-  /**
-   * Start using the app. Sets the first car as active and navigates to dashboard.
-   * This is only shown in wizard mode when at least one car has been added.
-   *
-   * covers: docs/specs/05-car-management.md#AC-3, AC-5
-   */
-  async handleStartUsing(): Promise<void> {
-    const cars = this.pendingCars();
-    if (cars.length === 0) return;
-
-    // Set the first added car as active
-    await this.carService.setActiveCar(cars[0].id);
-    this.router.navigate(['/dashboard']);
   }
 }

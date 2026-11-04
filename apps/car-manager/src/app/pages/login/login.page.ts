@@ -19,6 +19,7 @@ import { FirebaseError } from 'firebase/app';
 
 @Component({
   selector: 'app-login',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     FormsModule,
@@ -43,6 +44,7 @@ export class LoginPage {
   readonly password = signal('');
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly fieldErrors = signal<{ email?: string; password?: string }>({});
 
   constructor() {
     addIcons({ logoGoogle });
@@ -50,6 +52,17 @@ export class LoginPage {
 
   async handleLogin(): Promise<void> {
     if (this.isLoading()) return;
+
+    // Validate fields client-side
+    const errors: { email?: string; password?: string } = {};
+    if (!this.email().trim()) {
+      errors.email = 'Email jest wymagany.';
+    }
+    if (!this.password()) {
+      errors.password = 'Hasło jest wymagane.';
+    }
+    this.fieldErrors.set(errors);
+    if (errors.email || errors.password) return;
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
@@ -86,6 +99,10 @@ export class LoginPage {
       switch (err.code) {
         case 'auth/invalid-credential':
           return 'Nieprawidłowy email lub hasło.';
+        case 'auth/invalid-email':
+          return 'Nieprawidłowy format emaila.';
+        case 'auth/missing-password':
+          return 'Hasło jest wymagane.';
         case 'auth/too-many-requests':
           return 'Zbyt wiele prób. Spróbuj ponownie za chwilę.';
         case 'auth/network-request-failed':

@@ -29,6 +29,7 @@ import { formatPln } from '../../core/utils/consumption.util';
 
 @Component({
   selector: 'app-refuel-list',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     DatePipe,

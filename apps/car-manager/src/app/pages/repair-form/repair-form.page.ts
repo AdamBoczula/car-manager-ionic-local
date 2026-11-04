@@ -1,5 +1,5 @@
 // spec: docs/specs/05-car-management.md
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   IonHeader,
@@ -30,6 +30,7 @@ addIcons({ mic });
 
 @Component({
   selector: 'app-repair-form',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     IonHeader,
@@ -204,6 +205,7 @@ export class RepairFormPage {
   private readonly repairService = inject(RepairService);
   readonly carService = inject(CarService);
   private readonly router = inject(Router);
+  private readonly zone = inject(NgZone);
   readonly speechService = inject(SpeechService);
 
   // Form fields
@@ -267,7 +269,7 @@ export class RepairFormPage {
       });
 
       this.showToast('Naprawa zapisana!', 'success');
-      this.router.navigate(['/repair-list']);
+      this.zone.run(() => this.router.navigate(['/repair-list']));
     } catch (err) {
       console.error('Failed to save repair:', err);
       this.showToast('Nie udało się zapisać naprawy.', 'danger');

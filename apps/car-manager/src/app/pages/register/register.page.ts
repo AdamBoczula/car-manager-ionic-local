@@ -20,6 +20,7 @@ import { FirebaseError } from 'firebase/app';
 
 @Component({
   selector: 'app-register',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     FormsModule,

@@ -52,15 +52,27 @@ describe('CarSwitcherComponent', () => {
   });
 
   describe('popover open/close', () => {
-    it('should toggle isPopoverOpen when button clicked', async () => {
+    it('should open popover via trigger (Ionic handles the click)', async () => {
       const cars = [createCar()];
       const { fixture } = await render(CarSwitcherComponent, {
         componentInputs: { cars, activeCar: cars[0] },
       });
 
-      expect(fixture.componentInstance.isPopoverOpen()).toBe(false);
+      // Popover uses `trigger="car-switcher-trigger"` so Ionic handles opening.
+      // We verify the popover is present and has the trigger attribute set.
+      const popover = fixture.nativeElement.querySelector('ion-popover') as HTMLElement;
+      expect(popover).toBeTruthy();
+      expect(popover.getAttribute('trigger')).toBe('car-switcher-trigger');
+      expect(popover.getAttribute('trigger-action')).toBe('click');
+    });
 
-      await userEvent.click(screen.getByTestId('car-switcher-button'));
+    it('should close popover via popoverDismissed', async () => {
+      const cars = [createCar()];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar: cars[0] },
+      });
+
+      fixture.componentInstance.isPopoverOpen.set(true);
       expect(fixture.componentInstance.isPopoverOpen()).toBe(true);
 
       fixture.componentInstance.popoverDismissed();

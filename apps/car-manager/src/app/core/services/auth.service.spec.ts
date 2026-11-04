@@ -1,7 +1,8 @@
 // spec: docs/specs/02-login-screen.md
 // covers: docs/specs/02-login-screen.md#AC-1, AC-2, AC-3
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import { AuthService } from './auth.service';
 
 // Mock firebase/auth (direct SDK)
@@ -40,11 +41,11 @@ const mockUser: User = {
 
 describe('AuthService', () => {
   let service: AuthService;
-  let router: Router;
   let navigateSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    navigateSpy = vi.fn().mockResolvedValue(true);
 
     // Default: onAuthStateChanged emits null (not logged in)
     (onAuthStateChanged as ReturnType<typeof vi.fn>).mockImplementation(
@@ -60,12 +61,11 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         provideRouter([]),
+        { provide: NavController, useValue: { navigateRoot: navigateSpy } },
       ],
     });
 
     service = TestBed.inject(AuthService);
-    router = TestBed.inject(Router);
-    navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   describe('constructor / handleRedirectResult', () => {
@@ -91,21 +91,23 @@ describe('AuthService', () => {
         providers: [
           AuthService,
           provideRouter([]),
+          { provide: NavController, useValue: { navigateRoot: navigateSpy } },
         ],
       });
       service = TestBed.inject(AuthService);
-      router = TestBed.inject(Router);
-      navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
       // Wait for async handleRedirectResult
       await new Promise((r) => setTimeout(r, 10));
 
-      expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
+      // currentUser must be set BEFORE navigation to avoid race with authGuard
+      expect(service.currentUser()).toBe(mockUser);
+      expect(service.isLoggedIn()).toBe(true);
+      expect(navigateSpy).toHaveBeenCalledWith('/dashboard', { animated: false });
     });
   });
 
   describe('login()', () => {
-    it('powinien wywołać signInWithEmailAndPassword i przekierować na dashboard', async () => {
+    it('powinien wywołać signInWithEmailAndPassword, ustawić currentUser i przekierować na dashboard', async () => {
       (signInWithEmailAndPassword as ReturnType<typeof vi.fn>).mockResolvedValue({
         user: mockUser,
       });
@@ -117,12 +119,15 @@ describe('AuthService', () => {
         'test@example.com',
         'password123'
       );
-      expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
+      // currentUser must be set BEFORE navigation to avoid race with authGuard
+      expect(service.currentUser()).toBe(mockUser);
+      expect(service.isLoggedIn()).toBe(true);
+      expect(navigateSpy).toHaveBeenCalledWith('/dashboard', { animated: false });
     });
   });
 
   describe('register()', () => {
-    it('powinien wywołać createUserWithEmailAndPassword i przekierować', async () => {
+    it('powinien wywołać createUserWithEmailAndPassword, ustawić currentUser i przekierować', async () => {
       (createUserWithEmailAndPassword as ReturnType<typeof vi.fn>).mockResolvedValue({
         user: mockUser,
       });
@@ -134,12 +139,15 @@ describe('AuthService', () => {
         'new@example.com',
         'password123'
       );
-      expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
+      // currentUser must be set BEFORE navigation to avoid race with authGuard
+      expect(service.currentUser()).toBe(mockUser);
+      expect(service.isLoggedIn()).toBe(true);
+      expect(navigateSpy).toHaveBeenCalledWith('/dashboard', { animated: false });
     });
   });
 
   describe('loginWithGoogle()', () => {
-    it('powinien użyć signInWithPopup na desktopie', async () => {
+    it('powinien użyć signInWithPopup na desktopie, ustawić currentUser i przekierować', async () => {
       (signInWithPopup as ReturnType<typeof vi.fn>).mockResolvedValue({
         user: mockUser,
       });
@@ -151,7 +159,10 @@ describe('AuthService', () => {
         expect.any(Object),
         expect.any(Object)
       );
-      expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
+      // currentUser must be set BEFORE navigation to avoid race with authGuard
+      expect(service.currentUser()).toBe(mockUser);
+      expect(service.isLoggedIn()).toBe(true);
+      expect(navigateSpy).toHaveBeenCalledWith('/dashboard', { animated: false });
     });
   });
 
@@ -162,7 +173,7 @@ describe('AuthService', () => {
       await service.logout();
 
       expect(signOut).toHaveBeenCalledWith(expect.any(Object));
-      expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+      expect(navigateSpy).toHaveBeenCalledWith('/login', { animated: false });
     });
   });
 
@@ -189,6 +200,7 @@ describe('AuthService', () => {
         providers: [
           AuthService,
           provideRouter([]),
+          { provide: NavController, useValue: { navigateRoot: navigateSpy } },
         ],
       });
       service = TestBed.inject(AuthService);

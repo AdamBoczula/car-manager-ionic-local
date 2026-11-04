@@ -15,9 +15,10 @@ import {
   IonContent,
   IonInput,
   IonFooter,
+  IonNote,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { chevronDown, checkmark, add, copyOutline } from 'ionicons/icons';
+import { chevronDown, checkmark, add, copyOutline, create, trash } from 'ionicons/icons';
 import type { Car } from '../../../core/models/car.model';
 
 @Component({
@@ -38,10 +39,11 @@ import type { Car } from '../../../core/models/car.model';
     IonContent,
     IonInput,
     IonFooter,
+    IonNote,
   ],
   template: `
     <ion-button
-      (click)="openPopover($event)"
+      id="car-switcher-trigger"
       class="car-switcher__button"
       fill="clear"
       aria-label="Wybierz auto"
@@ -53,9 +55,10 @@ import type { Car } from '../../../core/models/car.model';
 
     <!-- Car selection popover -->
     <ion-popover
+      trigger="car-switcher-trigger"
+      trigger-action="click"
       [isOpen]="isPopoverOpen"
       (ionPopoverDidDismiss)="popoverDismissed()"
-      [dismissOnSelect]="true"
       class="car-switcher__popover"
     >
       <ng-template>
@@ -71,6 +74,15 @@ import type { Car } from '../../../core/models/car.model';
               @if (car.id === activeCar()?.id) {
                 <ion-icon name="checkmark" slot="end" color="primary" aria-label="Aktywne auto" />
               }
+              <ion-button
+                slot="end"
+                fill="clear"
+                (click)="openEditModal(car, $event); $event.stopPropagation()"
+                aria-label="Edytuj auto"
+                data-testid="edit-car-button"
+              >
+                <ion-icon name="create" slot="icon-only" />
+              </ion-button>
             </ion-item>
           }
         </ion-list>
@@ -182,6 +194,96 @@ import type { Car } from '../../../core/models/car.model';
         </ion-footer>
       </ng-template>
     </ion-modal>
+
+    <!-- Edit car modal -->
+    <ion-modal
+      [isOpen]="isEditModalOpen"
+      (ionModalDidDismiss)="editModalDismissed()"
+      [initialBreakpoint]="0.6"
+      [breakpoints]="[0, 0.6]"
+    >
+      <ng-template>
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Edytuj auto</ion-title>
+            <ion-buttons slot="end">
+              <ion-button (click)="cancelEditModal()" aria-label="Zamknij">
+                Zamknij
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <ion-input
+            label="Nazwa auta"
+            labelPlacement="stacked"
+            placeholder="np. Toyota Corolla"
+            [maxlength]="50"
+            [value]="editCarName()"
+            (ionInput)="editCarName.set($any($event).detail.value ?? '')"
+            aria-label="Nazwa auta"
+            data-testid="edit-car-name-input"
+          />
+          <ion-input
+            label="Przebieg (km)"
+            labelPlacement="stacked"
+            type="number"
+            placeholder="np. 123000"
+            [value]="editCarMileage() ?? ''"
+            (ionInput)="editCarMileage.set(toNumber($any($event).detail.value))"
+            class="car-switcher__field"
+            aria-label="Przebieg (km)"
+            data-testid="edit-car-mileage-input"
+          />
+          <ion-input
+            label="Rocznik"
+            labelPlacement="stacked"
+            type="number"
+            placeholder="np. 2020"
+            [value]="editCarYear() ?? ''"
+            (ionInput)="editCarYear.set(toNumber($any($event).detail.value))"
+            class="car-switcher__field"
+            aria-label="Rocznik"
+            data-testid="edit-car-year-input"
+          />
+          <ion-input
+            label="Numer VIN"
+            labelPlacement="stacked"
+            type="text"
+            placeholder="np. WBA..."
+            [value]="editCarVin()"
+            (ionInput)="editCarVin.set($any($event).detail.value ?? '')"
+            class="car-switcher__field"
+            aria-label="Numer VIN"
+            data-testid="edit-car-vin-input"
+          />
+        </ion-content>
+        <ion-footer>
+          <ion-toolbar>
+            <ion-note slot="start" class="car-switcher__delete-wrapper">
+              <ion-button
+                fill="clear"
+                color="danger"
+                size="small"
+                (click)="deleteEditingCar()"
+                data-testid="delete-car-button"
+              >
+                <ion-icon name="trash" slot="start" />
+                Usuń auto
+              </ion-button>
+            </ion-note>
+            <ion-button
+              slot="end"
+              [disabled]="!editCarName().trim()"
+              (click)="saveEdit()"
+              data-testid="save-edit-button"
+            >
+              Zapisz
+            </ion-button>
+          </ion-toolbar>
+        </ion-footer>
+      </ng-template>
+    </ion-modal>
   `,
   styleUrl: './car-switcher.component.scss',
 })
@@ -203,8 +305,24 @@ export class CarSwitcherComponent {
     vin?: string;
   }>();
 
-  // Internal UI state
+  /** Emitted when user updates a car via the edit modal. */
+  readonly carUpdated = output<{
+    id: string;
+    name: string;
+    currentMileage?: number;
+    year?: number;
+    vin?: string;
+  }>();
+
+  /** Emitted when user deletes a car via the edit modal. */
+  readonly carDeleted = output<string>();
+
+  // ── Popover state ──
+
   readonly isPopoverOpen = signal(false);
+
+  // ── Add car modal state ──
+
   readonly isModalOpen = signal(false);
   readonly newCarName = signal('');
   readonly newCarMileage = signal<number | undefined>(undefined);
@@ -212,14 +330,25 @@ export class CarSwitcherComponent {
   readonly newCarVin = signal('');
   readonly vinCopied = signal(false);
 
+  // ── Edit car modal state ──
+
+  readonly isEditModalOpen = signal(false);
+  readonly editingCarId = signal<string | null>(null);
+  readonly editCarName = signal('');
+  readonly editCarMileage = signal<number | undefined>(undefined);
+  readonly editCarYear = signal<number | undefined>(undefined);
+  readonly editCarVin = signal('');
+
   constructor() {
-    addIcons({ chevronDown, checkmark, add, copyOutline });
+    addIcons({ chevronDown, checkmark, add, copyOutline, create, trash });
   }
 
   /** Display name for the active car in the header button. */
   activeCarName(): string {
     return this.activeCar()?.name ?? 'Brak aut';
   }
+
+  // ── Popover ──
 
   /** Open the car selection popover. */
   openPopover(_event: Event): void {
@@ -237,15 +366,13 @@ export class CarSwitcherComponent {
     this.carSelected.emit(id);
   }
 
+  // ── Add car modal ──
+
   /** Open the add car modal. */
   openAddModal(): void {
     this.isPopoverOpen.set(false);
     this.isModalOpen.set(true);
-    this.newCarName.set('');
-    this.newCarMileage.set(undefined);
-    this.newCarYear.set(undefined);
-    this.newCarVin.set('');
-    this.vinCopied.set(false);
+    this.resetNewCarForm();
   }
 
   /** Cancel the add car modal. */
@@ -267,14 +394,12 @@ export class CarSwitcherComponent {
 
   /** Set new car mileage from ionInput event. */
   setNewCarMileage(value: string | undefined): void {
-    const num = value ? Number(value) : undefined;
-    this.newCarMileage.set(num !== undefined && !isNaN(num) ? num : undefined);
+    this.newCarMileage.set(this.toNumber(value));
   }
 
   /** Set new car year from ionInput event. */
   setNewCarYear(value: string | undefined): void {
-    const num = value ? Number(value) : undefined;
-    this.newCarYear.set(num !== undefined && !isNaN(num) ? num : undefined);
+    this.newCarYear.set(this.toNumber(value));
   }
 
   /** Set new car VIN from ionInput event. */
@@ -305,6 +430,67 @@ export class CarSwitcherComponent {
     this.resetNewCarForm();
   }
 
+  // ── Edit car modal ──
+
+  /** Open the edit modal, pre-filled with the selected car's data. */
+  openEditModal(car: Car, event: Event): void {
+    event.stopPropagation();
+    this.editingCarId.set(car.id);
+    this.editCarName.set(car.name);
+    this.editCarMileage.set(car.currentMileage);
+    this.editCarYear.set(car.year);
+    this.editCarVin.set(car.vin ?? '');
+    this.isEditModalOpen.set(true);
+  }
+
+  /** Cancel the edit modal (no save). */
+  cancelEditModal(): void {
+    this.isEditModalOpen.set(false);
+    this.resetEditForm();
+  }
+
+  /** Handles edit modal dismissal (backdrop). */
+  editModalDismissed(): void {
+    this.isEditModalOpen.set(false);
+    this.resetEditForm();
+  }
+
+  /** Save the edited car data and emit. */
+  saveEdit(): void {
+    const id = this.editingCarId();
+    const name = this.editCarName().trim();
+    if (!id || !name) return;
+
+    this.carUpdated.emit({
+      id,
+      name,
+      currentMileage: this.editCarMileage(),
+      year: this.editCarYear(),
+      vin: this.editCarVin().trim() || undefined,
+    });
+    this.isEditModalOpen.set(false);
+    this.resetEditForm();
+  }
+
+  /** Delete the car being edited and emit. */
+  deleteEditingCar(): void {
+    const id = this.editingCarId();
+    if (!id) return;
+
+    this.carDeleted.emit(id);
+    this.isEditModalOpen.set(false);
+    this.resetEditForm();
+  }
+
+  // ── Shared helpers ──
+
+  /** Convert an ionInput string value to number or undefined. */
+  toNumber(value: string | undefined): number | undefined {
+    if (!value) return undefined;
+    const num = Number(value);
+    return isNaN(num) ? undefined : num;
+  }
+
   /** Copy VIN to clipboard and show "Skopiowano!" feedback. */
   async copyVin(): Promise<void> {
     const vin = this.newCarVin().trim();
@@ -318,12 +504,21 @@ export class CarSwitcherComponent {
     }
   }
 
-  /** Reset all form fields in the modal. */
+  // ── Private reset helpers ──
+
   private resetNewCarForm(): void {
     this.newCarName.set('');
     this.newCarMileage.set(undefined);
     this.newCarYear.set(undefined);
     this.newCarVin.set('');
     this.vinCopied.set(false);
+  }
+
+  private resetEditForm(): void {
+    this.editingCarId.set(null);
+    this.editCarName.set('');
+    this.editCarMileage.set(undefined);
+    this.editCarYear.set(undefined);
+    this.editCarVin.set('');
   }
 }

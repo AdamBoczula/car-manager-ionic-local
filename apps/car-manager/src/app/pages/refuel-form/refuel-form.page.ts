@@ -1,5 +1,5 @@
 // spec: docs/specs/05-car-management.md
-import { Component, inject } from '@angular/core';
+import { Component, inject, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
@@ -25,6 +25,7 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
 
 @Component({
   selector: 'app-refuel-form',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     FormsModule,
@@ -175,6 +176,7 @@ export class RefuelFormPage {
   private readonly refuelService = inject(RefuelService);
   readonly carService = inject(CarService);
   private readonly router = inject(Router);
+  private readonly zone = inject(NgZone);
 
   // Form fields — plain class properties for ngModel binding
   date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -218,7 +220,7 @@ export class RefuelFormPage {
       this.toastColor = 'success';
       this.toastMessage = 'Tankowanie zapisane!';
       this.isToastOpen = true;
-      this.router.navigate(['/refuel-list']);
+      this.zone.run(() => this.router.navigate(['/refuel-list']));
     } catch (err) {
       console.error('Failed to add refuel:', err);
       this.toastColor = 'danger';

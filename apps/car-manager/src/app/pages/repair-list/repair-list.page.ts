@@ -25,6 +25,7 @@ import type { Repair } from '../../core/models/repair.model';
 
 @Component({
   selector: 'app-repair-list',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     DatePipe,

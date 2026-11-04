@@ -10,6 +10,7 @@ const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
  */
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
+  reporter: [['html', { open: 'never' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     baseURL,
@@ -21,10 +22,10 @@ export default defineConfig({
     {
       command:
         'npx firebase emulators:start --only auth,firestore --project carmanager-local',
-      url: 'http://localhost:4000',
+      url: 'http://127.0.0.1:9099',
       reuseExistingServer: !process.env['CI'],
       cwd: workspaceRoot,
-      timeout: 60_000,
+      timeout: 180_000,
     },
     {
       command: 'npm exec nx run car-manager:serve:e2e',

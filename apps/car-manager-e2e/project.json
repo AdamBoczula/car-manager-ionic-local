@@ -6,9 +6,9 @@
   "implicitDependencies": ["car-manager"],
   "targets": {
     "e2e": {
-      "executor": "@nx/playwright:playwright",
+      "executor": "nx:run-commands",
       "options": {
-        "config": "apps/car-manager-e2e/playwright.config.ts"
+        "command": "npx playwright test --config apps/car-manager-e2e/playwright.config.ts"
       }
     }
   }

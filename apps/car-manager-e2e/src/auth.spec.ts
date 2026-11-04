@@ -227,6 +227,34 @@ test.describe('System logowania – E2E', () => {
       await page.waitForURL('**/login');
       await expect(page.getByText('🚗 Car Manager')).toBeVisible();
     });
+
+    // covers: docs/specs/05-car-management.md#AC-3, AC-14
+    test('AC-18: Login email → dodanie pierwszego auta → dashboard bez starych stron', async ({
+      page,
+    }) => {
+      const email = 'routing-flow@carmanager.local';
+      const password = 'Password123!';
+
+      await seedAuthUser(page, { email, password });
+      await clearAuthState(page);
+      await navigateToLogin(page);
+
+      await page.getByPlaceholder('twoj@email.com').fill(email);
+      await page.getByPlaceholder('Twoje hasło').fill(password);
+      await page.getByText('🔑 Zaloguj się').click();
+
+      await expect(page).toHaveURL(/\/add-car/);
+      await expect(page.locator('app-add-car.ion-page:not(.ion-page-hidden)')).toBeVisible();
+      await expect(page.locator('app-login.ion-page:not(.ion-page-hidden)')).toHaveCount(0);
+
+      await page.getByTestId('car-name-input').locator('input').fill('Auto E2E');
+      await page.getByTestId('add-car-button').click();
+
+      await expect(page).toHaveURL(/\/dashboard/);
+      await expect(page.locator('app-dashboard.ion-page:not(.ion-page-hidden)')).toBeVisible();
+      await expect(page.locator('app-add-car.ion-page:not(.ion-page-hidden)')).toHaveCount(0);
+      await expect(page.getByText('Witaj!')).toBeVisible();
+    });
   });
 
   test.describe('Mobile-first responsive', () => {

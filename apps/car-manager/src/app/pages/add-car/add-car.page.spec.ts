@@ -2,8 +2,8 @@
 // covers: docs/specs/05-car-management.md#AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-18, AC-19, AC-20
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { provideRouter, Router, Routes } from '@angular/router';
-import { provideIonicAngular } from '@ionic/angular';
+import { provideRouter } from '@angular/router';
+import { NavController, provideIonicAngular } from '@ionic/angular';
 import { signal, Component } from '@angular/core';
 import { AddCarPage } from './add-car.page';
 import { CarService } from '../../core/services/car.service';
@@ -36,12 +36,14 @@ describe('AddCarPage', () => {
         deleteCar: vi.fn(),
         setActiveCar: vi.fn(),
       };
+      const navigateRoot = vi.fn().mockResolvedValue(true);
 
       await render(AddCarPage, {
         providers: [
           provideRouter(routes),
           provideIonicAngular({ mode: 'md' }),
           { provide: CarService, useValue: mockCarService },
+          { provide: NavController, useValue: { navigateRoot } },
         ],
       });
 
@@ -70,15 +72,17 @@ describe('AddCarPage', () => {
       expect(addBtn.disabled).toBe(true);
     });
 
-    it('should add a car to pending list after setting name and clicking add', async () => {
+    // covers: docs/specs/05-car-management.md#AC-3
+    it('should add car, set as active, and navigate to dashboard', async () => {
       const user = userEvent.setup();
+      const navigateRoot = vi.fn().mockResolvedValue(true);
       const mockCarService = {
         hasCars: signal(false),
         cars: signal<Car[]>([]),
         addCar: vi.fn().mockImplementation(async (name: string) =>
           createMockCar(name, `car-${Date.now()}`)
         ),
-        deleteCar: vi.fn().mockResolvedValue(undefined),
+        deleteCar: vi.fn(),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
       };
 
@@ -87,147 +91,21 @@ describe('AddCarPage', () => {
           provideRouter(routes),
           provideIonicAngular({ mode: 'md' }),
           { provide: CarService, useValue: mockCarService },
+          { provide: NavController, useValue: { navigateRoot } },
         ],
       });
 
-      // Set name directly via signal (bypasses ionInput event issues in JSDOM)
       fixture.componentInstance.newCarName.set('Toyota');
       fixture.detectChanges();
 
-      // Button should now be enabled
       const addBtn = screen.getByTestId('add-car-button') as HTMLButtonElement;
       expect(addBtn.disabled).toBe(false);
 
       await user.click(addBtn);
 
-      // async handleAddCar should have been triggered
       expect(mockCarService.addCar).toHaveBeenCalledWith('Toyota', {});
-
-      // pendingCars should be updated
-      const pendingCars = fixture.componentInstance.pendingCars();
-      expect(pendingCars.length).toBe(1);
-      expect(pendingCars[0].name).toBe('Toyota');
-    });
-
-    it('should show CTA after adding a car', async () => {
-      const user = userEvent.setup();
-      const mockCarService = {
-        hasCars: signal(false),
-        cars: signal<Car[]>([]),
-        addCar: vi.fn().mockImplementation(async (name: string) =>
-          createMockCar(name, `car-${Date.now()}`)
-        ),
-        deleteCar: vi.fn().mockResolvedValue(undefined),
-        setActiveCar: vi.fn().mockResolvedValue(undefined),
-      };
-
-      const { fixture } = await render(AddCarPage, {
-        providers: [
-          provideRouter(routes),
-          provideIonicAngular({ mode: 'md' }),
-          { provide: CarService, useValue: mockCarService },
-        ],
-      });
-
-      // CTA not visible initially
-      expect(screen.queryByTestId('start-using-button')).toBeNull();
-
-      // Add car
-      fixture.componentInstance.newCarName.set('Toyota');
-      fixture.detectChanges();
-      await user.click(screen.getByTestId('add-car-button'));
-
-      // CTA visible now
-      expect(screen.getByTestId('start-using-button')).toBeTruthy();
-    });
-
-    it('should set first car as active and navigate on CTA click', async () => {
-      const user = userEvent.setup();
-      const mockCarService = {
-        hasCars: signal(false),
-        cars: signal<Car[]>([]),
-        addCar: vi.fn().mockImplementation(async (name: string) =>
-          createMockCar(name, `car-${Date.now()}`)
-        ),
-        deleteCar: vi.fn().mockResolvedValue(undefined),
-        setActiveCar: vi.fn().mockResolvedValue(undefined),
-      };
-
-      const { fixture } = await render(AddCarPage, {
-        providers: [
-          provideRouter(routes),
-          provideIonicAngular({ mode: 'md' }),
-          { provide: CarService, useValue: mockCarService },
-        ],
-      });
-
-      const routerService = fixture.componentRef.injector.get(Router);
-      const navigateSpy = vi.spyOn(routerService, 'navigate').mockResolvedValue(true);
-
-      // Add car
-      fixture.componentInstance.newCarName.set('Toyota');
-      fixture.detectChanges();
-      await user.click(screen.getByTestId('add-car-button'));
-
-      // Click CTA
-      await user.click(screen.getByTestId('start-using-button'));
-
       expect(mockCarService.setActiveCar).toHaveBeenCalled();
-      expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
-    });
-
-    it('should remove a car when X is clicked', async () => {
-      const user = userEvent.setup();
-      const mockCarService = {
-        hasCars: signal(false),
-        cars: signal<Car[]>([]),
-        addCar: vi.fn().mockImplementation(async (name: string) =>
-          createMockCar(name, `car-${Date.now()}`)
-        ),
-        deleteCar: vi.fn().mockResolvedValue(undefined),
-        setActiveCar: vi.fn().mockResolvedValue(undefined),
-      };
-
-      const { fixture } = await render(AddCarPage, {
-        providers: [
-          provideRouter(routes),
-          provideIonicAngular({ mode: 'md' }),
-          { provide: CarService, useValue: mockCarService },
-        ],
-      });
-
-      // Add a car
-      fixture.componentInstance.newCarName.set('Toyota');
-      fixture.detectChanges();
-      await user.click(screen.getByTestId('add-car-button'));
-
-      // Remove it
-      const removeBtn = screen.getByTestId('remove-car-button');
-      await user.click(removeBtn);
-
-      expect(mockCarService.deleteCar).toHaveBeenCalled();
-      const pending = fixture.componentInstance.pendingCars();
-      expect(pending.length).toBe(0);
-    });
-
-    it('should not show back button in wizard mode', async () => {
-      const mockCarService = {
-        hasCars: signal(false),
-        cars: signal<Car[]>([]),
-        addCar: vi.fn(),
-        deleteCar: vi.fn(),
-        setActiveCar: vi.fn(),
-      };
-
-      await render(AddCarPage, {
-        providers: [
-          provideRouter(routes),
-          provideIonicAngular({ mode: 'md' }),
-          { provide: CarService, useValue: mockCarService },
-        ],
-      });
-
-      expect(document.querySelectorAll('ion-back-button').length).toBe(0);
+      expect(navigateRoot).toHaveBeenCalledWith('/dashboard', { animated: false });
     });
 
     // covers: docs/specs/05-car-management.md#AC-18
@@ -239,12 +117,14 @@ describe('AddCarPage', () => {
         deleteCar: vi.fn(),
         setActiveCar: vi.fn(),
       };
+      const navigateRoot = vi.fn().mockResolvedValue(true);
 
       await render(AddCarPage, {
         providers: [
           provideRouter(routes),
           provideIonicAngular({ mode: 'md' }),
           { provide: CarService, useValue: mockCarService },
+          { provide: NavController, useValue: { navigateRoot } },
         ],
       });
 
@@ -305,7 +185,7 @@ describe('AddCarPage', () => {
             }
           ) => createMockCar(name, `car-${Date.now()}`)
         ),
-        deleteCar: vi.fn().mockResolvedValue(undefined),
+        deleteCar: vi.fn(),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
       };
 
@@ -340,7 +220,7 @@ describe('AddCarPage', () => {
             }
           ) => createMockCar(name, `car-${Date.now()}`)
         ),
-        deleteCar: vi.fn().mockResolvedValue(undefined),
+        deleteCar: vi.fn(),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
       };
 
@@ -366,46 +246,6 @@ describe('AddCarPage', () => {
       });
     });
 
-    it('should reset all optional fields after adding car in wizard mode', async () => {
-      const user = userEvent.setup();
-      const mockCarService = {
-        hasCars: signal(false),
-        cars: signal<Car[]>([]),
-        addCar: vi.fn().mockImplementation(
-          async (
-            name: string,
-            _options?: {
-              currentMileage?: number;
-              year?: number;
-              vin?: string;
-            }
-          ) => createMockCar(name, `car-${Date.now()}`)
-        ),
-        deleteCar: vi.fn().mockResolvedValue(undefined),
-        setActiveCar: vi.fn().mockResolvedValue(undefined),
-      };
-
-      const { fixture } = await render(AddCarPage, {
-        providers: [
-          provideRouter(routes),
-          provideIonicAngular({ mode: 'md' }),
-          { provide: CarService, useValue: mockCarService },
-        ],
-      });
-
-      fixture.componentInstance.newCarName.set('Test');
-      fixture.componentInstance.newCarMileage.set(50000);
-      fixture.componentInstance.newCarYear.set(2023);
-      fixture.componentInstance.newCarVin.set('VIN');
-      fixture.detectChanges();
-      await user.click(screen.getByTestId('add-car-button'));
-
-      expect(fixture.componentInstance.newCarName()).toBe('');
-      expect(fixture.componentInstance.newCarMileage()).toBeUndefined();
-      expect(fixture.componentInstance.newCarYear()).toBeUndefined();
-      expect(fixture.componentInstance.newCarVin()).toBe('');
-    });
-
     it('should disable VIN copy button when VIN is empty', async () => {
       const mockCarService = {
         hasCars: signal(false),
@@ -427,6 +267,26 @@ describe('AddCarPage', () => {
         'copy-vin-button'
       ) as HTMLIonButtonElement;
       expect(copyBtn.disabled).toBe(true);
+    });
+
+    it('should not show back button in wizard mode', async () => {
+      const mockCarService = {
+        hasCars: signal(false),
+        cars: signal<Car[]>([]),
+        addCar: vi.fn(),
+        deleteCar: vi.fn(),
+        setActiveCar: vi.fn(),
+      };
+
+      await render(AddCarPage, {
+        providers: [
+          provideRouter(routes),
+          provideIonicAngular({ mode: 'md' }),
+          { provide: CarService, useValue: mockCarService },
+        ],
+      });
+
+      expect(document.querySelectorAll('ion-back-button').length).toBe(0);
     });
   });
 
@@ -453,6 +313,37 @@ describe('AddCarPage', () => {
       expect(title?.textContent?.trim()).toBe('Dodaj auto');
       expect(document.querySelectorAll('ion-back-button').length).toBeGreaterThan(0);
       expect(screen.queryByText('🚗 Witaj w swoim garażu!')).toBeNull();
+    });
+
+    it('should add car, set as active, and navigate to dashboard', async () => {
+      const user = userEvent.setup();
+      const navigateRoot = vi.fn().mockResolvedValue(true);
+      const mockCarService = {
+        hasCars: signal(true),
+        cars: signal<Car[]>([]),
+        addCar: vi.fn().mockImplementation(async (name: string) =>
+          createMockCar(name, `car-${Date.now()}`)
+        ),
+        deleteCar: vi.fn(),
+        setActiveCar: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const { fixture } = await render(AddCarPage, {
+        providers: [
+          provideRouter(routes),
+          provideIonicAngular({ mode: 'md' }),
+          { provide: CarService, useValue: mockCarService },
+          { provide: NavController, useValue: { navigateRoot } },
+        ],
+      });
+
+      fixture.componentInstance.newCarName.set('Honda');
+      fixture.detectChanges();
+      await user.click(screen.getByTestId('add-car-button'));
+
+      expect(mockCarService.addCar).toHaveBeenCalledWith('Honda', {});
+      expect(mockCarService.setActiveCar).toHaveBeenCalled();
+      expect(navigateRoot).toHaveBeenCalledWith('/dashboard', { animated: false });
     });
   });
 });

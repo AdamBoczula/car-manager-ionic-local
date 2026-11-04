@@ -7,8 +7,9 @@ import { AuthService } from './auth.service';
 import type { Car } from '../models/car.model';
 
 // ── Mocks ──
-const { mockAddDoc, mockDeleteDoc, mockDocFn, mockOnSnapshot } = vi.hoisted(() => ({
+const { mockAddDoc, mockUpdateDoc, mockDeleteDoc, mockDocFn, mockOnSnapshot } = vi.hoisted(() => ({
   mockAddDoc: vi.fn(),
+  mockUpdateDoc: vi.fn(),
   mockDeleteDoc: vi.fn(),
   mockDocFn: vi.fn(),
   mockOnSnapshot: vi.fn(),
@@ -18,7 +19,7 @@ const { mockAddDoc, mockDeleteDoc, mockDocFn, mockOnSnapshot } = vi.hoisted(() =
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   addDoc: mockAddDoc,
-  updateDoc: vi.fn(),
+  updateDoc: mockUpdateDoc,
   deleteDoc: mockDeleteDoc,
   doc: mockDocFn,
   query: vi.fn(),
@@ -82,6 +83,7 @@ describe('CarService', () => {
 
     // Default: addDoc returns a mock doc ref
     mockAddDoc.mockResolvedValue({ id: 'firestore-id-123' });
+    mockUpdateDoc.mockResolvedValue(undefined);
     mockDeleteDoc.mockResolvedValue(undefined);
     mockOnSnapshot.mockReturnValue(vi.fn());
 
@@ -149,6 +151,7 @@ describe('CarService', () => {
 
       const stored = await mockStorageService.get<Car[]>('cars:test-uid-123');
       expect(stored?.length).toBe(2);
+      expect(stored?.map((car) => car.id)).toEqual(['fs-1', 'fs-2']);
     });
 
     it('should trim whitespace from car name', async () => {
@@ -262,6 +265,71 @@ describe('CarService', () => {
       const stored = await mockStorageService.get<Car[]>('cars:test-uid-123');
       expect(stored?.length).toBe(0);
     });
+
+    it('should update cars signal immediately after deletion', async () => {
+      mockAddDoc.mockResolvedValue({ id: 'fs-1' });
+
+      await service.addCar('Car 1');
+      expect(service.cars().length).toBe(1);
+
+      const car = service.cars()[0];
+      await service.deleteCar(car.id);
+
+      expect(service.cars().length).toBe(0);
+      expect(service.hasCars()).toBe(false);
+    });
+  });
+
+  describe('updateCar()', () => {
+    it('should update car name in storage and signal', async () => {
+      mockAddDoc.mockResolvedValue({ id: 'fs-1' });
+
+      const car = await service.addCar('Old Name');
+      await service.updateCar(car.id, { name: 'New Name' });
+
+      expect(service.cars()[0].name).toBe('New Name');
+      const stored = await mockStorageService.get<Car[]>('cars:test-uid-123');
+      expect(stored![0].name).toBe('New Name');
+    });
+
+    it('should update optional fields', async () => {
+      mockAddDoc.mockResolvedValue({ id: 'fs-1' });
+
+      const car = await service.addCar('Test');
+      await service.updateCar(car.id, {
+        currentMileage: 100000,
+        year: 2021,
+        vin: 'WBA123',
+      });
+
+      const updated = service.cars()[0];
+      expect(updated.currentMileage).toBe(100000);
+      expect(updated.year).toBe(2021);
+      expect(updated.vin).toBe('WBA123');
+    });
+
+    it('should sync updates to Firestore', async () => {
+      mockAddDoc.mockResolvedValue({ id: 'fs-1' });
+
+      const car = await service.addCar('Test');
+      await service.updateCar(car.id, { name: 'Updated' });
+
+      expect(mockUpdateDoc).toHaveBeenCalled();
+    });
+
+    it('should handle offline update gracefully', async () => {
+      mockAddDoc.mockResolvedValue({ id: 'fs-1' });
+      mockUpdateDoc.mockRejectedValue(new Error('network error'));
+
+      const car = await service.addCar('Test');
+      // Should not throw
+      await expect(
+        service.updateCar(car.id, { name: 'Updated' })
+      ).resolves.toBeUndefined();
+
+      // Local state still updated
+      expect(service.cars()[0].name).toBe('Updated');
+    });
   });
 
   describe('setActiveCar()', () => {
@@ -300,13 +368,15 @@ describe('CarService', () => {
       expect(service.hasCars()).toBe(false);
     });
 
-    it('hasCars should be true when cars exist (after startListening populates signal)', async () => {
+    it('hasCars should be true immediately after addCar updates the signal', async () => {
       mockAddDoc.mockResolvedValue({ id: 'fs-1' });
 
-      const car = await service.addCar('Car 1');
+      await service.addCar('Car 1');
 
-      expect(car.name).toBe('Car 1');
-      // hasCars() depends on cars() signal which is only populated by listeners
+      // The signal is now updated immediately, not just by the Firestore listener
+      expect(service.hasCars()).toBe(true);
+      expect(service.cars().length).toBe(1);
+      expect(service.cars()[0].name).toBe('Car 1');
     });
 
     it('activeCar should be null when activeCarId is null', () => {

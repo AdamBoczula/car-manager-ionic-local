@@ -27,7 +27,7 @@ describe('DashboardPage', () => {
   let fixture: ComponentFixture<DashboardPage>;
   let router: Router;
 
-  function createMocks(overrides?: { isOnline?: boolean; userEmail?: string | null }) {
+  function createMocks(overrides?: { userEmail?: string | null }) {
     return {
       authService: {
         currentUser: vi.fn(() => {
@@ -44,7 +44,7 @@ describe('DashboardPage', () => {
         init: vi.fn().mockResolvedValue(undefined),
       },
       syncService: {
-        isOnline: vi.fn(() => overrides?.isOnline ?? true),
+        isOnline: vi.fn(() => true),
         processQueue: vi.fn().mockResolvedValue(undefined),
       },
       carService: {
@@ -59,6 +59,8 @@ describe('DashboardPage', () => {
           ownerId: 'u1',
           createdAt: Timestamp.now(),
         } as Car),
+        updateCar: vi.fn().mockResolvedValue(undefined),
+        deleteCar: vi.fn().mockResolvedValue(undefined),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
         startListening: vi.fn().mockResolvedValue(undefined),
         stopListening: vi.fn(),
@@ -66,7 +68,7 @@ describe('DashboardPage', () => {
     };
   }
 
-  async function setup(overrides?: { isOnline?: boolean; userEmail?: string | null }) {
+  async function setup(overrides?: { userEmail?: string | null }) {
     const mocks = createMocks(overrides);
 
     await TestBed.configureTestingModule({
@@ -133,20 +135,6 @@ describe('DashboardPage', () => {
       await renderAndWait();
       const el = fixture.nativeElement as HTMLElement;
       expect(el.textContent).not.toContain('@');
-    });
-
-    it('powinien wyświetlić wskaźnik "Online" gdy jest połączenie', async () => {
-      await setup({ isOnline: true });
-      await renderAndWait();
-      const el = fixture.nativeElement as HTMLElement;
-      expect(el.textContent).toContain('Online');
-    });
-
-    it('powinien wyświetlić wskaźnik "Offline" gdy brak połączenia', async () => {
-      await setup({ isOnline: false });
-      await renderAndWait();
-      const el = fixture.nativeElement as HTMLElement;
-      expect(el.textContent).toContain('Offline');
     });
   });
 
@@ -297,6 +285,41 @@ describe('DashboardPage', () => {
     });
   });
 
+  // ── Car updated / deleted handlers ──
+
+  describe('handleCarUpdated', () => {
+    it('powinien wywołać carService.updateCar z danymi', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      await fixture.componentInstance.handleCarUpdated({
+        id: 'car-1',
+        name: 'Updated Car',
+        currentMileage: 50000,
+        year: 2023,
+        vin: 'VIN123',
+      });
+
+      expect(mocks.carService.updateCar).toHaveBeenCalledWith('car-1', {
+        name: 'Updated Car',
+        currentMileage: 50000,
+        year: 2023,
+        vin: 'VIN123',
+      });
+    });
+  });
+
+  describe('handleCarDeleted', () => {
+    it('powinien wywołać carService.deleteCar', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      await fixture.componentInstance.handleCarDeleted('car-1');
+
+      expect(mocks.carService.deleteCar).toHaveBeenCalledWith('car-1');
+    });
+  });
+
   // ── Init ──
 
   describe('inicjalizacja', () => {
@@ -304,18 +327,6 @@ describe('DashboardPage', () => {
       const { mocks } = await setup();
       await renderAndWait();
       expect(mocks.storageService.init).toHaveBeenCalled();
-    });
-
-    it('powinien wywołać sync.processQueue() gdy online', async () => {
-      const { mocks } = await setup({ isOnline: true });
-      await renderAndWait();
-      expect(mocks.syncService.processQueue).toHaveBeenCalled();
-    });
-
-    it('nie powinien wywołać sync.processQueue() gdy offline', async () => {
-      const { mocks } = await setup({ isOnline: false });
-      await renderAndWait();
-      expect(mocks.syncService.processQueue).not.toHaveBeenCalled();
     });
   });
 });

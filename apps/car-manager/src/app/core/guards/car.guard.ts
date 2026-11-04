@@ -14,19 +14,14 @@ export const carGuard: CanActivateFn = () => {
   const carService = inject(CarService);
   const router = inject(Router);
 
-  // If cars already loaded – check immediately
-  if (!carService.isLoading() && carService.hasCars()) {
-    return true;
+  if (carService.isInitialized()) {
+    return carService.hasCars() ? true : router.createUrlTree(['/add-car']);
   }
 
-  // If cars loaded but empty – redirect to wizard
-  if (!carService.isLoading() && !carService.hasCars()) {
-    return router.createUrlTree(['/add-car']);
-  }
+  void carService.startListening();
 
-  // Wait for cars to finish loading
-  return toObservable(carService.isLoading).pipe(
-    filter((loading) => !loading),
+  return toObservable(carService.isInitialized).pipe(
+    filter((initialized) => initialized),
     take(1),
     map(() =>
       carService.hasCars() ? true : router.createUrlTree(['/add-car'])

@@ -19,6 +19,11 @@
             placeholder="twoj@email.com"
           />
         </ion-item>
+        @if (fieldErrors().email) {
+          <ion-text color="danger" class="field-error">
+            <p>{{ fieldErrors().email }}</p>
+          </ion-text>
+        }
 
         <ion-item>
           <ion-label position="stacked">Hasło</ion-label>
@@ -31,6 +36,11 @@
             placeholder="Twoje hasło"
           />
         </ion-item>
+        @if (fieldErrors().password) {
+          <ion-text color="danger" class="field-error">
+            <p>{{ fieldErrors().password }}</p>
+          </ion-text>
+        }
 
         <ion-button
           expand="block"

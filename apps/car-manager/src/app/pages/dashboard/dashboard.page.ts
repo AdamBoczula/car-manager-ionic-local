@@ -22,8 +22,6 @@ import {
   carSport,
   construct,
   logOut,
-  wifi,
-  cloudOffline,
 } from 'ionicons/icons';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
@@ -33,6 +31,7 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
 
 @Component({
   selector: 'app-dashboard',
+  host: { class: 'ion-page' },
   standalone: true,
   imports: [
     IonContent,
@@ -58,6 +57,8 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
           [activeCar]="carService.activeCar()"
           (carSelected)="carService.setActiveCar($event)"
           (carAdded)="handleCarAdded($event)"
+          (carUpdated)="handleCarUpdated($event)"
+          (carDeleted)="handleCarDeleted($event)"
         />
         <ion-buttons slot="end">
           <ion-button (click)="handleLogout()" aria-label="Wyloguj się" data-testid="logout-button">
@@ -70,22 +71,12 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
     <ion-content class="ion-padding">
       @if (storageReady()) {
         <div class="dashboard-content">
-          <!-- Welcome + status -->
+          <!-- Welcome -->
           <div class="dashboard-header">
             <h1>Witaj!</h1>
             @if (userEmail) {
               <p class="user-email">{{ userEmail }}</p>
             }
-            <div class="status-row">
-              <ion-icon
-                [name]="isOnline ? 'wifi' : 'cloud-offline'"
-                [color]="isOnline ? 'success' : 'warning'"
-                class="status-icon"
-              />
-              <ion-text [color]="isOnline ? 'success' : 'warning'">
-                {{ isOnline ? 'Online' : 'Offline' }}
-              </ion-text>
-            </div>
           </div>
 
           <!-- Quick-action cards -->
@@ -152,8 +143,6 @@ export class DashboardPage implements OnInit, OnDestroy {
       carSport,
       construct,
       logOut,
-      wifi,
-      cloudOffline,
     });
   }
 
@@ -161,17 +150,9 @@ export class DashboardPage implements OnInit, OnDestroy {
     return this.authService.currentUser()?.email ?? '';
   }
 
-  get isOnline(): boolean {
-    return this.sync.isOnline();
-  }
-
   async ngOnInit(): Promise<void> {
     await this.storage.init();
     this.storageReady.set(true);
-
-    if (this.sync.isOnline()) {
-      this.sync.processQueue();
-    }
   }
 
   ngOnDestroy(): void {
@@ -194,6 +175,35 @@ export class DashboardPage implements OnInit, OnDestroy {
       await this.carService.setActiveCar(car.id);
     } catch (err) {
       console.error('Failed to add car from dashboard:', err);
+    }
+  }
+
+  /** Handle a car update from the car-switcher edit modal. */
+  async handleCarUpdated(data: {
+    id: string;
+    name: string;
+    currentMileage?: number;
+    year?: number;
+    vin?: string;
+  }): Promise<void> {
+    try {
+      await this.carService.updateCar(data.id, {
+        name: data.name,
+        currentMileage: data.currentMileage,
+        year: data.year,
+        vin: data.vin,
+      });
+    } catch (err) {
+      console.error('Failed to update car from dashboard:', err);
+    }
+  }
+
+  /** Handle a car deletion from the car-switcher edit modal. */
+  async handleCarDeleted(id: string): Promise<void> {
+    try {
+      await this.carService.deleteCar(id);
+    } catch (err) {
+      console.error('Failed to delete car from dashboard:', err);
     }
   }
 

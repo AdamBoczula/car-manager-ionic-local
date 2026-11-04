@@ -3,6 +3,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import {
   collection,
   addDoc,
+  updateDoc,
   deleteDoc,
   doc,
   query,
@@ -45,6 +46,9 @@ export class CarService {
   /** Whether the initial load from storage + Firestore subscription is in progress. */
   readonly isLoading = signal<boolean>(false);
 
+  /** Whether the first local/remote car load has completed for the current user. */
+  readonly isInitialized = signal<boolean>(false);
+
   private firestoreUnsubscribe: Unsubscribe | null = null;
   private _started = false;
 
@@ -58,9 +62,13 @@ export class CarService {
     this._started = true;
 
     const user = this.auth.currentUser();
-    if (!user) return;
+    if (!user) {
+      this._started = false;
+      return;
+    }
 
     this.isLoading.set(true);
+    this.isInitialized.set(false);
 
     // 1. Fast path: load from local storage
     const cached = await this.storage.get<Car[]>(this.storageKey(user.uid));
@@ -121,10 +129,12 @@ export class CarService {
         }
 
         this.isLoading.set(false);
+        this.isInitialized.set(true);
       },
       (error) => {
         console.warn('Car Firestore listener error (offline?):', error);
         this.isLoading.set(false);
+        this.isInitialized.set(true);
       }
     );
   }
@@ -136,6 +146,10 @@ export class CarService {
       this.firestoreUnsubscribe = null;
     }
     this._started = false;
+    this.cars.set([]);
+    this.activeCarId.set(null);
+    this.isLoading.set(false);
+    this.isInitialized.set(false);
   }
 
   /**
@@ -164,12 +178,16 @@ export class CarService {
       ...(options?.vin?.trim() && { vin: options.vin.trim() }),
       createdAt: Timestamp.now(),
     };
+    const temporaryId = car.id;
 
     // 1. Save to local storage immediately
     const cached = await this.storage.get<Car[]>(this.storageKey(user.uid));
     const list = cached ? [...cached, car] : [car];
     await this.storage.set(this.storageKey(user.uid), list);
 
+    // Update the signal immediately so hasCars() and carGuard react without
+    // waiting for the Firestore onSnapshot round-trip.
+    this.cars.set(list);
     // 2. Sync to Firestore in background
     try {
       const docRef = await addDoc(
@@ -178,10 +196,13 @@ export class CarService {
       );
       // Update local with real Firestore ID
       car.id = docRef.id;
-      await this.updateLocalId(user.uid, car);
+      await this.updateLocalId(user.uid, temporaryId, car);
 
-      // Update the cars signal with the new ID
-      const updated = list.map((c) => (c.id === car.id ? car : c));
+      // Update the cars signal with the real Firestore ID
+      const updated = list.map((c) =>
+        c.id === temporaryId ? car : c
+      );
+      this.cars.set(updated);
       await this.storage.set(this.storageKey(user.uid), updated);
     } catch (err) {
       console.warn('Failed to sync car to Firestore (offline?):', err);
@@ -209,6 +230,8 @@ export class CarService {
     if (cached) {
       const filtered = cached.filter((c) => c.id !== id);
       await this.storage.set(this.storageKey(user.uid), filtered);
+      // Update signal immediately so hasCars() is correct.
+      this.cars.set(filtered);
     }
 
     // If deleting active car, switch to another
@@ -227,6 +250,49 @@ export class CarService {
       await deleteDoc(doc(this.firestore, CARS_COLLECTION, id));
     } catch (err) {
       console.warn('Failed to delete car from Firestore:', err);
+    }
+  }
+
+  /**
+   * Update an existing car. Updates local storage + signal immediately,
+   * then syncs to Firestore in the background.
+   */
+  async updateCar(
+    id: string,
+    updates: { name?: string; currentMileage?: number; year?: number; vin?: string }
+  ): Promise<void> {
+    const user = this.auth.currentUser();
+    if (!user) throw new Error('User must be logged in to update a car.');
+
+    // Update local storage
+    const cached = await this.storage.get<Car[]>(this.storageKey(user.uid));
+    if (!cached) return;
+
+    const updated = cached.map((c) => {
+      if (c.id !== id) return c;
+      return {
+        ...c,
+        ...(updates.name !== undefined && { name: updates.name.trim() }),
+        ...(updates.currentMileage !== undefined && { currentMileage: updates.currentMileage }),
+        ...(updates.year !== undefined && { year: updates.year }),
+        ...(updates.vin !== undefined && { vin: updates.vin.trim() || undefined }),
+      };
+    });
+
+    await this.storage.set(this.storageKey(user.uid), updated);
+    this.cars.set(updated);
+
+    // Sync to Firestore
+    try {
+      const firestoreUpdates: Record<string, unknown> = {};
+      if (updates.name !== undefined) firestoreUpdates['name'] = updates.name.trim();
+      if (updates.currentMileage !== undefined) firestoreUpdates['currentMileage'] = updates.currentMileage;
+      if (updates.year !== undefined) firestoreUpdates['year'] = updates.year;
+      if (updates.vin !== undefined) firestoreUpdates['vin'] = updates.vin.trim() || null;
+
+      await updateDoc(doc(this.firestore, CARS_COLLECTION, id), firestoreUpdates);
+    } catch (err) {
+      console.warn('Failed to sync car update to Firestore (offline?):', err);
     }
   }
 
@@ -251,14 +317,15 @@ export class CarService {
     return `active_car:${uid}`;
   }
 
-  private async updateLocalId(uid: string, car: Car): Promise<void> {
+  private async updateLocalId(
+    uid: string,
+    temporaryId: string,
+    car: Car
+  ): Promise<void> {
     const cached = await this.storage.get<Car[]>(this.storageKey(uid));
     if (cached) {
       const updated = cached.map((c) =>
-        // Match by temp UUID (36 chars) or by name+ownerId+createdAt
-        c.id === car.id || (c.name === car.name && c.ownerId === car.ownerId)
-          ? car
-          : c
+        c.id === temporaryId ? car : c
       );
       await this.storage.set(this.storageKey(uid), updated);
     }

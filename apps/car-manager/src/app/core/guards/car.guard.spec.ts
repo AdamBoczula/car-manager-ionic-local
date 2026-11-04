@@ -7,6 +7,7 @@ import {
 } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { Component, signal } from '@angular/core';
+import { firstValueFrom, type Observable } from 'rxjs';
 import { carGuard } from './car.guard';
 import { CarService } from '../services/car.service';
 
@@ -26,6 +27,7 @@ describe('carGuard', () => {
   let mockCarService: {
     hasCars: ReturnType<typeof signal<boolean>>;
     isLoading: ReturnType<typeof signal<boolean>>;
+    isInitialized: ReturnType<typeof signal<boolean>>;
     startListening: ReturnType<typeof vi.fn>;
     stopListening: ReturnType<typeof vi.fn>;
   };
@@ -34,7 +36,8 @@ describe('carGuard', () => {
     mockCarService = {
       hasCars: signal(false),
       isLoading: signal(false),
-      startListening: vi.fn(),
+      isInitialized: signal(true),
+      startListening: vi.fn().mockResolvedValue(undefined),
       stopListening: vi.fn(),
     };
 
@@ -85,12 +88,14 @@ describe('carGuard', () => {
     it('should wait for loading to finish, then redirect if empty', fakeAsync(async () => {
       mockCarService.hasCars.set(false);
       mockCarService.isLoading.set(true);
+      mockCarService.isInitialized.set(false);
 
       const navPromise = router.navigate(['/dashboard']);
       tick();
 
       // Simulate loading complete — still empty
       mockCarService.isLoading.set(false);
+      mockCarService.isInitialized.set(true);
       tick();
 
       await navPromise;
@@ -100,16 +105,35 @@ describe('carGuard', () => {
     it('should wait for loading to finish, then allow if cars exist', fakeAsync(async () => {
       mockCarService.hasCars.set(true);
       mockCarService.isLoading.set(true);
+      mockCarService.isInitialized.set(false);
 
       const navPromise = router.navigate(['/dashboard']);
       tick();
 
       // Simulate loading complete — cars now available
       mockCarService.isLoading.set(false);
+      mockCarService.isInitialized.set(true);
       tick();
 
       const result = await navPromise;
       expect(result).toBe(true);
     }));
+  });
+
+  describe('when car service has not started yet', () => {
+    it('should start loading before making a routing decision', async () => {
+      mockCarService.isInitialized.set(false);
+      mockCarService.hasCars.set(false);
+
+      const result = TestBed.runInInjectionContext(() => carGuard());
+
+      expect(mockCarService.startListening).toHaveBeenCalledOnce();
+
+      mockCarService.isInitialized.set(true);
+
+      const resolved = await firstValueFrom(result as Observable<boolean | ReturnType<Router['createUrlTree']>>);
+      expect(resolved).not.toBe(true);
+      expect(resolved.toString()).toBe('/add-car');
+    });
   });
 });
