@@ -31,9 +31,7 @@ export async function navigateToRegister(page: Page): Promise<void> {
  */
 export async function navigateToDashboard(page: Page): Promise<void> {
   await page.goto('/dashboard');
-  // Auth guard may redirect to /login if not authenticated.
-  // Accept either URL — test should check result.
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**

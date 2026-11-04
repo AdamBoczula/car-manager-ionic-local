@@ -1,4 +1,5 @@
 // spec: docs/specs/02-login-screen.md — Faza 1: offline-first refuel CRUD
+// bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 import { Injectable, inject, signal } from '@angular/core';
 import {
   collection,
@@ -33,6 +34,7 @@ export class RefuelService {
 
   private firestoreUnsubscribe: Unsubscribe | null = null;
   private activeCarId: string | null = null;
+  private listenerGeneration = 0;
 
   /**
    * Start listening to refuels for a given car.
@@ -41,14 +43,15 @@ export class RefuelService {
    */
   async startListening(carId: string): Promise<void> {
     this.stopListening();
+    const generation = ++this.listenerGeneration;
     this.activeCarId = carId;
     this.isLoading.set(true);
+    this.refuels.set([]);
 
     // 1. Fast path: load from local storage
     const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    if (cached?.length) {
-      this.refuels.set(cached);
-    }
+    if (!this.isCurrentListener(generation, carId)) return;
+    this.refuels.set(cached ?? []);
 
     // 2. Live sync from Firestore
     const q = query(
@@ -57,9 +60,10 @@ export class RefuelService {
       orderBy('date', 'desc')
     );
 
-    this.firestoreUnsubscribe = onSnapshot(
+    const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
+        if (!this.isCurrentListener(generation, carId)) return;
         const remote = snapshot.docs.map(
           (docSnap) =>
             ({
@@ -74,15 +78,23 @@ export class RefuelService {
         this.isLoading.set(false);
       },
       (error) => {
+        if (!this.isCurrentListener(generation, carId)) return;
         console.warn('Refuel Firestore listener error (offline?):', error);
         // Keep showing cached data on Firestore errors
         this.isLoading.set(false);
       }
     );
+
+    if (this.isCurrentListener(generation, carId)) {
+      this.firestoreUnsubscribe = unsubscribe;
+    } else {
+      unsubscribe();
+    }
   }
 
   /** Stop the Firestore listener. Call on component destroy. */
   stopListening(): void {
+    this.listenerGeneration++;
     if (this.firestoreUnsubscribe) {
       this.firestoreUnsubscribe();
       this.firestoreUnsubscribe = null;
@@ -90,11 +102,17 @@ export class RefuelService {
     this.activeCarId = null;
   }
 
+  private isCurrentListener(generation: number, carId: string): boolean {
+    return this.listenerGeneration === generation && this.activeCarId === carId;
+  }
+
   /**
    * Add a new refuel. Saves locally first, then syncs to Firestore.
    * Automatically calculates consumption if previous refuel data is available.
    */
-  async add(data: Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>): Promise<Refuel> {
+  async add(
+    data: Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>
+  ): Promise<Refuel> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to add a refuel.');
 
@@ -107,7 +125,10 @@ export class RefuelService {
     };
 
     // Calculate consumption if possible
-    const consumption = await this.tryCalculateConsumption(refuel.carId, refuel);
+    const consumption = await this.tryCalculateConsumption(
+      refuel.carId,
+      refuel
+    );
     if (consumption !== null) {
       refuel.consumption = consumption;
     }
@@ -132,7 +153,10 @@ export class RefuelService {
     return refuel;
   }
 
-  async update(id: string, data: Partial<Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>>): Promise<void> {
+  async update(
+    id: string,
+    data: Partial<Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>>
+  ): Promise<void> {
     const carId = data.carId || this.activeCarId;
     if (!carId) throw new Error('carId is required to update a refuel.');
 
@@ -184,7 +208,10 @@ export class RefuelService {
         // Check if this refuel already exists in Firestore (has a real ID)
         if (refuel.id.length === 36) {
           // Looks like a UUID (temp ID), create new Firestore doc
-          const docRef = await addDoc(firestoreRefuels, this.toFirestoreData(refuel));
+          const docRef = await addDoc(
+            firestoreRefuels,
+            this.toFirestoreData(refuel)
+          );
           refuel.id = docRef.id;
         }
         // If it has a shorter ID, it's likely a Firestore-generated ID already
@@ -252,19 +279,20 @@ export class RefuelService {
           r.id !== refuel.id
       )
       .sort(
-        (a, b) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       )[0];
 
     if (!previous) return null;
 
     const { calculateConsumption } = await import('../utils/consumption.util');
-    return calculateConsumption(refuel.liters, refuel.mileage, previous.mileage);
+    return calculateConsumption(
+      refuel.liters,
+      refuel.mileage,
+      previous.mileage
+    );
   }
 
-  private toFirestoreData(
-    refuel: Refuel
-  ): Omit<Refuel, 'id'> {
+  private toFirestoreData(refuel: Refuel): Omit<Refuel, 'id'> {
     const { id: _id, ...data } = refuel;
     void _id; // explicitly unused — stripped before Firestore write
     return data;

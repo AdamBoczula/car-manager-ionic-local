@@ -1,9 +1,10 @@
 // spec: docs/specs/05-car-management.md
 // covers: docs/specs/repair/02-repair-crud.md#AC-3, docs/specs/repair/02-repair-crud.md#AC-4, docs/specs/repair/02-repair-crud.md#AC-5
 // covers: docs/specs/05-car-management.md#AC-13
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { provideRouter, Router, Routes } from '@angular/router';
+import { provideRouter, Routes } from '@angular/router';
 import { provideIonicAngular, NavController } from '@ionic/angular';
 import { signal, Component } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
@@ -146,7 +147,10 @@ describe('RepairFormPage', () => {
     const mockSpeechSvc = createMockSpeechService();
     const user = userEvent.setup();
 
-    const navigateSpy = vi.fn();
+    const navMock = {
+      ...mockNavController,
+      navigateBack: vi.fn().mockResolvedValue(true),
+    };
 
     await render(RepairFormPage, {
       providers: [
@@ -155,14 +159,16 @@ describe('RepairFormPage', () => {
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
         { provide: SpeechService, useValue: mockSpeechSvc },
-        { provide: Router, useValue: { navigate: navigateSpy } },
-        { provide: NavController, useValue: mockNavController },
+        { provide: NavController, useValue: navMock },
       ],
     });
 
     await user.type(screen.getByLabelText('Kwota w PLN'), '500');
     await user.type(screen.getByLabelText('Przebieg w kilometrach'), '65000');
-    await user.type(screen.getByLabelText('Miejsce naprawy'), 'AutoSerwis Kraków');
+    await user.type(
+      screen.getByLabelText('Miejsce naprawy'),
+      'AutoSerwis Kraków'
+    );
     await user.type(
       screen.getByLabelText('Opis wykonanych prac'),
       'Wymiana klocków'
@@ -181,7 +187,7 @@ describe('RepairFormPage', () => {
     );
 
     await vi.waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith(['/repair-list']);
+      expect(navMock.navigateBack).toHaveBeenCalledWith('/repair-list');
     });
   });
 
@@ -230,7 +236,9 @@ describe('RepairFormPage', () => {
     const micButton = screen.getByTestId('mic-button');
     await user.click(micButton);
 
-    const descEl = screen.getByLabelText('Opis wykonanych prac') as HTMLTextAreaElement;
+    const descEl = screen.getByLabelText(
+      'Opis wykonanych prac'
+    ) as HTMLTextAreaElement;
     expect(descEl.value).toContain('testowy transkrypt');
   });
 

@@ -19,7 +19,11 @@ vi.mock('firebase/firestore', () => ({
   onSnapshot: vi.fn(),
   getDocs: vi.fn(),
   Timestamp: {
-    now: () => ({ seconds: 1, nanoseconds: 0, toDate: () => new Date(2026, 0, 1) }),
+    now: () => ({
+      seconds: 1,
+      nanoseconds: 0,
+      toDate: () => new Date(2026, 0, 1),
+    }),
   },
   enableIndexedDbPersistence: vi.fn(),
   connectFirestoreEmulator: vi.fn(),
@@ -33,11 +37,20 @@ vi.mock('../firebase', () => ({
 const storageData = new Map<string, unknown>();
 
 const mockStorageService = {
-  get: vi.fn(async <T>(key: string): Promise<T | null> => (storageData.get(key) as T | null) ?? null),
-  set: vi.fn(async (key: string, value: unknown) => { storageData.set(key, value); }),
-  remove: vi.fn(async (key: string) => { storageData.delete(key); }),
+  get: vi.fn(
+    async <T>(key: string): Promise<T | null> =>
+      (storageData.get(key) as T | null) ?? null
+  ),
+  set: vi.fn(async (key: string, value: unknown) => {
+    storageData.set(key, value);
+  }),
+  remove: vi.fn(async (key: string) => {
+    storageData.delete(key);
+  }),
   keys: vi.fn(async () => Array.from(storageData.keys())),
-  clear: vi.fn(async () => { storageData.clear(); }),
+  clear: vi.fn(async () => {
+    storageData.clear();
+  }),
   init: vi.fn(async () => {}),
 };
 
@@ -118,10 +131,12 @@ describe('RefuelService', () => {
         },
       ];
 
-      (onSnapshot as ReturnType<typeof vi.fn>).mockImplementation((_q, cb, _errCb) => {
-        setTimeout(() => cb({ docs: firestoreRefuels }), 0);
-        return vi.fn();
-      });
+      (onSnapshot as ReturnType<typeof vi.fn>).mockImplementation(
+        (_q, cb, _errCb) => {
+          setTimeout(() => cb({ docs: firestoreRefuels }), 0);
+          return vi.fn();
+        }
+      );
 
       await service.startListening('car1');
 
@@ -142,12 +157,70 @@ describe('RefuelService', () => {
 
       expect(unsubscribeSpy).toHaveBeenCalled();
     });
+
+    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+    it('powinien wyczyścić dane poprzedniego auta, gdy nowe auto nie ma cache', async () => {
+      const { Timestamp, onSnapshot } = await import('firebase/firestore');
+      service.refuels.set([
+        {
+          id: 'old-refuel',
+          carId: 'car1',
+          date: '2026-01-01',
+          amount: 200,
+          mileage: 50000,
+          isVerva: false,
+          isSkipped: false,
+          createdBy: 'u1',
+          createdAt: Timestamp.now(),
+        },
+      ]);
+      (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(vi.fn());
+
+      await service.startListening('car2');
+
+      expect(service.refuels()).toEqual([]);
+    });
+
+    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+    it('powinien zignorować spóźniony cache poprzedniego auta', async () => {
+      const { Timestamp, onSnapshot } = await import('firebase/firestore');
+      let resolveFirst!: (value: Refuel[]) => void;
+      const firstCache = new Promise<Refuel[]>((resolve) => {
+        resolveFirst = resolve;
+      });
+      mockStorageService.get
+        .mockImplementationOnce(() => firstCache)
+        .mockResolvedValueOnce([]);
+      (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(vi.fn());
+
+      const firstStart = service.startListening('car1');
+      await service.startListening('car2');
+      resolveFirst([
+        {
+          id: 'late-refuel',
+          carId: 'car1',
+          date: '2026-01-01',
+          amount: 200,
+          mileage: 50000,
+          isVerva: false,
+          isSkipped: false,
+          createdBy: 'u1',
+          createdAt: Timestamp.now(),
+        },
+      ]);
+      await firstStart;
+
+      expect(service.refuels()).toEqual([]);
+      expect(onSnapshot).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('add()', () => {
     it('powinien zapisać lokalnie i próbować zsynchronizować do Firestore', async () => {
       const { addDoc } = await import('firebase/firestore');
-      (addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'firestore-id-1' });
+      (addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: 'firestore-id-1',
+      });
 
       const refuel = await service.add({
         carId: 'car1',
@@ -187,7 +260,9 @@ describe('RefuelService', () => {
 
     it('powinien zapisać lokalnie nawet gdy Firestore rzuci błędem (offline)', async () => {
       const { addDoc } = await import('firebase/firestore');
-      (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
+      (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('Network error')
+      );
 
       const refuel = await service.add({
         carId: 'car1',

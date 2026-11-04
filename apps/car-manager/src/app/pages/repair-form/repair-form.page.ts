@@ -1,6 +1,7 @@
 // spec: docs/specs/05-car-management.md
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { Component, inject, signal, computed, NgZone } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import {
   IonHeader,
   IonToolbar,
@@ -86,7 +87,11 @@ addIcons({ mic });
             <ion-input
               type="number"
               [value]="amount()"
-              (ionInput)="amount.set($any($event).detail.value ? +$any($event).detail.value : 0)"
+              (ionInput)="
+                amount.set(
+                  $any($event).detail.value ? +$any($event).detail.value : 0
+                )
+              "
               placeholder="0.00"
               aria-label="Kwota w PLN"
             />
@@ -103,7 +108,11 @@ addIcons({ mic });
             <ion-input
               type="number"
               [value]="mileage()"
-              (ionInput)="mileage.set($any($event).detail.value ? +$any($event).detail.value : 0)"
+              (ionInput)="
+                mileage.set(
+                  $any($event).detail.value ? +$any($event).detail.value : 0
+                )
+              "
               placeholder="0"
               aria-label="Przebieg w kilometrach"
             />
@@ -138,7 +147,9 @@ addIcons({ mic });
                 fill="clear"
                 size="small"
                 (click)="startSpeechRecognition()"
-                [disabled]="!speechService.isSupported() || speechService.isListening()"
+                [disabled]="
+                  !speechService.isSupported() || speechService.isListening()
+                "
                 aria-label="Dyktuj opis prac"
                 data-testid="mic-button"
                 class="repair-form__mic-button"
@@ -204,7 +215,7 @@ addIcons({ mic });
 export class RepairFormPage {
   private readonly repairService = inject(RepairService);
   readonly carService = inject(CarService);
-  private readonly router = inject(Router);
+  private readonly navController = inject(NavController);
   private readonly zone = inject(NgZone);
   readonly speechService = inject(SpeechService);
 
@@ -269,7 +280,7 @@ export class RepairFormPage {
       });
 
       this.showToast('Naprawa zapisana!', 'success');
-      this.zone.run(() => this.router.navigate(['/repair-list']));
+      this.zone.run(() => this.navController.navigateBack('/repair-list'));
     } catch (err) {
       console.error('Failed to save repair:', err);
       this.showToast('Nie udało się zapisać naprawy.', 'danger');
@@ -277,7 +288,8 @@ export class RepairFormPage {
   }
 
   startSpeechRecognition(): void {
-    if (!this.speechService.isSupported() || this.speechService.isListening()) return;
+    if (!this.speechService.isSupported() || this.speechService.isListening())
+      return;
 
     this.speechService.startListening().subscribe({
       next: (transcript) => {

@@ -3,7 +3,7 @@ import {
   provideZoneChangeDetection,
   APP_INITIALIZER,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withRouterConfig } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { IonicRouteStrategy } from '@ionic/angular';
 import { RouteReuseStrategy } from '@angular/router';
@@ -22,7 +22,7 @@ function initializeStorage(storageService: StorageService): () => Promise<void> 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(appRoutes),
+    provideRouter(appRoutes, withRouterConfig({ onSameUrlNavigation: 'reload' })),
     provideIonicAngular({ mode: 'md' }),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
 

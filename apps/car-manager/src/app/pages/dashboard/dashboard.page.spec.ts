@@ -1,8 +1,9 @@
 // spec: docs/specs/05-car-management.md
 // covers: docs/specs/05-car-management.md#AC-8, AC-9, AC-18, AC-20
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
-import { provideIonicAngular } from '@ionic/angular';
+import { provideRouter } from '@angular/router';
+import { provideIonicAngular, NavController } from '@ionic/angular';
 import { signal } from '@angular/core';
 import { DashboardPage } from './dashboard.page';
 import { AuthService } from '../../core/services/auth.service';
@@ -25,16 +26,18 @@ const mockUser: Partial<User> = {
 
 describe('DashboardPage', () => {
   let fixture: ComponentFixture<DashboardPage>;
-  let router: Router;
+  let navController: NavController;
 
   function createMocks(overrides?: { userEmail?: string | null }) {
     return {
       authService: {
         currentUser: vi.fn(() => {
           if (overrides?.userEmail === null) return null;
-          return (overrides?.userEmail
-            ? { uid: 'u1', email: overrides.userEmail, displayName: null }
-            : mockUser) as User;
+          return (
+            overrides?.userEmail
+              ? { uid: 'u1', email: overrides.userEmail, displayName: null }
+              : mockUser
+          ) as User;
         }),
         isLoggedIn: vi.fn(() => true),
         authReady: vi.fn(() => true),
@@ -70,12 +73,18 @@ describe('DashboardPage', () => {
 
   async function setup(overrides?: { userEmail?: string | null }) {
     const mocks = createMocks(overrides);
+    const navControllerMock = {
+      navigateForward: vi.fn(),
+      navigateRoot: vi.fn().mockResolvedValue(true),
+      navigateBack: vi.fn(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [DashboardPage],
       providers: [
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
+        { provide: NavController, useValue: navControllerMock },
         { provide: AuthService, useValue: mocks.authService },
         { provide: StorageService, useValue: mocks.storageService },
         { provide: SyncService, useValue: mocks.syncService },
@@ -84,7 +93,7 @@ describe('DashboardPage', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(DashboardPage);
-    router = TestBed.inject(Router);
+    navController = TestBed.inject(NavController);
 
     return { mocks };
   }
@@ -144,7 +153,9 @@ describe('DashboardPage', () => {
     it('powinien wyświetlić kartę "Tankowania"', async () => {
       await setup();
       await renderAndWait();
-      const card = fixture.nativeElement.querySelector('[data-testid="card-refuel"]');
+      const card = fixture.nativeElement.querySelector(
+        '[data-testid="card-refuel"]'
+      );
       expect(card).toBeTruthy();
       expect(card!.textContent).toContain('Tankowania');
     });
@@ -152,7 +163,9 @@ describe('DashboardPage', () => {
     it('powinien wyświetlić kartę "Naprawy"', async () => {
       await setup();
       await renderAndWait();
-      const card = fixture.nativeElement.querySelector('[data-testid="card-repair"]');
+      const card = fixture.nativeElement.querySelector(
+        '[data-testid="card-repair"]'
+      );
       expect(card).toBeTruthy();
       expect(card!.textContent).toContain('Naprawy');
     });
@@ -161,24 +174,28 @@ describe('DashboardPage', () => {
       await setup();
       await renderAndWait();
 
-      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const card = fixture.nativeElement.querySelector('[data-testid="card-refuel"]') as HTMLElement;
+      const navigateSpy = vi.spyOn(navController, 'navigateForward');
+      const card = fixture.nativeElement.querySelector(
+        '[data-testid="card-refuel"]'
+      ) as HTMLElement;
       card.click();
       await fixture.whenStable();
 
-      expect(navigateSpy).toHaveBeenCalledWith(['/refuel-list']);
+      expect(navigateSpy).toHaveBeenCalledWith('/refuel-list');
     });
 
     it('kliknięcie w kartę Naprawy powinno nawigować do /repair-list', async () => {
       await setup();
       await renderAndWait();
 
-      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const card = fixture.nativeElement.querySelector('[data-testid="card-repair"]') as HTMLElement;
+      const navigateSpy = vi.spyOn(navController, 'navigateForward');
+      const card = fixture.nativeElement.querySelector(
+        '[data-testid="card-repair"]'
+      ) as HTMLElement;
       card.click();
       await fixture.whenStable();
 
-      expect(navigateSpy).toHaveBeenCalledWith(['/repair-list']);
+      expect(navigateSpy).toHaveBeenCalledWith('/repair-list');
     });
   });
 
@@ -188,21 +205,27 @@ describe('DashboardPage', () => {
     it('powinien wyrenderować główny przycisk FAB', async () => {
       await setup();
       await renderAndWait();
-      const fab = fixture.nativeElement.querySelector('[data-testid="fab-main"]');
+      const fab = fixture.nativeElement.querySelector(
+        '[data-testid="fab-main"]'
+      );
       expect(fab).toBeTruthy();
     });
 
     it('powinien wyrenderować przycisk FAB dla tankowania', async () => {
       await setup();
       await renderAndWait();
-      const fabRefuel = fixture.nativeElement.querySelector('[data-testid="fab-refuel"]');
+      const fabRefuel = fixture.nativeElement.querySelector(
+        '[data-testid="fab-refuel"]'
+      );
       expect(fabRefuel).toBeTruthy();
     });
 
     it('powinien wyrenderować przycisk FAB dla naprawy', async () => {
       await setup();
       await renderAndWait();
-      const fabRepair = fixture.nativeElement.querySelector('[data-testid="fab-repair"]');
+      const fabRepair = fixture.nativeElement.querySelector(
+        '[data-testid="fab-repair"]'
+      );
       expect(fabRepair).toBeTruthy();
     });
 
@@ -210,24 +233,28 @@ describe('DashboardPage', () => {
       await setup();
       await renderAndWait();
 
-      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const fabRefuel = fixture.nativeElement.querySelector('[data-testid="fab-refuel"]') as HTMLElement;
+      const navigateSpy = vi.spyOn(navController, 'navigateForward');
+      const fabRefuel = fixture.nativeElement.querySelector(
+        '[data-testid="fab-refuel"]'
+      ) as HTMLElement;
       fabRefuel.click();
       await fixture.whenStable();
 
-      expect(navigateSpy).toHaveBeenCalledWith(['/refuel-form']);
+      expect(navigateSpy).toHaveBeenCalledWith('/refuel-form');
     });
 
     it('kliknięcie FAB repair powinno nawigować do /repair-form', async () => {
       await setup();
       await renderAndWait();
 
-      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const fabRepair = fixture.nativeElement.querySelector('[data-testid="fab-repair"]') as HTMLElement;
+      const navigateSpy = vi.spyOn(navController, 'navigateForward');
+      const fabRepair = fixture.nativeElement.querySelector(
+        '[data-testid="fab-repair"]'
+      ) as HTMLElement;
       fabRepair.click();
       await fixture.whenStable();
 
-      expect(navigateSpy).toHaveBeenCalledWith(['/repair-form']);
+      expect(navigateSpy).toHaveBeenCalledWith('/repair-form');
     });
   });
 
@@ -238,7 +265,9 @@ describe('DashboardPage', () => {
       const { mocks } = await setup();
       await renderAndWait();
 
-      const logoutBtn = fixture.nativeElement.querySelector('[data-testid="logout-button"]');
+      const logoutBtn = fixture.nativeElement.querySelector(
+        '[data-testid="logout-button"]'
+      );
 
       expect(logoutBtn).toBeTruthy();
       (logoutBtn as HTMLElement).click();
@@ -327,6 +356,41 @@ describe('DashboardPage', () => {
       const { mocks } = await setup();
       await renderAndWait();
       expect(mocks.storageService.init).toHaveBeenCalled();
+    });
+  });
+
+  // ── Car selected handler with redirect ──
+  // bugfix: docs/bugs/01-car-switcher-confirmation-redirect.md
+
+  describe('handleCarSelected', () => {
+    it('powinien ustawić aktywne auto i przekierować na /dashboard', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      const navigateSpy = vi
+        .spyOn(navController, 'navigateRoot')
+        .mockResolvedValue(true);
+      await fixture.componentInstance.handleCarSelected('car-2');
+
+      expect(mocks.carService.setActiveCar).toHaveBeenCalledWith('car-2');
+      expect(navigateSpy).toHaveBeenCalledWith('/dashboard', {
+        animated: false,
+      });
+    });
+
+    it('powinien przekierować na /dashboard nawet gdy auto jest już aktywne', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      const navigateSpy = vi
+        .spyOn(navController, 'navigateRoot')
+        .mockResolvedValue(true);
+      await fixture.componentInstance.handleCarSelected('car-1');
+
+      expect(mocks.carService.setActiveCar).toHaveBeenCalledWith('car-1');
+      expect(navigateSpy).toHaveBeenCalledWith('/dashboard', {
+        animated: false,
+      });
     });
   });
 });

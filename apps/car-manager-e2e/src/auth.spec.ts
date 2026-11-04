@@ -38,10 +38,10 @@ test.describe('System logowania – E2E', () => {
       await waitForIonicPage(page);
 
       await expect(
-        page.getByPlaceholder('twoj@email.com')
+        page.locator('ion-input[name="email"]')
       ).toBeVisible();
       await expect(
-        page.getByPlaceholder('Twoje hasło')
+        page.locator('ion-input[name="password"]')
       ).toBeVisible();
     });
 
@@ -73,7 +73,7 @@ test.describe('System logowania – E2E', () => {
       await page.waitForURL('**/register');
 
       await expect(
-        page.getByText('Utwórz konto')
+        page.getByRole('heading', { name: 'Utwórz konto' })
       ).toBeVisible();
     });
   });
@@ -86,7 +86,7 @@ test.describe('System logowania – E2E', () => {
       await waitForIonicPage(page);
 
       await expect(
-        page.getByText('Utwórz konto')
+        page.getByRole('heading', { name: 'Utwórz konto' })
       ).toBeVisible();
       await expect(
         page.getByText('Zarejestruj się, aby zacząć śledzić koszty')
@@ -98,13 +98,13 @@ test.describe('System logowania – E2E', () => {
       await waitForIonicPage(page);
 
       await expect(
-        page.getByPlaceholder('twoj@email.com')
+        page.locator('ion-input[name="email"]')
       ).toBeVisible();
       await expect(
-        page.getByPlaceholder('Minimum 6 znaków')
+        page.locator('ion-input[name="password"]')
       ).toBeVisible();
       await expect(
-        page.getByPlaceholder('Wpisz hasło ponownie')
+        page.locator('ion-input[name="confirmPassword"]')
       ).toBeVisible();
     });
 
@@ -205,7 +205,7 @@ test.describe('System logowania – E2E', () => {
       await waitForIonicPage(page);
 
       await expect(
-        page.getByText('Wyloguj się')
+        page.getByRole('button', { name: 'Wyloguj się' })
       ).toBeVisible();
     });
   });
@@ -220,7 +220,9 @@ test.describe('System logowania – E2E', () => {
       // Login → Register
       await page.getByText('Zarejestruj się →').click();
       await page.waitForURL('**/register');
-      await expect(page.getByText('Utwórz konto')).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Utwórz konto' })
+      ).toBeVisible();
 
       // Register → Login
       await page.getByText('Zaloguj się →').click();
@@ -235,13 +237,17 @@ test.describe('System logowania – E2E', () => {
       const email = 'routing-flow@carmanager.local';
       const password = 'Password123!';
 
-      await seedAuthUser(page, { email, password });
+      const seededUser = await seedAuthUser(page, {
+        email,
+        password,
+        provisionCar: false,
+      });
       await clearAuthState(page);
       await navigateToLogin(page);
 
-      await page.getByPlaceholder('twoj@email.com').fill(email);
-      await page.getByPlaceholder('Twoje hasło').fill(password);
-      await page.getByText('🔑 Zaloguj się').click();
+      await page.locator('ion-input[name="email"] input').fill(seededUser.email);
+      await page.locator('ion-input[name="password"] input').fill(seededUser.password);
+      await page.getByRole('button', { name: /Zaloguj się/i }).click();
 
       await expect(page).toHaveURL(/\/add-car/);
       await expect(page.locator('app-add-car.ion-page:not(.ion-page-hidden)')).toBeVisible();
@@ -285,7 +291,9 @@ test.describe('System logowania – E2E', () => {
       await navigateToRegister(page);
       await waitForIonicPage(page);
 
-      await expect(page.getByText('Utwórz konto')).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Utwórz konto' })
+      ).toBeVisible();
 
       const registerContainer = page.locator('.register-container');
       const box = await registerContainer.boundingBox();

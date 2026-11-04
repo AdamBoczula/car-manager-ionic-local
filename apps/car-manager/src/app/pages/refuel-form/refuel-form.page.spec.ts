@@ -4,6 +4,7 @@
 // covers: docs/specs/refuel/02-refuel-crud.md#AC-7 (submit calls service and navigates)
 // covers: docs/specs/refuel/02-refuel-crud.md#AC-8 (skip toggle reveals reason field)
 // covers: docs/specs/05-car-management.md#AC-13
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { provideRouter, Routes } from '@angular/router';
@@ -14,7 +15,6 @@ import { Timestamp } from 'firebase/firestore';
 import { RefuelFormPage } from './refuel-form.page';
 import { RefuelService } from '../../core/services/refuel.service';
 import { CarService } from '../../core/services/car.service';
-import { Router } from '@angular/router';
 import type { Refuel } from '../../core/models/refuel.model';
 import type { Car } from '../../core/models/car.model';
 
@@ -49,7 +49,9 @@ function createMockRefuelService(overrides?: Partial<RefuelService>) {
 
 function createMockCarService(overrides?: { activeCarId?: string | null }) {
   return {
-    cars: signal<Car[]>(overrides?.activeCarId !== undefined ? [mockCar] : [mockCar]),
+    cars: signal<Car[]>(
+      overrides?.activeCarId !== undefined ? [mockCar] : [mockCar]
+    ),
     activeCar: signal<Car | null>(mockCar),
     activeCarId: signal<string | null>(
       overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc'
@@ -69,9 +71,7 @@ function mockNavController() {
   };
 }
 
-const baseRoutes: Routes = [
-  { path: 'refuel-list', component: class Dummy {} },
-];
+const baseRoutes: Routes = [{ path: 'refuel-list', component: class Dummy {} }];
 
 describe('RefuelFormPage', () => {
   it('should render all form fields', async () => {
@@ -125,8 +125,7 @@ describe('RefuelFormPage', () => {
     const mockCarSvc = createMockCarService({ activeCarId: 'car-abc' });
     const user = userEvent.setup();
 
-    const navigateSpy = vi.fn();
-    const mockRouter = { navigate: navigateSpy };
+    const navMock = mockNavController();
 
     await render(RefuelFormPage, {
       providers: [
@@ -134,8 +133,7 @@ describe('RefuelFormPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
-        { provide: Router, useValue: mockRouter },
-        { provide: NavController, useValue: mockNavController() },
+        { provide: NavController, useValue: navMock },
       ],
     });
 
@@ -157,7 +155,7 @@ describe('RefuelFormPage', () => {
     );
 
     await vi.waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith(['/refuel-list']);
+      expect(navMock.navigateBack).toHaveBeenCalledWith('/refuel-list');
     });
   });
 
@@ -176,9 +174,7 @@ describe('RefuelFormPage', () => {
       ],
     });
 
-    expect(
-      screen.queryByLabelText('Powód pominięcia')
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Powód pominięcia')).not.toBeInTheDocument();
 
     const skipCheckbox = screen.getByText('Pomiń wpis');
     await user.click(skipCheckbox);
@@ -231,7 +227,7 @@ describe('RefuelFormPage', () => {
     const mockCarSvc = createMockCarService();
     const user = userEvent.setup();
 
-    const navigateSpy = vi.fn();
+    const navMock = mockNavController();
 
     await render(RefuelFormPage, {
       providers: [
@@ -239,8 +235,7 @@ describe('RefuelFormPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
-        { provide: Router, useValue: { navigate: navigateSpy } },
-        { provide: NavController, useValue: mockNavController() },
+        { provide: NavController, useValue: navMock },
       ],
     });
 
@@ -253,7 +248,7 @@ describe('RefuelFormPage', () => {
       expect(mockRefuelSvc.add).toHaveBeenCalled();
     });
 
-    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(navMock.navigateBack).not.toHaveBeenCalled();
   });
 
   it('should show error toast when no active car', async () => {

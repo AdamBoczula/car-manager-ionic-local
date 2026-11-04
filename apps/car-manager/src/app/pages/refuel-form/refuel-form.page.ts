@@ -1,6 +1,7 @@
 // spec: docs/specs/05-car-management.md
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { Component, inject, NgZone } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader,
@@ -121,14 +122,22 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
 
           <!-- Verva -->
           <ion-item>
-            <ion-toggle [(ngModel)]="isVerva" name="isVerva" justify="space-between">
+            <ion-toggle
+              [(ngModel)]="isVerva"
+              name="isVerva"
+              justify="space-between"
+            >
               Verva?
             </ion-toggle>
           </ion-item>
 
           <!-- Pomiń wpis -->
           <ion-item>
-            <ion-checkbox [(ngModel)]="isSkipped" name="isSkipped" justify="start">
+            <ion-checkbox
+              [(ngModel)]="isSkipped"
+              name="isSkipped"
+              justify="start"
+            >
               Pomiń wpis
             </ion-checkbox>
           </ion-item>
@@ -175,7 +184,7 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
 export class RefuelFormPage {
   private readonly refuelService = inject(RefuelService);
   readonly carService = inject(CarService);
-  private readonly router = inject(Router);
+  private readonly navController = inject(NavController);
   private readonly zone = inject(NgZone);
 
   // Form fields — plain class properties for ngModel binding
@@ -214,13 +223,15 @@ export class RefuelFormPage {
         liters: this.liters ?? undefined,
         isVerva: this.isVerva,
         isSkipped: this.isSkipped,
-        skippedReason: this.isSkipped ? (this.skippedReason || undefined) : undefined,
+        skippedReason: this.isSkipped
+          ? this.skippedReason || undefined
+          : undefined,
       });
 
       this.toastColor = 'success';
       this.toastMessage = 'Tankowanie zapisane!';
       this.isToastOpen = true;
-      this.zone.run(() => this.router.navigate(['/refuel-list']));
+      this.zone.run(() => this.navController.navigateBack('/refuel-list'));
     } catch (err) {
       console.error('Failed to add refuel:', err);
       this.toastColor = 'danger';

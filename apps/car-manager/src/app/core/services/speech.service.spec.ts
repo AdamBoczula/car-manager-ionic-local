@@ -1,6 +1,7 @@
 // covers: docs/specs/repair/02-repair-crud.md#AC-5
 // spec: docs/specs/repair/02-repair-crud.md
 import { TestBed } from '@angular/core/testing';
+import { firstValueFrom } from 'rxjs';
 import { SpeechService } from './speech.service';
 
 interface MockRecognition {
@@ -42,7 +43,9 @@ describe('SpeechService', () => {
     };
 
     (window as unknown as Record<string, unknown>)['SpeechRecognition'] = SR;
-    delete (window as unknown as Record<string, unknown>)['webkitSpeechRecognition'];
+    delete (window as unknown as Record<string, unknown>)[
+      'webkitSpeechRecognition'
+    ];
 
     TestBed.configureTestingModule({
       providers: [SpeechService],
@@ -53,7 +56,9 @@ describe('SpeechService', () => {
 
   afterEach(() => {
     delete (window as unknown as Record<string, unknown>)['SpeechRecognition'];
-    delete (window as unknown as Record<string, unknown>)['webkitSpeechRecognition'];
+    delete (window as unknown as Record<string, unknown>)[
+      'webkitSpeechRecognition'
+    ];
   });
 
   // ── AC-5: isSupported ──
@@ -91,45 +96,36 @@ describe('SpeechService', () => {
     expect(mockRecognition.start).toHaveBeenCalled();
   });
 
-  it('powinien emitować transkrypt po rozpoznaniu mowy', (done) => {
-    service.startListening().subscribe({
-      next: (transcript) => {
-        expect(transcript).toBe('Wymiana oleju');
-        expect(service.isListening()).toBe(false);
-        done();
-      },
-    });
+  it('powinien emitować transkrypt po rozpoznaniu mowy', async () => {
+    const transcriptPromise = firstValueFrom(service.startListening());
 
     mockRecognition.onresult?.({
       results: [[{ transcript: 'Wymiana oleju' }]],
     } as unknown as Record<string, unknown>);
+
+    await expect(transcriptPromise).resolves.toBe('Wymiana oleju');
+    expect(service.isListening()).toBe(false);
   });
 
-  it('powinien obsłużyć błąd rozpoznawania', (done) => {
-    service.startListening().subscribe({
-      error: (err) => {
-        expect(err).toBe('no-speech');
-        expect(service.isListening()).toBe(false);
-        done();
-      },
-    });
+  it('powinien obsłużyć błąd rozpoznawania', async () => {
+    const transcriptPromise = firstValueFrom(service.startListening());
 
     mockRecognition.onerror?.({
       error: 'no-speech',
     } as unknown as Record<string, unknown>);
+
+    await expect(transcriptPromise).rejects.toBe('no-speech');
+    expect(service.isListening()).toBe(false);
   });
 
-  it('powinien zwrócić błąd gdy SpeechRecognition nie jest wspierane', (done) => {
+  it('powinien zwrócić błąd gdy SpeechRecognition nie jest wspierane', async () => {
     const win = window as unknown as Record<string, unknown>;
     delete win['SpeechRecognition'];
     const svc = new SpeechService();
 
-    svc.startListening().subscribe({
-      error: (err) => {
-        expect(err).toBe('Speech recognition not supported');
-        done();
-      },
-    });
+    await expect(firstValueFrom(svc.startListening())).rejects.toBe(
+      'Speech recognition not supported'
+    );
   });
 
   // ── AC-5: stopListening ──

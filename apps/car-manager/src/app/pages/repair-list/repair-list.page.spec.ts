@@ -3,7 +3,7 @@
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { provideRouter } from '@angular/router';
-import { provideIonicAngular } from '@ionic/angular';
+import { NavController, provideIonicAngular } from '@ionic/angular';
 import { Timestamp } from 'firebase/firestore';
 import { signal } from '@angular/core';
 import { RepairListPage } from './repair-list.page';
@@ -150,8 +150,7 @@ describe('RepairListPage', () => {
       ],
     });
 
-    const expected =
-      'Bardzo długi opis naprawy który powinien zostać ob…';
+    const expected = 'Bardzo długi opis naprawy który powinien zostać ob…';
     expect(screen.getByText(expected)).toBeInTheDocument();
   });
 
@@ -230,5 +229,50 @@ describe('RepairListPage', () => {
     });
 
     expect(container.querySelector('app-car-switcher')).toBeTruthy();
+  });
+
+  // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+  it('powinien renderować przycisk powrotu do dashboardu', async () => {
+    const mockRepairSvc = createMockRepairService();
+    const mockCarSvc = createMockCarService();
+
+    const { container } = await render(RepairListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
+      ],
+    });
+
+    const backButton = container.querySelector('ion-back-button');
+    expect(backButton).toBeTruthy();
+    expect(backButton?.getAttribute('defaultHref')).toBe('/dashboard');
+  });
+
+  // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+  it('powinien zapisać wybrane auto i przeładować trasę listy napraw', async () => {
+    const mockRepairSvc = createMockRepairService();
+    const mockCarSvc = createMockCarService();
+    const navController = {
+      navigateRoot: vi.fn().mockResolvedValue(true),
+    };
+
+    const { fixture } = await render(RepairListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: NavController, useValue: navController },
+      ],
+    });
+
+    await fixture.componentInstance.handleCarSelected('car-2');
+
+    expect(mockCarSvc.setActiveCar).toHaveBeenCalledWith('car-2');
+    expect(navController.navigateRoot).toHaveBeenCalledWith('/repair-list', {
+      animated: false,
+    });
   });
 });

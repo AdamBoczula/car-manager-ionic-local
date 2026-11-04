@@ -77,6 +77,10 @@ ion-content {
   background: #eef7f0;
   border: 1px solid var(--ion-color-primary, #1b6b4a);
 
+  h2 {
+    color: var(--ion-color-primary, #1b6b4a);
+  }
+
   .card-icon {
     color: var(--ion-color-primary, #1b6b4a);
     font-size: 2.8rem; // slightly larger for visibility
@@ -87,6 +91,10 @@ ion-content {
   // Jaśniejszy pomarańczowy background – lepszy kontrast
   background: #fff7f0;
   border: 1px solid var(--ion-color-tertiary, #e67e22);
+
+  h2 {
+    color: var(--ion-color-tertiary, #e67e22);
+  }
 
   .card-icon {
     color: var(--ion-color-tertiary, #e67e22);

@@ -1,4 +1,5 @@
 // spec: docs/specs/02-login-screen.md — Faza 1: offline-first repair CRUD
+// bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 import { Injectable, inject, signal } from '@angular/core';
 import {
   collection,
@@ -32,17 +33,19 @@ export class RepairService {
 
   private firestoreUnsubscribe: Unsubscribe | null = null;
   private activeCarId: string | null = null;
+  private listenerGeneration = 0;
 
   async startListening(carId: string): Promise<void> {
     this.stopListening();
+    const generation = ++this.listenerGeneration;
     this.activeCarId = carId;
     this.isLoading.set(true);
+    this.repairs.set([]);
 
     // Fast path: local cache
     const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    if (cached?.length) {
-      this.repairs.set(cached);
-    }
+    if (!this.isCurrentListener(generation, carId)) return;
+    this.repairs.set(cached ?? []);
 
     // Firestore listener
     const q = query(
@@ -51,9 +54,10 @@ export class RepairService {
       orderBy('date', 'desc')
     );
 
-    this.firestoreUnsubscribe = onSnapshot(
+    const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
+        if (!this.isCurrentListener(generation, carId)) return;
         const remote = snapshot.docs.map(
           (docSnap) =>
             ({
@@ -67,13 +71,21 @@ export class RepairService {
         this.isLoading.set(false);
       },
       (error) => {
+        if (!this.isCurrentListener(generation, carId)) return;
         console.warn('Repair Firestore listener error (offline?):', error);
         this.isLoading.set(false);
       }
     );
+
+    if (this.isCurrentListener(generation, carId)) {
+      this.firestoreUnsubscribe = unsubscribe;
+    } else {
+      unsubscribe();
+    }
   }
 
   stopListening(): void {
+    this.listenerGeneration++;
     if (this.firestoreUnsubscribe) {
       this.firestoreUnsubscribe();
       this.firestoreUnsubscribe = null;
@@ -81,7 +93,13 @@ export class RepairService {
     this.activeCarId = null;
   }
 
-  async add(data: Omit<Repair, 'id' | 'createdAt' | 'createdBy'>): Promise<Repair> {
+  private isCurrentListener(generation: number, carId: string): boolean {
+    return this.listenerGeneration === generation && this.activeCarId === carId;
+  }
+
+  async add(
+    data: Omit<Repair, 'id' | 'createdAt' | 'createdBy'>
+  ): Promise<Repair> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to add a repair.');
 
@@ -110,7 +128,10 @@ export class RepairService {
     return repair;
   }
 
-  async update(id: string, data: Partial<Omit<Repair, 'id' | 'createdAt' | 'createdBy'>>): Promise<void> {
+  async update(
+    id: string,
+    data: Partial<Omit<Repair, 'id' | 'createdAt' | 'createdBy'>>
+  ): Promise<void> {
     const carId = data.carId || this.activeCarId;
     if (!carId) throw new Error('carId is required to update a repair.');
 
@@ -154,7 +175,10 @@ export class RepairService {
     for (const repair of cached) {
       try {
         if (repair.id.length === 36) {
-          const docRef = await addDoc(firestoreRepairs, this.toFirestoreData(repair));
+          const docRef = await addDoc(
+            firestoreRepairs,
+            this.toFirestoreData(repair)
+          );
           repair.id = docRef.id;
         }
       } catch (err) {
@@ -185,7 +209,9 @@ export class RepairService {
   private async updateLocalId(carId: string, repair: Repair): Promise<void> {
     const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
     if (cached) {
-      const updated = cached.map((r) => (r.id === repair.id ? { ...repair } : r));
+      const updated = cached.map((r) =>
+        r.id === repair.id ? { ...repair } : r
+      );
       await this.storage.set(this.storageKey(carId), updated);
     }
   }

@@ -52,18 +52,24 @@ describe('CarSwitcherComponent', () => {
   });
 
   describe('popover open/close', () => {
-    it('should open popover via trigger (Ionic handles the click)', async () => {
+    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+    it('should control its own popover without a global trigger id', async () => {
       const cars = [createCar()];
       const { fixture } = await render(CarSwitcherComponent, {
         componentInputs: { cars, activeCar: cars[0] },
       });
 
-      // Popover uses `trigger="car-switcher-trigger"` so Ionic handles opening.
-      // We verify the popover is present and has the trigger attribute set.
-      const popover = fixture.nativeElement.querySelector('ion-popover') as HTMLElement;
+      const popover = fixture.nativeElement.querySelector(
+        'ion-popover'
+      ) as HTMLElement;
+      const event = new MouseEvent('click');
+
+      fixture.componentInstance.openPopover(event);
+
       expect(popover).toBeTruthy();
-      expect(popover.getAttribute('trigger')).toBe('car-switcher-trigger');
-      expect(popover.getAttribute('trigger-action')).toBe('click');
+      expect(popover.hasAttribute('trigger')).toBe(false);
+      expect(fixture.componentInstance.isPopoverOpen()).toBe(true);
+      expect(fixture.componentInstance.popoverEvent()).toBe(event);
     });
 
     it('should close popover via popoverDismissed', async () => {
@@ -251,6 +257,86 @@ describe('CarSwitcherComponent', () => {
     it('should return the active car name when set', () => {
       // Access via rendered component's method
       expect(true).toBe(true); // tested via rendering tests above
+    });
+  });
+
+  // ── Car selection confirmation ──
+  // bugfix: docs/bugs/01-car-switcher-confirmation-redirect.md
+
+  describe('selectCar confirmation', () => {
+    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+    it('should close without emitting when selecting the already-active car', async () => {
+      const car = createCar({ id: 'car-1', name: 'Toyota' });
+      const cars = [car, createCar({ id: 'car-2', name: 'Honda' })];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar: car },
+      });
+
+      const emitted = vi.fn();
+      fixture.componentInstance.carSelected.subscribe(emitted);
+
+      await fixture.componentInstance.selectCar('car-1');
+
+      expect(emitted).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.isPopoverOpen()).toBe(false);
+    });
+
+    it('should NOT emit carSelected when selecting a different car without confirmation', async () => {
+      const activeCar = createCar({ id: 'car-1', name: 'Toyota' });
+      const cars = [activeCar, createCar({ id: 'car-2', name: 'Honda' })];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar },
+      });
+
+      const emitted = vi.fn();
+      fixture.componentInstance.carSelected.subscribe(emitted);
+
+      // Before confirmation, carSelected should NOT be emitted
+      // selectCar should show confirmation alert first
+      const result = fixture.componentInstance.selectCar('car-2');
+
+      // If selectCar returns a Promise (for alert), we await it
+      // If it's synchronous, we check immediately
+      if (result instanceof Promise) {
+        await result;
+      }
+
+      // carSelected should NOT be emitted from selectCar alone — it needs confirmation
+      // (This test WILL FAIL until confirmation alert is implemented)
+      expect(emitted).not.toHaveBeenCalled();
+    });
+
+    it('should close popover after selecting same active car', async () => {
+      const car = createCar({ id: 'car-1', name: 'Toyota' });
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars: [car], activeCar: car },
+      });
+
+      fixture.componentInstance.isPopoverOpen.set(true);
+      await fixture.componentInstance.selectCar('car-1');
+
+      expect(fixture.componentInstance.isPopoverOpen()).toBe(false);
+    });
+
+    it('should close popover when selecting a different car (before showing alert)', async () => {
+      const activeCar = createCar({ id: 'car-1', name: 'Toyota' });
+      const cars = [activeCar, createCar({ id: 'car-2', name: 'Honda' })];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar },
+      });
+
+      fixture.componentInstance.isPopoverOpen.set(true);
+
+      // selectCar for different car should close popover immediately
+      // (even though it then shows an alert)
+      const result = fixture.componentInstance.selectCar('car-2');
+      // Popover should be closed synchronously before the async alert
+      expect(fixture.componentInstance.isPopoverOpen()).toBe(false);
+
+      // Await the promise to avoid unhandled rejections
+      if (result instanceof Promise) {
+        await result;
+      }
     });
   });
 });

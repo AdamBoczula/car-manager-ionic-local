@@ -1,6 +1,16 @@
 // spec: docs/specs/05-car-management.md
-import { Component, inject, signal, OnInit, OnDestroy, effect, DestroyRef } from '@angular/core';
-import { Router } from '@angular/router';
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  OnDestroy,
+  effect,
+  DestroyRef,
+  NgZone,
+} from '@angular/core';
+import { NavController } from '@ionic/angular';
 import {
   IonHeader,
   IonToolbar,
@@ -17,12 +27,7 @@ import {
   IonText,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import {
-  add,
-  carSport,
-  construct,
-  logOut,
-} from 'ionicons/icons';
+import { add, carSport, construct, logOut } from 'ionicons/icons';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { SyncService } from '../../core/services/sync.service';
@@ -55,13 +60,17 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
         <app-car-switcher
           [cars]="carService.cars()"
           [activeCar]="carService.activeCar()"
-          (carSelected)="carService.setActiveCar($event)"
+          (carSelected)="handleCarSelected($event)"
           (carAdded)="handleCarAdded($event)"
           (carUpdated)="handleCarUpdated($event)"
           (carDeleted)="handleCarDeleted($event)"
         />
         <ion-buttons slot="end">
-          <ion-button (click)="handleLogout()" aria-label="Wyloguj się" data-testid="logout-button">
+          <ion-button
+            (click)="handleLogout()"
+            aria-label="Wyloguj się"
+            data-testid="logout-button"
+          >
             <ion-icon name="log-out" slot="icon-only" />
           </ion-button>
         </ion-buttons>
@@ -80,13 +89,21 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
           </div>
 
           <!-- Quick-action cards -->
-          <button class="card card-refuel" (click)="navigateTo('/refuel-list')" data-testid="card-refuel">
+          <button
+            class="card card-refuel"
+            (click)="navigateTo('/refuel-list')"
+            data-testid="card-refuel"
+          >
             <ion-icon name="car-sport" class="card-icon" />
             <h2>Tankowania</h2>
             <p>Przeglądaj i dodawaj tankowania</p>
           </button>
 
-          <button class="card card-repair" (click)="navigateTo('/repair-list')" data-testid="card-repair">
+          <button
+            class="card card-repair"
+            (click)="navigateTo('/repair-list')"
+            data-testid="card-repair"
+          >
             <ion-icon name="construct" class="card-icon" />
             <h2>Naprawy</h2>
             <p>Zarządzaj naprawami i serwisem</p>
@@ -132,7 +149,8 @@ export class DashboardPage implements OnInit, OnDestroy {
   private readonly storage = inject(StorageService);
   readonly sync = inject(SyncService);
   readonly carService = inject(CarService);
-  private readonly router = inject(Router);
+  private readonly navController = inject(NavController);
+  private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly storageReady = signal(false);
@@ -207,8 +225,19 @@ export class DashboardPage implements OnInit, OnDestroy {
     }
   }
 
+  /** Handle car selection with redirect to force dashboard re-render. */
+  // bugfix: docs/bugs/01-car-switcher-confirmation-redirect.md
+  async handleCarSelected(id: string): Promise<void> {
+    await this.carService.setActiveCar(id);
+    await this.zone.run(() =>
+      this.navController.navigateRoot('/dashboard', { animated: false })
+    );
+  }
+
   navigateTo(path: string): void {
-    this.router.navigate([path]);
+    this.zone.run(() => {
+      this.navController.navigateForward(path);
+    });
   }
 
   async handleLogout(): Promise<void> {

@@ -1,7 +1,16 @@
 // spec: docs/specs/05-car-management.md
-import { Component, inject, OnInit, OnDestroy, effect, DestroyRef } from '@angular/core';
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
+// bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
+import {
+  Component,
+  inject,
+  OnDestroy,
+  effect,
+  DestroyRef,
+  NgZone,
+} from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import {
   IonHeader,
   IonToolbar,
@@ -9,6 +18,7 @@ import {
   IonButtons,
   IonButton,
   IonIcon,
+  IonBackButton,
   IonContent,
   IonList,
   IonItem,
@@ -36,6 +46,7 @@ import type { Repair } from '../../core/models/repair.model';
     IonButtons,
     IonButton,
     IonIcon,
+    IonBackButton,
     IonContent,
     IonList,
     IonItem,
@@ -48,10 +59,13 @@ import type { Repair } from '../../core/models/repair.model';
   template: `
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-back-button defaultHref="/dashboard" />
+        </ion-buttons>
         <app-car-switcher
           [cars]="carService.cars()"
           [activeCar]="carService.activeCar()"
-          (carSelected)="carService.setActiveCar($event)"
+          (carSelected)="handleCarSelected($event)"
           (carAdded)="handleCarAdded($event)"
         />
         <ion-buttons slot="end">
@@ -78,14 +92,18 @@ import type { Repair } from '../../core/models/repair.model';
             <ion-item-sliding>
               <ion-item [button]="true">
                 <ion-label>
-                  <h2>{{ repair.date | date:'dd.MM.yyyy' }}</h2>
+                  <h2>{{ repair.date | date: 'dd.MM.yyyy' }}</h2>
                   <p>
-                    <span class="repair-list__amount">{{ formatAmount(repair.amount) }}</span>
+                    <span class="repair-list__amount">{{
+                      formatAmount(repair.amount)
+                    }}</span>
                     &nbsp;·&nbsp;
                     {{ repair.mileage | number }} km
                   </p>
                   <p class="repair-list__location">{{ repair.location }}</p>
-                  <p class="repair-list__description">{{ truncate(repair.description, 50) }}</p>
+                  <p class="repair-list__description">
+                    {{ truncate(repair.description, 50) }}
+                  </p>
                 </ion-label>
               </ion-item>
               <ion-item-options side="end">
@@ -107,10 +125,11 @@ import type { Repair } from '../../core/models/repair.model';
   `,
   styleUrl: './repair-list.page.scss',
 })
-export class RepairListPage implements OnInit, OnDestroy {
+export class RepairListPage implements OnDestroy {
   private readonly repairService = inject(RepairService);
   readonly carService = inject(CarService);
-  private readonly router = inject(Router);
+  private readonly navController = inject(NavController);
+  private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly repairs = this.repairService.repairs;
@@ -129,19 +148,21 @@ export class RepairListPage implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit(): void {
-    const carId = this.carService.activeCarId();
-    if (carId) {
-      this.repairService.startListening(carId);
-    }
-  }
-
   ngOnDestroy(): void {
     this.repairService.stopListening();
   }
 
   navigateToForm(): void {
-    this.router.navigate(['/repair-form']);
+    this.zone.run(() => {
+      this.navController.navigateForward('/repair-form');
+    });
+  }
+
+  async handleCarSelected(id: string): Promise<void> {
+    await this.carService.setActiveCar(id);
+    await this.zone.run(() =>
+      this.navController.navigateRoot('/repair-list', { animated: false })
+    );
   }
 
   async deleteRepair(id: string): Promise<void> {

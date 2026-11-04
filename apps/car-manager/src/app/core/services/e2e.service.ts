@@ -1,6 +1,7 @@
 // spec: docs/specs/02-login-screen.md
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { Injectable, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { environment } from '../../../environments/environment';
@@ -13,7 +14,7 @@ import { environment } from '../../../environments/environment';
  */
 @Injectable({ providedIn: 'root' })
 export class E2eService {
-  private readonly router = inject(Router);
+  private readonly navController = inject(NavController);
 
   constructor() {
     if (!environment.production && typeof window !== 'undefined') {
@@ -21,7 +22,7 @@ export class E2eService {
         signIn: (email: string, password: string) =>
           signInWithEmailAndPassword(auth, email, password),
         signOut: () => signOut(auth),
-        navigateTo: (path: string) => this.router.navigate([path]),
+        navigateTo: (path: string) => this.navController.navigateForward(path),
       };
 
       // Preserve any existing __e2e__ properties (e.g., set by tests before app load)

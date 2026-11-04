@@ -1,3 +1,6 @@
+/* bugfix: docs/bugs/02-router-navigate-in-ionic.md */
+@import '@ionic/angular/css/core.css';
+
 :root {
   --ion-color-primary: #1b6b4a;
   --ion-color-primary-rgb: 27, 107, 74;
@@ -8,8 +11,9 @@
   --ion-color-secondary: #1a1a2e;
   --ion-color-tertiary: #e67e22;
 
-  --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  --ion-font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,7 +36,8 @@
   }
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;

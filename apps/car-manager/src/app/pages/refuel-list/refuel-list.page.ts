@@ -1,6 +1,16 @@
 // spec: docs/specs/05-car-management.md
-import { Component, inject, OnInit, OnDestroy, computed, effect, DestroyRef } from '@angular/core';
-import { Router } from '@angular/router';
+// bugfix: docs/bugs/02-router-navigate-in-ionic.md
+// bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
+import {
+  Component,
+  inject,
+  OnDestroy,
+  computed,
+  effect,
+  DestroyRef,
+  NgZone,
+} from '@angular/core';
+import { NavController } from '@ionic/angular';
 import { DatePipe } from '@angular/common';
 import {
   IonHeader,
@@ -60,11 +70,15 @@ import { formatPln } from '../../core/utils/consumption.util';
         <app-car-switcher
           [cars]="carService.cars()"
           [activeCar]="carService.activeCar()"
-          (carSelected)="carService.setActiveCar($event)"
+          (carSelected)="handleCarSelected($event)"
           (carAdded)="handleCarAdded($event)"
         />
         <ion-buttons slot="end">
-          <ion-button (click)="navigateToForm()" aria-label="Dodaj tankowanie" data-testid="add-refuel-button">
+          <ion-button
+            (click)="navigateToForm()"
+            aria-label="Dodaj tankowanie"
+            data-testid="add-refuel-button"
+          >
             <ion-icon name="add" slot="icon-only" />
           </ion-button>
         </ion-buttons>
@@ -90,7 +104,7 @@ import { formatPln } from '../../core/utils/consumption.util';
             <ion-item-sliding>
               <ion-item [button]="true" (click)="navigateToForm()">
                 <ion-label>
-                  <h3>{{ refuel.date | date:'dd.MM.yyyy' }}</h3>
+                  <h3>{{ refuel.date | date: 'dd.MM.yyyy' }}</h3>
                   <p>{{ formatAmount(refuel.amount) }}</p>
                   <p>{{ refuel.mileage }} km</p>
                   @if (refuel.liters != null) {
@@ -123,10 +137,11 @@ import { formatPln } from '../../core/utils/consumption.util';
   `,
   styleUrl: './refuel-list.page.scss',
 })
-export class RefuelListPage implements OnInit, OnDestroy {
+export class RefuelListPage implements OnDestroy {
   private readonly refuelService = inject(RefuelService);
   readonly carService = inject(CarService);
-  private readonly router = inject(Router);
+  private readonly navController = inject(NavController);
+  private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly refuels = this.refuelService.refuels;
@@ -150,20 +165,21 @@ export class RefuelListPage implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit(): void {
-    // Initial load — if active car already set, start listening
-    const carId = this.carService.activeCarId();
-    if (carId) {
-      this.refuelService.startListening(carId);
-    }
-  }
-
   ngOnDestroy(): void {
     this.refuelService.stopListening();
   }
 
   navigateToForm(): void {
-    this.router.navigate(['/refuel-form']);
+    this.zone.run(() => {
+      this.navController.navigateForward('/refuel-form');
+    });
+  }
+
+  async handleCarSelected(id: string): Promise<void> {
+    await this.carService.setActiveCar(id);
+    await this.zone.run(() =>
+      this.navController.navigateRoot('/refuel-list', { animated: false })
+    );
   }
 
   formatAmount(amount: number): string {

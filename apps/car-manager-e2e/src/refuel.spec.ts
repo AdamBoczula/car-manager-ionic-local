@@ -4,7 +4,6 @@ import { test, expect } from '@playwright/test';
 import {
   navigateToRefuelListViaDashboard,
   navigateToRefuelFormViaFAB,
-  waitForIonicPage,
 } from './utils/navigation-helpers';
 import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';

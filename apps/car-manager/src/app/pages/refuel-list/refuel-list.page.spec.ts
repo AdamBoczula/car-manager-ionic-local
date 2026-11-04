@@ -7,7 +7,7 @@
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { provideRouter } from '@angular/router';
-import { provideIonicAngular } from '@ionic/angular';
+import { NavController, provideIonicAngular } from '@ionic/angular';
 import { Timestamp } from 'firebase/firestore';
 import { signal } from '@angular/core';
 import { RefuelListPage } from './refuel-list.page';
@@ -246,5 +246,31 @@ describe('RefuelListPage', () => {
     });
 
     expect(container.querySelector('app-car-switcher')).toBeTruthy();
+  });
+
+  // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+  it('should persist the selected car and reload the refuel list route', async () => {
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService();
+    const navController = {
+      navigateRoot: vi.fn().mockResolvedValue(true),
+    };
+
+    const { fixture } = await render(RefuelListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: NavController, useValue: navController },
+      ],
+    });
+
+    await fixture.componentInstance.handleCarSelected('car-2');
+
+    expect(mockCarSvc.setActiveCar).toHaveBeenCalledWith('car-2');
+    expect(navController.navigateRoot).toHaveBeenCalledWith('/refuel-list', {
+      animated: false,
+    });
   });
 });

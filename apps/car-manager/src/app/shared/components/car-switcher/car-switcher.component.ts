@@ -1,6 +1,16 @@
 // spec: docs/specs/05-car-management.md
-import { Component, input, output, signal } from '@angular/core';
+// bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 import {
+  Component,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+  NgZone,
+} from '@angular/core';
+import {
+  AlertController,
   IonButton,
   IonIcon,
   IonPopover,
@@ -18,7 +28,14 @@ import {
   IonNote,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { chevronDown, checkmark, add, copyOutline, create, trash } from 'ionicons/icons';
+import {
+  chevronDown,
+  checkmark,
+  add,
+  copyOutline,
+  create,
+  trash,
+} from 'ionicons/icons';
 import type { Car } from '../../../core/models/car.model';
 
 @Component({
@@ -43,9 +60,9 @@ import type { Car } from '../../../core/models/car.model';
   ],
   template: `
     <ion-button
-      id="car-switcher-trigger"
       class="car-switcher__button"
       fill="clear"
+      (click)="openPopover($event)"
       aria-label="Wybierz auto"
       data-testid="car-switcher-button"
     >
@@ -55,9 +72,8 @@ import type { Car } from '../../../core/models/car.model';
 
     <!-- Car selection popover -->
     <ion-popover
-      trigger="car-switcher-trigger"
-      trigger-action="click"
-      [isOpen]="isPopoverOpen"
+      [isOpen]="isPopoverOpen()"
+      [event]="popoverEvent()"
       (ionPopoverDidDismiss)="popoverDismissed()"
       class="car-switcher__popover"
     >
@@ -72,7 +88,12 @@ import type { Car } from '../../../core/models/car.model';
             >
               <ion-label>{{ car.name }}</ion-label>
               @if (car.id === activeCar()?.id) {
-                <ion-icon name="checkmark" slot="end" color="primary" aria-label="Aktywne auto" />
+                <ion-icon
+                  name="checkmark"
+                  slot="end"
+                  color="primary"
+                  aria-label="Aktywne auto"
+                />
               }
               <ion-button
                 slot="end"
@@ -103,7 +124,7 @@ import type { Car } from '../../../core/models/car.model';
 
     <!-- Add car modal -->
     <ion-modal
-      [isOpen]="isModalOpen"
+      [isOpen]="isModalOpen()"
       (ionModalDidDismiss)="modalDismissed()"
       [initialBreakpoint]="0.55"
       [breakpoints]="[0, 0.55]"
@@ -176,7 +197,9 @@ import type { Car } from '../../../core/models/car.model';
               <ion-icon name="copy-outline" slot="icon-only" />
             </ion-button>
             @if (vinCopied()) {
-              <span class="car-switcher__vin-copied" role="status">Skopiowano!</span>
+              <span class="car-switcher__vin-copied" role="status"
+                >Skopiowano!</span
+              >
             }
           </div>
         </ion-content>
@@ -197,7 +220,7 @@ import type { Car } from '../../../core/models/car.model';
 
     <!-- Edit car modal -->
     <ion-modal
-      [isOpen]="isEditModalOpen"
+      [isOpen]="isEditModalOpen()"
       (ionModalDidDismiss)="editModalDismissed()"
       [initialBreakpoint]="0.6"
       [breakpoints]="[0, 0.6]"
@@ -320,6 +343,11 @@ export class CarSwitcherComponent {
   // ── Popover state ──
 
   readonly isPopoverOpen = signal(false);
+  readonly popoverEvent = signal<Event | undefined>(undefined);
+  private readonly popover = viewChild(IonPopover);
+
+  private readonly alertController = inject(AlertController);
+  private readonly ngZone = inject(NgZone);
 
   // ── Add car modal state ──
 
@@ -351,26 +379,62 @@ export class CarSwitcherComponent {
   // ── Popover ──
 
   /** Open the car selection popover. */
-  openPopover(_event: Event): void {
+  openPopover(event: Event): void {
+    this.popoverEvent.set(event);
     this.isPopoverOpen.set(true);
   }
 
   /** Handles popover dismissal. */
   popoverDismissed(): void {
     this.isPopoverOpen.set(false);
+    this.popoverEvent.set(undefined);
   }
 
-  /** Select a car and emit the event. */
-  selectCar(id: string): void {
-    this.isPopoverOpen.set(false);
-    this.carSelected.emit(id);
+  /** Select a car — shows confirmation alert for different car, emits immediately for same car. */
+  // bugfix: docs/bugs/01-car-switcher-confirmation-redirect.md
+  async selectCar(id: string): Promise<void> {
+    const activeCar = this.activeCar();
+
+    // Same car — close the selector without emitting or reloading the page.
+    if (activeCar?.id === id) {
+      await this.dismissPopover();
+      return;
+    }
+
+    // Different car — dismiss popover first, then show confirmation alert
+    await this.dismissPopover();
+
+    const selectedCar = this.cars().find((c) => c.id === id);
+    const carName = selectedCar?.name ?? 'wybrane auto';
+
+    const alert = await this.alertController.create({
+      header: 'Zmień auto',
+      message: `Czy na pewno chcesz zmienić auto na ${carName}?`,
+      buttons: [
+        {
+          text: 'Nie',
+          role: 'cancel',
+        },
+        {
+          text: 'Tak',
+          role: 'confirm',
+          handler: () => {
+            this.ngZone.run(() => {
+              this.carSelected.emit(id);
+            });
+          },
+        },
+      ],
+    });
+
+    await alert.present();
   }
 
   // ── Add car modal ──
 
   /** Open the add car modal. */
   openAddModal(): void {
-    this.isPopoverOpen.set(false);
+    this.closePopover();
     this.isModalOpen.set(true);
     this.resetNewCarForm();
   }
@@ -520,5 +584,18 @@ export class CarSwitcherComponent {
     this.editCarMileage.set(undefined);
     this.editCarYear.set(undefined);
     this.editCarVin.set('');
+  }
+
+  private closePopover(): void {
+    this.isPopoverOpen.set(false);
+    this.popoverEvent.set(undefined);
+  }
+
+  private async dismissPopover(): Promise<void> {
+    const popover = this.popover();
+    this.closePopover();
+    if (popover) {
+      await popover.dismiss().catch(() => false);
+    }
   }
 }
