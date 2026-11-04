@@ -216,7 +216,8 @@ describe('RefuelService', () => {
   });
 
   describe('add()', () => {
-    it('powinien zapisać lokalnie i próbować zsynchronizować do Firestore', async () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien zapisać lokalnie i zaktualizować sygnał refuels', async () => {
       const { addDoc } = await import('firebase/firestore');
       (addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: 'firestore-id-1',
@@ -240,6 +241,10 @@ describe('RefuelService', () => {
       const stored = storageData.get('refuels:car1') as Refuel[];
       expect(stored).toBeDefined();
       expect(stored.length).toBe(1);
+
+      // REGRESSION: signal must reflect the new entry immediately
+      expect(service.refuels().length).toBe(1);
+      expect(service.refuels()[0].amount).toBe(300);
     });
 
     it('powinien rzucić błąd gdy użytkownik nie jest zalogowany', async () => {
@@ -258,7 +263,8 @@ describe('RefuelService', () => {
       ).rejects.toThrow('User must be logged in');
     });
 
-    it('powinien zapisać lokalnie nawet gdy Firestore rzuci błędem (offline)', async () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien zapisać lokalnie i zaktualizować sygnał nawet gdy Firestore rzuci błędem (offline)', async () => {
       const { addDoc } = await import('firebase/firestore');
       (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('Network error')
@@ -278,13 +284,33 @@ describe('RefuelService', () => {
       const stored = storageData.get('refuels:car1') as Refuel[];
       expect(stored).toBeDefined();
       expect(stored.length).toBe(1);
+
+      // REGRESSION: signal must be updated even when offline
+      expect(service.refuels().length).toBe(1);
+      expect(service.refuels()[0].amount).toBe(280);
     });
   });
 
   describe('delete()', () => {
-    it('powinien usunąć z lokalnego storage i Firestore', async () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien usunąć z lokalnego storage i zaktualizować sygnał', async () => {
       const { Timestamp } = await import('firebase/firestore');
       storageData.set('refuels:car1', [
+        {
+          id: 'r1',
+          carId: 'car1',
+          date: '2026-01-01',
+          amount: 200,
+          mileage: 50000,
+          liters: 45,
+          isVerva: false,
+          isSkipped: false,
+          createdBy: 'u1',
+          createdAt: Timestamp.now(),
+        },
+      ]);
+      // Pre-set signal to match storage
+      service.refuels.set([
         {
           id: 'r1',
           carId: 'car1',
@@ -307,6 +333,41 @@ describe('RefuelService', () => {
       const stored = storageData.get('refuels:car1') as Refuel[];
       expect(stored.length).toBe(0);
       expect(deleteDoc).toHaveBeenCalled();
+
+      // REGRESSION: signal must reflect deletion
+      expect(service.refuels().length).toBe(0);
+    });
+  });
+
+  describe('update()', () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien zaktualizować lokalnie i odświeżyć sygnał', async () => {
+      const { Timestamp } = await import('firebase/firestore');
+      const existing: Refuel = {
+        id: 'r1',
+        carId: 'car1',
+        date: '2026-01-01',
+        amount: 200,
+        mileage: 50000,
+        liters: 45,
+        isVerva: false,
+        isSkipped: false,
+        createdBy: 'u1',
+        createdAt: Timestamp.now(),
+      };
+      storageData.set('refuels:car1', [existing]);
+      service.refuels.set([existing]);
+
+      const { updateDoc } = await import('firebase/firestore');
+      (updateDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+      await service.update('r1', { amount: 220, carId: 'car1' });
+
+      const stored = storageData.get('refuels:car1') as Refuel[];
+      expect(stored[0].amount).toBe(220);
+
+      // REGRESSION: signal must reflect update
+      expect(service.refuels()[0].amount).toBe(220);
     });
   });
 });

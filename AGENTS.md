@@ -67,8 +67,6 @@ The full workflow is defined below.
 4. **Quality Gate** — `npm exec nx affected -t lint test build e2e`
 5. **Done** — code ready, reviewed locally by user
 
-For bug fixes and small refactors, skip to the regular workflow below.
-
 ### Phase 1: Analysis
 - Use `business-analyst` skill to drill down requirements
 - Output: `docs/specs/XX-feature-name.md`
@@ -98,6 +96,98 @@ npm exec nx affected -t lint test build e2e
 - Every new source file must start with: `// spec: docs/specs/<domain>/<name>.md`
 - Every test must annotate which AC it covers: `// covers: docs/specs/<domain>/<name>.md#AC-N`
 - During implementation, update the spec file's "Implemented in" table continuously
+
+---
+
+## Bug Fix Workflow (BFW)
+
+This project uses a **structured Bug Fix Workflow** to ensure fixes are correct,
+verified, and don't introduce regressions. The key principle: **reproduce first,
+then fix via TDD, then review**.
+
+### Quick BFW overview
+
+1. **Diagnoza** — analyze the bug, understand root cause, document findings
+2. **Test regresyjny** — write a failing E2E/integration test that reproduces the bug (Playwright)
+3. **TDD Fix** — implement the fix using TDD approach (unit tests + code)
+4. **Code Review** — independent review of the change by a reviewer agent
+5. **Post-Review Fix** — address review findings, iterate until approved
+6. **Quality Gate** — `npm exec nx affected -t lint test build e2e`
+7. **Done** — commit with Conventional Commits, bug doc updated
+
+### Phase 1: Diagnoza
+- Analyze the bug: what is the actual behavior vs. expected behavior?
+- Identify root cause: which component/service/utility is at fault?
+- Determine impact: is this a regression? Which user flows are affected?
+- Output: `docs/bugs/XX-bug-name.md` with the following structure:
+  - **Objawy** — what the user sees (actual vs. expected)
+  - **Kroki do reprodukcji** — step-by-step reproduction instructions
+  - **Root cause analysis** — technical explanation of the defect
+  - **Dotknięte pliki** — files involved in the bug
+  - **Proponowane rozwiązanie** — high-level fix strategy (before implementation)
+- Use `senior-frontend-dev` agent for the analysis phase
+
+### Phase 2: Test regresyjny (RED)
+- Write an E2E/integration test that **demonstrates the bug** (must FAIL before the fix)
+- Use `automation-playwright-tester` agent for E2E tests
+- For unit-level regressions, write a Vitest unit test instead
+- The test must clearly document what the expected behavior should be
+- Annotate with: `// covers: docs/bugs/<name>.md`
+- Commit the failing test separately (or keep it staged) to prove it catches the bug
+
+### Phase 3: TDD Fix (GREEN)
+- Use `senior-frontend-dev` agent to implement the fix
+- Follow TDD: run the failing test → write minimal code to make it pass → refactor
+- Add/update unit tests for the fixed code
+- Add/update component tests if the fix touches UI behavior
+- Update the bug doc: add "Rozwiązanie" section and "Naprawione pliki" table
+- Run project-specific tests to verify:
+
+```bash
+npm exec nx test car-manager
+npm exec nx build car-manager
+```
+
+### Phase 4: Code Review
+- Use `pr-reviewer` agent to review the entire change
+- Review criteria:
+  - **Poprawność** — does the fix actually resolve the root cause?
+  - **Regresja** — could this break anything else?
+  - **Konwencje** — does the code follow project conventions (AGENTS.md)?
+  - **Testy** — are tests sufficient and meaningful? Do they pass?
+  - **Architektura** — is the fix in the right layer? No leaky abstractions?
+- Output: review comments in the bug doc or conversation thread
+- If changes requested → go to Phase 5
+
+### Phase 5: Post-Review Fix
+- Use `senior-frontend-dev` agent to address review findings
+- Iterate on Phase 4–5 until the reviewer approves
+- Update the bug doc with final resolution details
+
+### Phase 6: Quality Gate
+
+```bash
+npm exec nx affected -t lint test build e2e
+```
+
+All checks must pass. If E2E tests are too slow, run project-specific tests first:
+
+```bash
+npm exec nx test car-manager
+npm exec nx build car-manager
+```
+
+### Phase 7: Done
+- Commit with Conventional Commits format (`fix: <description>`)
+- Update bug doc: add "Data naprawy" and "Zweryfikowano przez" fields
+- Close the bug
+
+### BFW Traceability
+
+- Every bug fix source file must reference: `// bugfix: docs/bugs/<name>.md`
+- Every regression test must annotate: `// covers: docs/bugs/<name>.md`
+- During fix implementation, update the bug doc's "Naprawione pliki" table
+- The bug doc serves as a permanent record of the defect and its resolution
 
 ---
 
@@ -246,6 +336,8 @@ The review is **optional** — it does NOT block the pipeline. Results are saved
 | Responsive Checker | DeepSeek-V4-Flash | Viewport testing is procedural |
 | Senior Frontend Dev | DeepSeek-V4-Pro | Primary implementation |
 | Business Analyst | DeepSeek-V4-Pro | Requirements analysis |
+| Automation Playwright Tester | DeepSeek-V4-Flash | E2E test generation — procedural, tool-driven |
+| PR Reviewer | DeepSeek-V4-Pro | Code review — correctness, regression, conventions, architecture |
 
 ---
 
@@ -292,4 +384,4 @@ The review is **optional** — it does NOT block the pipeline. Results are saved
 
 ---
 
-*Ostatnia aktualizacja: 01.11.2026*
+*Ostatnia aktualizacja: 04.11.2026*

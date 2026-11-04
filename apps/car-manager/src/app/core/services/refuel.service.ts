@@ -1,5 +1,6 @@
 // spec: docs/specs/02-login-screen.md — Faza 1: offline-first refuel CRUD
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
+// bugfix: docs/bugs/04-add-not-refreshing-list.md
 import { Injectable, inject, signal } from '@angular/core';
 import {
   collection,
@@ -136,6 +137,13 @@ export class RefuelService {
     // 1. Save to local storage immediately
     await this.saveLocal(refuel.carId, refuel);
 
+    // Update the signal immediately so the UI reflects the new entry
+    // without waiting for the Firestore onSnapshot round-trip.
+    const allLocal = await this.storage.get<Refuel[]>(
+      this.storageKey(refuel.carId)
+    );
+    this.refuels.set(allLocal ?? []);
+
     // 2. Sync to Firestore in background
     try {
       const docRef = await addDoc(
@@ -167,6 +175,8 @@ export class RefuelService {
         r.id === id ? { ...r, ...data, id } : r
       );
       await this.storage.set(this.storageKey(carId), updated);
+      // Update the signal immediately so the UI reflects changes
+      this.refuels.set(updated);
     }
 
     // Update Firestore
@@ -183,6 +193,8 @@ export class RefuelService {
     if (cached) {
       const filtered = cached.filter((r) => r.id !== id);
       await this.storage.set(this.storageKey(carId), filtered);
+      // Update the signal immediately so the UI reflects deletion
+      this.refuels.set(filtered);
     }
 
     // Delete from Firestore

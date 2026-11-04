@@ -1,5 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "agents": {
+    "pr-reviewer": {
+      "description": "Senior Code Reviewer for Car Manager. Reviews bug fixes and feature changes for correctness, regression risk, conventions, test coverage, and architecture. Produces structured reviews with APPROVED/CHANGES REQUESTED/REJECTED verdicts.",
+      "model": "azure-foundry-base-models/DeepSeek-V4-Pro",
+      "instructions": ".opencode/agents/pr-reviewer.md"
+    }
+  },
   "mcp": {
     "servers": {
       "nx-mcp": {
@@ -11,8 +18,9 @@
       "angular-cli": {
         "type": "local",
         "command": ["npx", "-y", "@angular/cli", "mcp"],
-        "enabled": false,
-        "comment": "Disabled: Nx workspace (no angular.json). Use nx-mcp for workspace operations."
+        "enabled": true,
+        "timeout": 30000,
+        "comment": "Angular CLI MCP — best practices, documentation search, AI tutor (works despite Nx workspace)"
       },
       "playwright": {
         "type": "local",
@@ -23,10 +31,10 @@
       },
       "chrome-devtools": {
         "type": "local",
-        "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+        "command": ["npx", "-y", "chrome-devtools-mcp@latest", "--autoConnect"],
         "enabled": true,
         "timeout": 30000,
-        "comment": "Chrome DevTools MCP — accessibility audits (Axe-core), performance, CSS coverage"
+        "comment": "Chrome DevTools MCP — auto-connect to existing Chrome with remote debugging"
       },
       "github": {
         "type": "local",

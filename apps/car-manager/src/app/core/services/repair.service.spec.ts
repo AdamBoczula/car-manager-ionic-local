@@ -142,7 +142,8 @@ describe('RepairService', () => {
   });
 
   describe('add()', () => {
-    it('powinien zapisać naprawę lokalnie i zsynchronizować do Firestore', async () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien zapisać naprawę lokalnie i zaktualizować sygnał repairs', async () => {
       const { addDoc } = await import('firebase/firestore');
       (addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: 'fs-repair-1',
@@ -163,9 +164,14 @@ describe('RepairService', () => {
       expect(repair.location).toBe('AutoSerwis Kraków');
       expect(repair.createdBy).toBe('test-uid-123');
       expect(addDoc).toHaveBeenCalled();
+
+      // REGRESSION: signal must reflect the new entry immediately
+      expect(service.repairs().length).toBe(1);
+      expect(service.repairs()[0].amount).toBe(500);
     });
 
-    it('powinien zapisać lokalnie nawet gdy Firestore jest niedostępny (offline)', async () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien zapisać lokalnie i zaktualizować sygnał nawet gdy Firestore jest niedostępny (offline)', async () => {
       const { addDoc } = await import('firebase/firestore');
       (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('Network error')
@@ -185,6 +191,10 @@ describe('RepairService', () => {
       const stored = storageData.get('repairs:car1') as Repair[];
       expect(stored).toBeDefined();
       expect(stored.length).toBe(1);
+
+      // REGRESSION: signal must be updated even when offline
+      expect(service.repairs().length).toBe(1);
+      expect(service.repairs()[0].amount).toBe(1200);
     });
 
     it('powinien rzucić błąd gdy użytkownik nie jest zalogowany', async () => {
@@ -205,7 +215,8 @@ describe('RepairService', () => {
   });
 
   describe('update()', () => {
-    it('powinien zaktualizować lokalnie i w Firestore', async () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien zaktualizować lokalnie i odświeżyć sygnał', async () => {
       const { Timestamp } = await import('firebase/firestore');
       const existing: Repair = {
         id: 'r1',
@@ -220,6 +231,7 @@ describe('RepairService', () => {
         createdAt: Timestamp.now(),
       };
       storageData.set('repairs:car1', [existing]);
+      service.repairs.set([existing]);
 
       const { updateDoc } = await import('firebase/firestore');
       (updateDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
@@ -231,12 +243,15 @@ describe('RepairService', () => {
 
       const stored = storageData.get('repairs:car1') as Repair[];
       expect(stored[0].description).toBe('Nowy opis naprawy');
-      expect(updateDoc).toHaveBeenCalled();
+
+      // REGRESSION: signal must reflect update
+      expect(service.repairs()[0].description).toBe('Nowy opis naprawy');
     });
   });
 
   describe('delete()', () => {
-    it('powinien usunąć z lokalnego storage i Firestore', async () => {
+    // covers: docs/bugs/04-add-not-refreshing-list.md
+    it('powinien usunąć z lokalnego storage i zaktualizować sygnał', async () => {
       const { Timestamp } = await import('firebase/firestore');
       const existing: Repair = {
         id: 'r1',
@@ -251,6 +266,7 @@ describe('RepairService', () => {
         createdAt: Timestamp.now(),
       };
       storageData.set('repairs:car1', [existing]);
+      service.repairs.set([existing]);
 
       const { deleteDoc } = await import('firebase/firestore');
       (deleteDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
@@ -260,6 +276,9 @@ describe('RepairService', () => {
       const stored = storageData.get('repairs:car1') as Repair[];
       expect(stored.length).toBe(0);
       expect(deleteDoc).toHaveBeenCalled();
+
+      // REGRESSION: signal must reflect deletion
+      expect(service.repairs().length).toBe(0);
     });
   });
 });

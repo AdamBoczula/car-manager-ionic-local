@@ -1,5 +1,6 @@
 // spec: docs/specs/02-login-screen.md — Faza 1: offline-first repair CRUD
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
+// bugfix: docs/bugs/04-add-not-refreshing-list.md
 import { Injectable, inject, signal } from '@angular/core';
 import {
   collection,
@@ -113,6 +114,13 @@ export class RepairService {
     // Save local first
     await this.saveLocal(repair.carId, repair);
 
+    // Update the signal immediately so the UI reflects the new repair
+    // without waiting for the Firestore onSnapshot round-trip.
+    const allLocal = await this.storage.get<Repair[]>(
+      this.storageKey(repair.carId)
+    );
+    this.repairs.set(allLocal ?? []);
+
     // Sync to Firestore
     try {
       const docRef = await addDoc(
@@ -142,6 +150,8 @@ export class RepairService {
         r.id === id ? { ...r, ...data, id } : r
       );
       await this.storage.set(this.storageKey(carId), updated);
+      // Update the signal immediately so the UI reflects changes
+      this.repairs.set(updated);
     }
 
     // Update Firestore
@@ -157,6 +167,8 @@ export class RepairService {
     if (cached) {
       const filtered = cached.filter((r) => r.id !== id);
       await this.storage.set(this.storageKey(carId), filtered);
+      // Update the signal immediately so the UI reflects deletion
+      this.repairs.set(filtered);
     }
 
     try {

@@ -1,16 +1,16 @@
 ---
-description: Triggers a full UI/UX/A11y/Responsive QA review of the Budget Fort application.
+description: Triggers a full UI/UX/A11y/Responsive QA review of the Car Manager application.
 ---
 
 # /qa-review
 
-You are the QA Coordinator for Budget Fort. Run a comprehensive quality review of the
+You are the QA Coordinator for Car Manager. Run a comprehensive quality review of the
 application by following the workflow defined in `.opencode/agents/qa-coordinator.md`.
 
 ## Quick Start
 
 1. Verify the dev server is running at `http://localhost:4200`.
-   - If not, tell the user to run: `npm exec nx serve budget-fort`
+   - If not, tell the user to run: `npm exec nx serve car-manager`
 2. Spawn four review subagents **in parallel**:
    - `ui-reviewer` — visual consistency, layout, typography
    - `ux-analyzer` — user flows, interaction design, heuristics

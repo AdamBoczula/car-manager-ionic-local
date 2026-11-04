@@ -1,5 +1,5 @@
 ---
-description: Anti-UI-Slop dla Car Manager. Zapobiega generowaniu generycznego UI przez AI. Wymusza spójność z design systemem Ionic, SCSS+iONIC CSS vars, i istniejącymi komponentami Car Manager. USE WHEN tworzysz nowy komponent, redesign, review UI.
+description: Anti-UI-Slop for Car Manager. Prevents AI from generating generic UI. Enforces consistency with Ionic design system, SCSS + Ionic CSS vars, and existing Car Manager components. USE WHEN creating a new component, redesign, UI review.
 mode: subagent
 tools:
   - read
@@ -7,76 +7,76 @@ tools:
   - grep
 ---
 
-# Anti-UI-Slop — Stop Generycznemu UI
+# Anti-UI-Slop — Stop Generic UI
 
-**Nie pozwól AI generować generycznych interfejsów w Car Manager.**
+**Don't let AI generate generic interfaces in Car Manager.**
 
-Każdy nowy komponent musi pasować do istniejącego design systemu, używać
-Ionic Framework (`<ion-*>`) zgodnie z dotychczasowymi wzorcami i respektować konwencje
-SCSS + Ionic CSS vars używane w projekcie.
+Every new component must fit the existing design system, use
+Ionic Framework (`<ion-*>`) consistent with existing patterns, and respect
+the SCSS + Ionic CSS vars conventions used in the project.
 
-## Kontekst Design Systemu Car Manager
+## Car Manager Design System Context
 
 - **Framework:** Ionic (ion-card, ion-list, ion-item, ion-input, ion-button, ion-toolbar, ion-content, ion-modal)
-- **Styl:** SCSS + BEM (`&__element`, `&--modifier`)
-- **Pliki styli:** `styleUrl: './*.component.scss'` — NIGDY inline `styles`
-- **Kolorystyka:** Angular Material theme + custom properties
-- **Typografia:** Angular Material typography scale
-- **Komponenty:** Container/Presenter pattern, inline template, osobny SCSS
-- **Layout:** CSS Grid + Flexbox, Angular Material grid
+- **Style:** SCSS + BEM (`&__element`, `&--modifier`)
+- **Style files:** `styleUrl: './*.component.scss'` — NEVER inline `styles`
+- **Color scheme:** Ionic CSS variables + custom properties
+- **Typography:** Ionic default typography scale
+- **Components:** Container/Presenter pattern, inline template, separate SCSS
+- **Layout:** CSS Grid + Flexbox, Ionic grid
 
-## Zasady
+## Principles
 
-### Pracuj z produktu, nie z trendu
+### Work from the product, not from trends
 
-Zanim zaprojektujesz nowy komponent, przeczytaj:
-1. Istniejące komponenty w tym samym feature module
-2. Reusable UI w `libs/*/ui-*`
-3. Jak inne komponenty używają Angular Material
-4. Istniejące wzorce SCSS w podobnych komponentach
+Before designing a new component, read:
+1. Existing components in the same feature module
+2. Reusable UI in `apps/car-manager/src/app/shared/`
+3. How other components use Ionic
+4. Existing SCSS patterns in similar components
 
-**NIGDY nie wymyślaj nowego design systemu.** Rozszerzaj istniejący.
+**NEVER invent a new design system.** Extend the existing one.
 
-### Nowy komponent — checklista
+### New component — checklist
 
-- [ ] Używa istniejących komponentów Angular Material
-- [ ] Template jest inline (`template: \`...\``)
-- [ ] Style są w osobnym pliku SCSS (`styleUrl: './*.component.scss'`)
-- [ ] Nazewnictwo BEM: `&__element`, `&--modifier`
-- [ ] Container/Presenter pattern (jeśli jest z danymi)
-- [ ] Wszystkie stany: loading, empty, error, success
-- [ ] Responsywność strukturalna (nie tylko skalowanie)
-- [ ] Dostępne: kontrast, labelki, fokus, aria
-- [ ] i18n: wszystkie stringi przez `@@` lub `i18n` atrybuty
+- [ ] Uses existing Ionic components
+- [ ] Template is inline (`template: \`...\``)
+- [ ] Styles are in a separate SCSS file (`styleUrl: './*.component.scss'`)
+- [ ] BEM naming: `&__element`, `&--modifier`
+- [ ] Container/Presenter pattern (if data-bound)
+- [ ] All states: loading, empty, error, success
+- [ ] Responsive structurally (not just scaling)
+- [ ] Accessible: contrast, labels, focus, aria
+- [ ] i18n: all strings in Polish (UI language)
 
-### Review UI — checklista
+### UI Review — checklist
 
-- [ ] Czy komponent wygląda jak reszta aplikacji?
-- [ ] Czy używa tych samych komponentów Material?
-- [ ] Czy spacing, typografia, kolory są spójne?
-- [ ] Czy BEM jest poprawny?
-- [ ] Czy style nie wyciekają poza komponent?
-- [ ] Czy są wszystkie stany (loading, empty, error)?
-- [ ] Czy układ nie psuje się na mobile (< 768px)?
+- [ ] Does the component look like the rest of the app?
+- [ ] Does it use the same Ionic components?
+- [ ] Are spacing, typography, colors consistent?
+- [ ] Is BEM correct?
+- [ ] Do styles not leak outside the component?
+- [ ] Are all states covered (loading, empty, error)?
+- [ ] Does the layout not break on mobile (< 430px)?
 
-## Anti-patterny — NIGDY tego nie rób
+## Anti-patterns — NEVER do this
 
-| Złe | Dobre |
-|-----|-------|
-| Wymyślanie własnych kontrolek | Używaj MatDialog, MatFormField, MatTable |
+| Bad | Good |
+|-----|------|
+| Inventing custom controls | Use ion-modal, ion-input, ion-list |
 | Inline styles | `styleUrl: './*.component.scss'` |
-| Inne nazewnictwo CSS | Tylko BEM (`&__element`, `&--modifier`) |
-| Generyczny "ładny" design | Spójny z resztą aplikacji |
-| Nowa kolorystyka | Używaj theme variables |
-| Brak stanów pustych/ładowania | Każdy komponent z danymi ma loading + empty state |
-| Pomijanie i18n | Każdy string użytkownika przez `@@` |
+| Different CSS naming | Only BEM (`&__element`, `&--modifier`) |
+| Generic "pretty" design | Consistent with the rest of the app |
+| New color scheme | Use Ionic CSS variables |
+| Missing empty/loading states | Every data-bound component has loading + empty state |
+| Skipping Polish UI text | All user-facing strings in Polish |
 
 ## Finish Gate
 
-Po stworzeniu komponentu zweryfikuj:
-1. Czy użyto istniejących komponentów Material?
-2. Czy style są w SCSS, nie inline?
-3. Czy BEM jest poprawny?
-4. Czy komponent pasuje wizualnie do reszty?
-5. Czy stany są pokryte?
-6. Czy i18n jest zrobione?
+After creating a component, verify:
+1. Are existing Ionic components used?
+2. Are styles in SCSS, not inline?
+3. Is BEM correct?
+4. Does the component visually fit with the rest?
+5. Are all states covered?
+6. Is all UI text in Polish?
