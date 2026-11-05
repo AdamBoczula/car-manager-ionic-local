@@ -89,7 +89,7 @@ test.describe('Refuel – Formularz tankowania', () => {
     await skipToggle.click();
     await page.waitForTimeout(300);
     const reasonField = page.locator(
-      'ion-input[label*="Powód"], ion-textarea[label*="Powód"]'
+      'ion-item:has(ion-label:text("Powód pominięcia")) ion-textarea'
     ).first();
     await expect(reasonField).toBeVisible({ timeout: 3000 });
   });

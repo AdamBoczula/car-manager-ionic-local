@@ -1,4 +1,5 @@
 // spec: docs/adr/003-migration-system.md
+// covers: docs/adr/003-migration-system.md#Krok-2
 // Core interfaces for the migration system.
 
 import type { StorageService } from '../services/storage.service';

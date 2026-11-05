@@ -71,8 +71,9 @@ export class MigrationService {
       // Użytkownik ma nowszą wersję danych niż kod (cofnął update).
       // Nie możemy migrować w dół — zatrzymujemy startup.
       throw new Error(
-        `[MigrationService] Schema version mismatch: storage v${storedVersion} > ` +
-        `app v${EXPECTED_SCHEMA_VERSION}. Please update the app to the latest version.`
+        `[MigrationService] Wersja danych (v${storedVersion}) jest nowsza niż ` +
+        `wersja aplikacji (v${EXPECTED_SCHEMA_VERSION}). ` +
+        `Zaktualizuj aplikację do najnowszej wersji.`
       );
     }
 

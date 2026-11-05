@@ -1,6 +1,6 @@
 ﻿// spec: docs/specs/05-car-management.md
 // covers: dashboard → refuel-list and dashboard → repair-list navigation
-import { TestBed } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Routes, Router } from '@angular/router';
 import { NavController, provideIonicAngular } from '@ionic/angular';
 import { signal, Component } from '@angular/core';
@@ -9,8 +9,13 @@ import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { SyncService } from '../../core/services/sync.service';
 import { CarService } from '../../core/services/car.service';
+import { RefuelService } from '../../core/services/refuel.service';
+import { RepairService } from '../../core/services/repair.service';
 import type { Car } from '../../core/models/car.model';
+import type { Refuel } from '../../core/models/refuel.model';
+import type { Repair } from '../../core/models/repair.model';
 import type { User } from 'firebase/auth';
+import { Timestamp } from 'firebase/firestore';
 
 vi.mock('../../core/firebase', () => ({
   auth: {} as unknown,
@@ -60,7 +65,14 @@ const routes: Routes = [
 ];
 
 describe('DashboardPage routing integration', () => {
+  let fixture: ComponentFixture<DashboardPage>;
+  let refuelServiceRefuels: ReturnType<typeof signal<Refuel[]>>;
+  let repairServiceRepairs: ReturnType<typeof signal<Repair[]>>;
+
   function createMocks() {
+    refuelServiceRefuels = signal<Refuel[]>([]);
+    repairServiceRepairs = signal<Repair[]>([]);
+
     return {
       authService: {
         currentUser: vi.fn(() => mockUser as User),
@@ -89,6 +101,18 @@ describe('DashboardPage routing integration', () => {
         startListening: vi.fn().mockResolvedValue(undefined),
         stopListening: vi.fn(),
       },
+      refuelService: {
+        refuels: refuelServiceRefuels,
+        isLoading: signal(false),
+        startListening: vi.fn().mockResolvedValue(undefined),
+        stopListening: vi.fn(),
+      },
+      repairService: {
+        repairs: repairServiceRepairs,
+        isLoading: signal(false),
+        startListening: vi.fn().mockResolvedValue(undefined),
+        stopListening: vi.fn(),
+      },
     };
   }
 
@@ -113,11 +137,13 @@ describe('DashboardPage routing integration', () => {
         { provide: StorageService, useValue: mocks.storageService },
         { provide: SyncService, useValue: mocks.syncService },
         { provide: CarService, useValue: mocks.carService },
+        { provide: RefuelService, useValue: mocks.refuelService },
+        { provide: RepairService, useValue: mocks.repairService },
         { provide: NavController, useValue: navControllerMock },
       ],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(DashboardPage);
+    fixture = TestBed.createComponent(DashboardPage);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -126,28 +152,53 @@ describe('DashboardPage routing integration', () => {
     return { mocks, navControllerMock };
   }
 
-  it('should navigate from dashboard to refuel-list via card click', async () => {
-    const { navControllerMock } = await setup();
+  it('should navigate from dashboard to refuel-list via "Zobacz wszystkie" link click', async () => {
+    const { mocks, navControllerMock } = await setup();
+    // Need refuels for the "Zobacz wszystkie" link to appear
+    const car: Car = { id: 'c1', name: 'A', ownerId: 'u1', createdAt: Timestamp.now() };
+    mocks.carService.cars.set([car]);
+    mocks.carService.activeCar.set(car);
+    mocks.carService.activeCarId.set('c1');
+    mocks.carService.hasCars.set(true);
+    refuelServiceRefuels.set([
+      { id: 'r1', carId: 'c1', date: '2026-01-15', amount: 250, mileage: 125000, liters: 40, isVerva: false, isSkipped: false, createdBy: 'u1', createdAt: Timestamp.now() },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await TestBed.flushEffects();
 
-    const card = document.querySelector(
-      '[data-testid="card-refuel"]'
+    const link = document.querySelector(
+      '[data-testid="link-all-refuels"]'
     ) as HTMLElement;
-    expect(card).toBeTruthy();
-    card.click();
+    expect(link).toBeTruthy();
+    link.click();
 
     expect(navControllerMock.navigateForward).toHaveBeenCalledWith(
       '/refuel-list'
     );
   });
 
-  it('should navigate from dashboard to repair-list via card click', async () => {
-    const { navControllerMock } = await setup();
+  it('should navigate from dashboard to repair-list via "Zobacz wszystkie" link click', async () => {
+    const { mocks, navControllerMock } = await setup();
+    const car: Car = { id: 'c1', name: 'A', ownerId: 'u1', createdAt: Timestamp.now() };
+    mocks.carService.cars.set([car]);
+    mocks.carService.activeCar.set(car);
+    mocks.carService.activeCarId.set('c1');
+    mocks.carService.hasCars.set(true);
+    repairServiceRepairs.set([
+      { id: 'p1', carId: 'c1', date: '2026-01-15', amount: 500, mileage: 125000, location: 'Serwis', description: 'Naprawa', mechanicNote: '', createdBy: 'u1', createdAt: Timestamp.now() },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await TestBed.flushEffects();
 
-    const card = document.querySelector(
-      '[data-testid="card-repair"]'
+    const link = document.querySelector(
+      '[data-testid="link-all-repairs"]'
     ) as HTMLElement;
-    expect(card).toBeTruthy();
-    card.click();
+    expect(link).toBeTruthy();
+    link.click();
 
     expect(navControllerMock.navigateForward).toHaveBeenCalledWith(
       '/repair-list'
@@ -186,15 +237,10 @@ describe('DashboardPage routing integration', () => {
   it('should display dashboard content (not just URL) after car selection redirect', async () => {
     const { navControllerMock } = await setup();
 
-    // Simulate carSelected event by calling setActiveCar
-    // In a real scenario, the CarSwitcher would emit carSelected,
-    // and the DashboardPage would call handleCarSelected which
-    // calls setActiveCar + router.navigate(['/dashboard'])
-    // After navigation, we verify the content is actually dashboard content
     const dashContent = document.querySelector('.dashboard-content');
     expect(dashContent).toBeTruthy();
-    const refuelCard = document.querySelector('[data-testid="card-refuel"]');
-    expect(refuelCard).toBeTruthy();
+    const refuelBtn = document.querySelector('[data-testid="btn-add-refuel"]');
+    expect(refuelBtn).toBeTruthy();
 
     // Verify that if we navigate via NavController, dashboard content persists
     expect(navControllerMock.navigateForward).toBeDefined();
@@ -203,7 +249,14 @@ describe('DashboardPage routing integration', () => {
 
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
 describe('DashboardPage routing integration — real NavController', () => {
+  let fixture: ComponentFixture<DashboardPage>;
+  let refuelServiceRefuels: ReturnType<typeof signal<Refuel[]>>;
+  let repairServiceRepairs: ReturnType<typeof signal<Repair[]>>;
+
   function createMocks() {
+    refuelServiceRefuels = signal<Refuel[]>([]);
+    repairServiceRepairs = signal<Repair[]>([]);
+
     return {
       authService: {
         currentUser: vi.fn(() => mockUser as User),
@@ -232,6 +285,18 @@ describe('DashboardPage routing integration — real NavController', () => {
         startListening: vi.fn().mockResolvedValue(undefined),
         stopListening: vi.fn(),
       },
+      refuelService: {
+        refuels: refuelServiceRefuels,
+        isLoading: signal(false),
+        startListening: vi.fn().mockResolvedValue(undefined),
+        stopListening: vi.fn(),
+      },
+      repairService: {
+        repairs: repairServiceRepairs,
+        isLoading: signal(false),
+        startListening: vi.fn().mockResolvedValue(undefined),
+        stopListening: vi.fn(),
+      },
     };
   }
 
@@ -253,53 +318,78 @@ describe('DashboardPage routing integration — real NavController', () => {
         { provide: StorageService, useValue: mocks.storageService },
         { provide: SyncService, useValue: mocks.syncService },
         { provide: CarService, useValue: mocks.carService },
+        { provide: RefuelService, useValue: mocks.refuelService },
+        { provide: RepairService, useValue: mocks.repairService },
         // No NavController mock — use real Ionic NavController
       ],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(DashboardPage);
+    fixture = TestBed.createComponent(DashboardPage);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
     await TestBed.flushEffects();
 
-    return { fixture };
+    return { mocks };
   }
 
   // covers: docs/bugs/02-router-navigate-in-ionic.md
-  it('should navigate to /refuel-list and change URL when clicking Tankowania card', async () => {
-    const { fixture } = await setupRealNav();
+  it('should navigate to /refuel-list and change URL when clicking "Zobacz wszystkie" link', async () => {
+    const { mocks } = await setupRealNav();
+    // Add a car and refuel so the link appears
+    const car: Car = { id: 'c1', name: 'A', ownerId: 'u1', createdAt: Timestamp.now() };
+    mocks.carService.activeCarId.set('c1');
+    mocks.carService.activeCar.set(car);
+    mocks.carService.cars.set([car]);
+    mocks.carService.hasCars.set(true);
+    refuelServiceRefuels.set([
+      { id: 'r1', carId: 'c1', date: '2026-01-15', amount: 250, mileage: 125000, liters: 40, isVerva: false, isSkipped: false, createdBy: 'u1', createdAt: Timestamp.now() },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await TestBed.flushEffects();
 
     // Verify we start on dashboard
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
-    expect(document.querySelector('[data-testid="card-refuel"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="link-all-refuels"]')).toBeTruthy();
 
-    // Click the Tankowania card
-    const card = document.querySelector(
-      '[data-testid="card-refuel"]'
+    // Click the "Zobacz wszystkie" link
+    const link = document.querySelector(
+      '[data-testid="link-all-refuels"]'
     ) as HTMLElement;
-    card.click();
+    link.click();
     await fixture.whenStable();
 
-    // Verify the router URL reflects navigation (Ionic IonRouterOutlet
-    // doesn't render stubs in JSDOM, but the Angular Router URL proves
-    // the navigation happened — this was broken before the NavController
-    // fix when Router.navigate() was used instead).
+    // Verify the router URL reflects navigation
     const router = TestBed.inject(Router);
     const currentUrl = router.url;
     expect(currentUrl).toContain('refuel-list');
   });
 
   // covers: docs/bugs/02-router-navigate-in-ionic.md
-  it('should navigate to /repair-list and change URL when clicking Naprawy card', async () => {
-    const { fixture } = await setupRealNav();
+  it('should navigate to /repair-list and change URL when clicking "Zobacz wszystkie" link', async () => {
+    const { mocks } = await setupRealNav();
+    const car: Car = { id: 'c1', name: 'A', ownerId: 'u1', createdAt: Timestamp.now() };
+    mocks.carService.activeCarId.set('c1');
+    mocks.carService.activeCar.set(car);
+    mocks.carService.cars.set([car]);
+    mocks.carService.hasCars.set(true);
+    repairServiceRepairs.set([
+      { id: 'p1', carId: 'c1', date: '2026-01-15', amount: 500, mileage: 125000, location: 'Serwis', description: 'Naprawa', mechanicNote: '', createdBy: 'u1', createdAt: Timestamp.now() },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await TestBed.flushEffects();
 
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
+    expect(document.querySelector('[data-testid="link-all-repairs"]')).toBeTruthy();
 
-    const card = document.querySelector(
-      '[data-testid="card-repair"]'
+    const link = document.querySelector(
+      '[data-testid="link-all-repairs"]'
     ) as HTMLElement;
-    card.click();
+    link.click();
     await fixture.whenStable();
 
     const router = TestBed.inject(Router);
@@ -309,46 +399,68 @@ describe('DashboardPage routing integration — real NavController', () => {
 
   // covers: docs/bugs/02-router-navigate-in-ionic.md
   it('should ACTIVATE the refuel-list component, not just change URL', async () => {
-    const { fixture } = await setupRealNav();
+    const { mocks } = await setupRealNav();
+    const car: Car = { id: 'c1', name: 'A', ownerId: 'u1', createdAt: Timestamp.now() };
+    mocks.carService.activeCarId.set('c1');
+    mocks.carService.activeCar.set(car);
+    mocks.carService.cars.set([car]);
+    mocks.carService.hasCars.set(true);
+    refuelServiceRefuels.set([
+      { id: 'r1', carId: 'c1', date: '2026-01-15', amount: 250, mileage: 125000, liters: 40, isVerva: false, isSkipped: false, createdBy: 'u1', createdAt: Timestamp.now() },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await TestBed.flushEffects();
 
     // Verify dashboard content is present before navigation
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
-    expect(document.querySelector('[data-testid="card-refuel"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="link-all-refuels"]')).toBeTruthy();
 
-    // Click Tankowania card
-    const card = document.querySelector(
-      '[data-testid="card-refuel"]'
+    // Click "Zobacz wszystkie" link
+    const link = document.querySelector(
+      '[data-testid="link-all-refuels"]'
     ) as HTMLElement;
-    card.click();
+    link.click();
     await fixture.whenStable();
 
     // The Angular Router should have the refuel-list route as active.
-    // Check that the Router's root route snapshot points to refuel-list.
     const router = TestBed.inject(Router);
     expect(router.url).toContain('refuel-list');
 
-    // Verify the activated component is RefuelListStub by checking
-    // the route snapshot's component — it should exist and be the stub.
+    // Verify the activated component is RefuelListStub
     const rootSnapshot = router.routerState.root;
     let leafSnapshot = rootSnapshot;
     while (leafSnapshot.firstChild) {
       leafSnapshot = leafSnapshot.firstChild;
     }
-    // leafSnapshot is the deepest ActivatedRouteSnapshot — should be refuel-list
     expect(leafSnapshot.routeConfig?.path).toBe('refuel-list');
     expect(leafSnapshot.routeConfig?.component).toBe(RefuelListStub);
   });
 
   // covers: docs/bugs/02-router-navigate-in-ionic.md
   it('should ACTIVATE the repair-list component, not just change URL', async () => {
-    const { fixture } = await setupRealNav();
+    const { mocks } = await setupRealNav();
+    const car: Car = { id: 'c1', name: 'A', ownerId: 'u1', createdAt: Timestamp.now() };
+    mocks.carService.activeCarId.set('c1');
+    mocks.carService.activeCar.set(car);
+    mocks.carService.cars.set([car]);
+    mocks.carService.hasCars.set(true);
+    repairServiceRepairs.set([
+      { id: 'p1', carId: 'c1', date: '2026-01-15', amount: 500, mileage: 125000, location: 'Serwis', description: 'Naprawa', mechanicNote: '', createdBy: 'u1', createdAt: Timestamp.now() },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await TestBed.flushEffects();
 
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
+    expect(document.querySelector('[data-testid="link-all-repairs"]')).toBeTruthy();
 
-    const card = document.querySelector(
-      '[data-testid="card-repair"]'
+    const link = document.querySelector(
+      '[data-testid="link-all-repairs"]'
     ) as HTMLElement;
-    card.click();
+    link.click();
     await fixture.whenStable();
 
     const router = TestBed.inject(Router);

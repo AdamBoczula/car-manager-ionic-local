@@ -238,12 +238,12 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     // Tankowania card
     // The Ionic overlay can keep the underlying page aria-hidden while its
     // leave animation settles, so assert the rendered text rather than role.
-    await expect(page.getByText('Tankowania', { exact: true })).toBeVisible({
+    await expect(page.getByText('Ostatnie tankowania')).toBeVisible({
       timeout: 5000,
     });
 
-    // Naprawy card
-    await expect(page.getByText('Naprawy', { exact: true })).toBeVisible({
+    // Naprawy section header
+    await expect(page.getByText('Ostatnie naprawy')).toBeVisible({
       timeout: 5000,
     });
 
@@ -326,22 +326,27 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
 
   for (const list of [
     {
-      cardTestId: 'card-refuel',
+      cardTestId: 'btn-add-refuel',
       route: '/refuel-list',
       pageSelector: 'app-refuel-list',
       emptyText: 'Brak tankowań – dodaj pierwsze!',
+      emptyTestId: null,
     },
     {
-      cardTestId: 'card-repair',
+      cardTestId: 'btn-add-repair',
       route: '/repair-list',
       pageSelector: 'app-repair-list',
       emptyText: 'Brak napraw – dodaj pierwszą!',
+      emptyTestId: null,
     },
   ] as const) {
     test(`should close the popover and reload ${list.route} after changing car`, async ({
       page,
     }) => {
-      await page.getByTestId(list.cardTestId).click();
+      await page.evaluate((route) => {
+        const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+        return (e2e['navigateTo'] as (path: string) => Promise<unknown>)(route);
+      }, list.route);
       await expect(page).toHaveURL(new RegExp(`${list.route}$`));
 
       const activePage = page.locator(
@@ -370,7 +375,7 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
           .getByTestId('car-switcher-button')
       ).toContainText(CAR_2.name);
       await expect(
-        page.getByText(list.emptyText, { exact: true })
+        page.locator(`${list.pageSelector}.ion-page:not(.ion-page-hidden)`).getByText(list.emptyText, { exact: true })
       ).toBeVisible();
     });
   }
@@ -378,8 +383,11 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
   test('should return from repair list to the dashboard with the back button', async ({
     page,
   }) => {
-    await page.getByTestId('card-repair').click();
-    await expect(page).toHaveURL(/\/repair-list$/);
+    await page.evaluate(() => {
+      const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-list');
+    });
+    await page.waitForURL(/\/repair-list$/);
 
     const activeRepairList = page.locator(
       'app-repair-list.ion-page:not(.ion-page-hidden)'

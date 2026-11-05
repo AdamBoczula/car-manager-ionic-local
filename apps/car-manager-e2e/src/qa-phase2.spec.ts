@@ -83,7 +83,7 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
     });
 
     // Navigate programmatically via Angular Router (avoids full reload)
-    await page.locator('[data-testid="card-refuel"]').waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('[data-testid="btn-add-refuel"]').waitFor({ state: 'visible', timeout: 15000 });
     await page.evaluate(() => {
       const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
       return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/refuel-form');
@@ -134,7 +134,7 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
     });
 
     // Navigate programmatically via Angular Router
-    await page.locator('[data-testid="card-repair"]').waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('[data-testid="btn-add-repair"]').waitFor({ state: 'visible', timeout: 15000 });
     await page.evaluate(() => {
       const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
       return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-form');

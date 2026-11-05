@@ -158,7 +158,7 @@ describe('RefuelFormPage', () => {
     );
 
     await vi.waitFor(() => {
-      expect(navMock.navigateBack).toHaveBeenCalledWith('/refuel-list');
+      expect(navMock.navigateForward).toHaveBeenCalledWith('/dashboard');
     });
   });
 

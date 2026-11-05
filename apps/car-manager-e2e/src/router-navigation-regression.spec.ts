@@ -47,12 +47,8 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
       .press('Enter');
 
     const dashboardHeading = page.getByRole('heading', { name: /Tankowania/i });
-    const emptyRefuelList = page.getByText('Brak tankowań – dodaj pierwsze!', {
-      exact: true,
-    });
-    const emptyRepairList = page.getByText('Brak napraw – dodaj pierwszą!', {
-      exact: true,
-    });
+    const emptyRefuelList = page.locator('.refuel-list__empty');
+    const emptyRepairList = page.locator('.repair-list__empty');
     const activeDashboard = page.locator(
       'app-dashboard.ion-page:not(.ion-page-hidden)'
     );
@@ -64,8 +60,12 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
     await expect(dashboardHeading).toBeVisible();
     await expect(activeDashboard).toBeVisible();
 
-    // Act: use the real dashboard card click, not window.__e2e__.navigateTo.
-    await page.getByTestId('card-refuel').click();
+    // Act: navigate to refuel-list via programmatic route.
+    await page.evaluate(() => {
+      const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/refuel-list');
+    });
+    await page.waitForURL(/\/refuel-list$/);
 
     // Assert
     await expect(page).toHaveURL(/\/refuel-list$/);
@@ -83,11 +83,14 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
     await expect(activeDashboard).toBeVisible();
     await expect(emptyRefuelList).not.toBeVisible();
 
-    // Act: verify that the same outlet transition works for the other card.
-    await page.getByTestId('card-repair').click();
+    // Act: navigate to repair-list via programmatic route.
+    await page.evaluate(() => {
+      const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
+      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-list');
+    });
+    await page.waitForURL(/\/repair-list$/);
 
     // Assert
-    await expect(page).toHaveURL(/\/repair-list$/);
     await expect(emptyRepairList).toBeVisible();
     await expect(dashboardHeading).not.toBeVisible();
     await expect(

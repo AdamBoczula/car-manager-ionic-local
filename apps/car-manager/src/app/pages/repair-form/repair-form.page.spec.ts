@@ -187,7 +187,7 @@ describe('RepairFormPage', () => {
     );
 
     await vi.waitFor(() => {
-      expect(navMock.navigateBack).toHaveBeenCalledWith('/repair-list');
+      expect(navMock.navigateForward).toHaveBeenCalledWith('/dashboard');
     });
   });
 

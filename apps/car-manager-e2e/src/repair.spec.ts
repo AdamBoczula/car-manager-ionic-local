@@ -27,7 +27,7 @@ test.describe('Repair – Lista napraw', () => {
     page,
   }) => {
     await expect(
-      page.getByText(/Brak napraw/i)
+      page.getByTestId('empty-repairs')
     ).toBeVisible();
   });
 
