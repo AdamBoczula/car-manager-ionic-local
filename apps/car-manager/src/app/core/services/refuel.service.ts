@@ -2,30 +2,17 @@
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 // bugfix: docs/bugs/04-add-not-refreshing-list.md
 import { Injectable, inject, signal } from '@angular/core';
-import type { Unsubscribe } from 'firebase/firestore';
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '../firebase';
+import type { Refuel } from '../models/refuel.model';
+import { FirestoreCrudService } from './firestore-crud.service';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
-import type { Refuel } from '../models/refuel.model';
 
 const REFUELS_COLLECTION = 'refuels';
 const STORAGE_KEY = 'refuels';
 
 @Injectable({ providedIn: 'root' })
 export class RefuelService {
-  private readonly firestore = db;
+  private readonly crud = inject(FirestoreCrudService);
   private readonly storage = inject(StorageService);
   private readonly auth = inject(AuthService);
 
@@ -33,95 +20,31 @@ export class RefuelService {
   readonly refuels = signal<Refuel[]>([]);
   readonly isLoading = signal(false);
 
-  private firestoreUnsubscribe: Unsubscribe | null = null;
-  private activeCarId: string | null = null;
-  private listenerGeneration = 0;
-
   /**
    * Start listening to refuels for a given car.
-   * Loads from Ionic Storage first (fast), then syncs with Firestore.
+   * Updates `this.refuels` with cached data (fast), then with live Firestore data.
    * Call `stopListening()` when navigating away.
    */
-  async startListening(carId: string): Promise<void> {
-    this.stopListening();
-    const generation = ++this.listenerGeneration;
-    this.activeCarId = carId;
+  startListening(carId: string): void {
     this.isLoading.set(true);
-    this.refuels.set([]);
-
-    // 1. Fast path: load from local storage
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    if (!this.isCurrentListener(generation, carId)) return;
-    this.refuels.set(cached ?? []);
-
-    // 2. Live sync from Firestore
-    const q = query(
-      collection(this.firestore, REFUELS_COLLECTION),
-      where('carId', '==', carId),
-      orderBy('date', 'desc'),
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        if (!this.isCurrentListener(generation, carId)) return;
-        const remote = snapshot.docs.map(
-          (docSnap) =>
-            ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            }) as Refuel,
-        );
-
-        this.refuels.set(remote);
-        // Keep local cache in sync
-        this.storage.set(this.storageKey(carId), remote);
-        this.isLoading.set(false);
-      },
-      (error) => {
-        if (!this.isCurrentListener(generation, carId)) return;
-        console.warn('Refuel Firestore listener error (offline?):', error);
-        // Keep showing cached data on Firestore errors
-        this.isLoading.set(false);
-      },
-    );
-
-    if (this.isCurrentListener(generation, carId)) {
-      this.firestoreUnsubscribe = unsubscribe;
-    } else {
-      unsubscribe();
-    }
+    this.crud.startListening<Refuel>(REFUELS_COLLECTION, STORAGE_KEY, carId, this.refuels);
+    this.isLoading.set(false);
   }
 
-  /** Stop the Firestore listener. Call on component destroy. */
+  /** Stop the Firestore listener. */
   stopListening(): void {
-    this.listenerGeneration++;
-    if (this.firestoreUnsubscribe) {
-      this.firestoreUnsubscribe();
-      this.firestoreUnsubscribe = null;
-    }
-    this.activeCarId = null;
-  }
-
-  private isCurrentListener(generation: number, carId: string): boolean {
-    return this.listenerGeneration === generation && this.activeCarId === carId;
+    this.crud.stopListening(REFUELS_COLLECTION);
   }
 
   /**
-   * Add a new refuel. Saves locally first, then syncs to Firestore.
-   * Automatically calculates consumption if previous refuel data is available.
+   * Add a new refuel. Delegates to FirestoreCrudService for persistence,
+   * then calculates consumption if previous refuel data is available.
    */
   async add(data: Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>): Promise<Refuel> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to add a refuel.');
 
-    const now = Timestamp.now();
-    const refuel: Refuel = {
-      ...data,
-      id: crypto.randomUUID(), // temporary ID before Firestore assigns one
-      createdAt: now,
-      createdBy: user.uid,
-    };
+    const refuel = await this.crud.addBase<Refuel>(REFUELS_COLLECTION, STORAGE_KEY, data);
 
     // Calculate consumption if possible
     const consumption = await this.tryCalculateConsumption(refuel.carId, refuel);
@@ -129,125 +52,26 @@ export class RefuelService {
       refuel.consumption = consumption;
     }
 
-    // 1. Save to local storage immediately
-    await this.saveLocal(refuel.carId, refuel);
-
-    // Update the signal immediately so the UI reflects the new entry
-    // without waiting for the Firestore onSnapshot round-trip.
-    const allLocal = await this.storage.get<Refuel[]>(this.storageKey(refuel.carId));
-    this.refuels.set(allLocal ?? []);
-
-    // 2. Sync to Firestore in background
-    try {
-      const docRef = await addDoc(
-        collection(this.firestore, REFUELS_COLLECTION),
-        this.toFirestoreData(refuel),
-      );
-      // Update local with real Firestore ID
-      refuel.id = docRef.id;
-      await this.updateLocalId(refuel.carId, refuel);
-    } catch (err) {
-      console.warn('Failed to sync refuel to Firestore (offline?):', err);
-      // Item stays in local storage, sync service will handle later
-    }
-
     return refuel;
   }
 
   async update(
     id: string,
-    data: Partial<Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>>,
+    data: Partial<Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>> & { carId: string },
   ): Promise<void> {
-    const carId = data.carId ?? this.activeCarId;
-    if (!carId) throw new Error('carId is required to update a refuel.');
-
-    // Update local
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    if (cached) {
-      const updated = cached.map((r) => (r.id === id ? { ...r, ...data, id } : r));
-      await this.storage.set(this.storageKey(carId), updated);
-      // Update the signal immediately so the UI reflects changes
-      this.refuels.set(updated);
-    }
-
-    // Update Firestore
-    try {
-      await updateDoc(doc(this.firestore, REFUELS_COLLECTION, id), data);
-    } catch (err) {
-      console.warn('Failed to sync refuel update to Firestore:', err);
-    }
+    await this.crud.update<Refuel>(REFUELS_COLLECTION, id, data);
   }
 
   async delete(id: string, carId: string): Promise<void> {
-    // Delete local
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    if (cached) {
-      const filtered = cached.filter((r) => r.id !== id);
-      await this.storage.set(this.storageKey(carId), filtered);
-      // Update the signal immediately so the UI reflects deletion
-      this.refuels.set(filtered);
-    }
-
-    // Delete from Firestore
-    try {
-      await deleteDoc(doc(this.firestore, REFUELS_COLLECTION, id));
-    } catch (err) {
-      console.warn('Failed to delete refuel from Firestore:', err);
-    }
+    await this.crud.delete(REFUELS_COLLECTION, id, carId);
   }
 
-  /**
-   * Force-sync all local refuels for a car to Firestore.
-   * Used by SyncService when coming back online.
-   */
   async syncToFirestore(carId: string): Promise<void> {
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    if (!cached?.length) return;
-
-    const firestoreRefuels = collection(this.firestore, REFUELS_COLLECTION);
-
-    for (const refuel of cached) {
-      try {
-        // Check if this refuel already exists in Firestore (has a real ID)
-        if (refuel.id.length === 36) {
-          // Looks like a UUID (temp ID), create new Firestore doc
-          const docRef = await addDoc(firestoreRefuels, this.toFirestoreData(refuel));
-          refuel.id = docRef.id;
-        }
-        // If it has a shorter ID, it's likely a Firestore-generated ID already
-      } catch (err) {
-        console.warn(`Failed to sync refuel ${refuel.id}:`, err);
-      }
-    }
-
-    // Save updated IDs back to local
-    await this.storage.set(this.storageKey(carId), cached);
+    await this.crud.syncToFirestore<Refuel>(REFUELS_COLLECTION, STORAGE_KEY, carId);
   }
 
-  /** Get all refuels for a car (one-shot, no listener). */
   async getAllLocal(carId: string): Promise<Refuel[]> {
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    return cached ?? [];
-  }
-
-  // ── Private helpers ──
-
-  private storageKey(carId: string): string {
-    return `${STORAGE_KEY}:${carId}`;
-  }
-
-  private async saveLocal(carId: string, refuel: Refuel): Promise<void> {
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    const list = cached ? [...cached, refuel] : [refuel];
-    await this.storage.set(this.storageKey(carId), list);
-  }
-
-  private async updateLocalId(carId: string, refuel: Refuel): Promise<void> {
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    if (cached) {
-      const updated = cached.map((r) => (r.id === refuel.id ? { ...refuel } : r));
-      await this.storage.set(this.storageKey(carId), updated);
-    }
+    return this.crud.getAllLocal<Refuel>(STORAGE_KEY, carId);
   }
 
   /**
@@ -259,7 +83,7 @@ export class RefuelService {
       return null;
     }
 
-    const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
+    const cached = await this.storage.get<Refuel[]>(`${STORAGE_KEY}:${carId}`);
     if (!cached?.length) return null;
 
     // Find previous refuel: sorted by date, same carId, not skipped, has mileage
@@ -274,16 +98,5 @@ export class RefuelService {
 
     const { calculateConsumption } = await import('../utils/consumption.util');
     return calculateConsumption(refuel.liters, refuel.mileage, previous.mileage);
-  }
-
-  /**
-   * Strip `id` and `undefined` fields before writing to Firestore.
-   * Firestore rejects documents with undefined values.
-   */
-  private toFirestoreData(refuel: Refuel): Record<string, unknown> {
-    const { id: _id, ...data } = refuel;
-    void _id; // explicitly unused — stripped before Firestore write
-    // Remove undefined fields — Firestore does not accept them
-    return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
   }
 }

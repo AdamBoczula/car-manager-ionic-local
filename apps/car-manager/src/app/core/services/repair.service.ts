@@ -2,229 +2,61 @@
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 // bugfix: docs/bugs/04-add-not-refreshing-list.md
 import { Injectable, inject, signal } from '@angular/core';
-import type { Unsubscribe } from 'firebase/firestore';
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '../firebase';
-import { StorageService } from './storage.service';
-import { AuthService } from './auth.service';
 import type { Repair } from '../models/repair.model';
+import { FirestoreCrudService } from './firestore-crud.service';
+import { AuthService } from './auth.service';
 
 const REPAIRS_COLLECTION = 'repairs';
 const STORAGE_KEY = 'repairs';
 
 @Injectable({ providedIn: 'root' })
 export class RepairService {
-  private readonly firestore = db;
-  private readonly storage = inject(StorageService);
+  private readonly crud = inject(FirestoreCrudService);
   private readonly auth = inject(AuthService);
 
+  /** Signal with all repairs for the currently displayed car. */
   readonly repairs = signal<Repair[]>([]);
-  readonly isLoading = signal(false);
 
-  private firestoreUnsubscribe: Unsubscribe | null = null;
-  private activeCarId: string | null = null;
-  private listenerGeneration = 0;
-
-  async startListening(carId: string): Promise<void> {
-    this.stopListening();
-    const generation = ++this.listenerGeneration;
-    this.activeCarId = carId;
-    this.isLoading.set(true);
-    this.repairs.set([]);
-
-    // Fast path: local cache
-    const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    if (!this.isCurrentListener(generation, carId)) return;
-    this.repairs.set(cached ?? []);
-
-    // Firestore listener
-    const q = query(
-      collection(this.firestore, REPAIRS_COLLECTION),
-      where('carId', '==', carId),
-      orderBy('date', 'desc'),
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        if (!this.isCurrentListener(generation, carId)) return;
-        const remote = snapshot.docs.map(
-          (docSnap) =>
-            ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            }) as Repair,
-        );
-
-        this.repairs.set(remote);
-        this.storage.set(this.storageKey(carId), remote);
-        this.isLoading.set(false);
-      },
-      (error) => {
-        if (!this.isCurrentListener(generation, carId)) return;
-        console.warn('Repair Firestore listener error (offline?):', error);
-        this.isLoading.set(false);
-      },
-    );
-
-    if (this.isCurrentListener(generation, carId)) {
-      this.firestoreUnsubscribe = unsubscribe;
-    } else {
-      unsubscribe();
-    }
+  /**
+   * Start listening to repairs for a given car.
+   * Updates `this.repairs` with cached data (fast), then with live Firestore data.
+   * Call `stopListening()` when navigating away.
+   */
+  startListening(carId: string): void {
+    this.crud.startListening<Repair>(REPAIRS_COLLECTION, STORAGE_KEY, carId, this.repairs);
   }
 
+  /** Stop the Firestore listener. */
   stopListening(): void {
-    this.listenerGeneration++;
-    if (this.firestoreUnsubscribe) {
-      this.firestoreUnsubscribe();
-      this.firestoreUnsubscribe = null;
-    }
-    this.activeCarId = null;
+    this.crud.stopListening(REPAIRS_COLLECTION);
   }
 
-  private isCurrentListener(generation: number, carId: string): boolean {
-    return this.listenerGeneration === generation && this.activeCarId === carId;
-  }
-
+  /**
+   * Add a new repair. Delegates to FirestoreCrudService for persistence.
+   */
   async add(data: Omit<Repair, 'id' | 'createdAt' | 'createdBy'>): Promise<Repair> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to add a repair.');
 
-    const repair: Repair = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: Timestamp.now(),
-      createdBy: user.uid,
-    };
-
-    // Save local first
-    await this.saveLocal(repair.carId, repair);
-
-    // Update the signal immediately so the UI reflects the new repair
-    // without waiting for the Firestore onSnapshot round-trip.
-    const allLocal = await this.storage.get<Repair[]>(this.storageKey(repair.carId));
-    this.repairs.set(allLocal ?? []);
-
-    // Sync to Firestore
-    try {
-      const docRef = await addDoc(
-        collection(this.firestore, REPAIRS_COLLECTION),
-        this.toFirestoreData(repair),
-      );
-      repair.id = docRef.id;
-      await this.updateLocalId(repair.carId, repair);
-    } catch (err) {
-      console.warn('Failed to sync repair to Firestore (offline?):', err);
-    }
-
-    return repair;
+    return this.crud.addBase<Repair>(REPAIRS_COLLECTION, STORAGE_KEY, data);
   }
 
   async update(
     id: string,
-    data: Partial<Omit<Repair, 'id' | 'createdAt' | 'createdBy'>>,
+    data: Partial<Omit<Repair, 'id' | 'createdAt' | 'createdBy'>> & { carId: string },
   ): Promise<void> {
-    const carId = data.carId ?? this.activeCarId;
-    if (!carId) throw new Error('carId is required to update a repair.');
-
-    // Update local
-    const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    if (cached) {
-      const updated = cached.map((r) => (r.id === id ? { ...r, ...data, id } : r));
-      await this.storage.set(this.storageKey(carId), updated);
-      // Update the signal immediately so the UI reflects changes
-      this.repairs.set(updated);
-    }
-
-    // Update Firestore
-    try {
-      await updateDoc(doc(this.firestore, REPAIRS_COLLECTION, id), data);
-    } catch (err) {
-      console.warn('Failed to sync repair update to Firestore:', err);
-    }
+    await this.crud.update<Repair>(REPAIRS_COLLECTION, id, data);
   }
 
   async delete(id: string, carId: string): Promise<void> {
-    const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    if (cached) {
-      const filtered = cached.filter((r) => r.id !== id);
-      await this.storage.set(this.storageKey(carId), filtered);
-      // Update the signal immediately so the UI reflects deletion
-      this.repairs.set(filtered);
-    }
-
-    try {
-      await deleteDoc(doc(this.firestore, REPAIRS_COLLECTION, id));
-    } catch (err) {
-      console.warn('Failed to delete repair from Firestore:', err);
-    }
+    await this.crud.delete(REPAIRS_COLLECTION, id, carId);
   }
 
   async syncToFirestore(carId: string): Promise<void> {
-    const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    if (!cached?.length) return;
-
-    const firestoreRepairs = collection(this.firestore, REPAIRS_COLLECTION);
-
-    for (const repair of cached) {
-      try {
-        if (repair.id.length === 36) {
-          const docRef = await addDoc(firestoreRepairs, this.toFirestoreData(repair));
-          repair.id = docRef.id;
-        }
-      } catch (err) {
-        console.warn(`Failed to sync repair ${repair.id}:`, err);
-      }
-    }
-
-    await this.storage.set(this.storageKey(carId), cached);
+    await this.crud.syncToFirestore<Repair>(REPAIRS_COLLECTION, STORAGE_KEY, carId);
   }
 
   async getAllLocal(carId: string): Promise<Repair[]> {
-    const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    return cached ?? [];
-  }
-
-  // ── Private helpers ──
-
-  private storageKey(carId: string): string {
-    return `${STORAGE_KEY}:${carId}`;
-  }
-
-  private async saveLocal(carId: string, repair: Repair): Promise<void> {
-    const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    const list = cached ? [...cached, repair] : [repair];
-    await this.storage.set(this.storageKey(carId), list);
-  }
-
-  private async updateLocalId(carId: string, repair: Repair): Promise<void> {
-    const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    if (cached) {
-      const updated = cached.map((r) => (r.id === repair.id ? { ...repair } : r));
-      await this.storage.set(this.storageKey(carId), updated);
-    }
-  }
-
-  /**
-   * Strip `id` and `undefined` fields before writing to Firestore.
-   * Firestore rejects documents with undefined values.
-   */
-  private toFirestoreData(repair: Repair): Record<string, unknown> {
-    const { id: _id, ...data } = repair;
-    void _id; // explicitly unused — stripped before Firestore write
-    // Remove undefined fields — Firestore does not accept them
-    return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+    return this.crud.getAllLocal<Repair>(STORAGE_KEY, carId);
   }
 }

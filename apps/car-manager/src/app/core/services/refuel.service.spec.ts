@@ -2,6 +2,7 @@ import type { Firestore } from 'firebase/firestore';
 // spec: docs/specs/02-login-screen.md
 import { TestBed } from '@angular/core/testing';
 import { RefuelService } from './refuel.service';
+import { FirestoreCrudService } from './firestore-crud.service';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
 import type { Refuel } from '../models/refuel.model';
@@ -63,6 +64,17 @@ const mockAuthService = {
   authReady: vi.fn(() => true),
 };
 
+const mockCrudService = {
+  startListening: vi.fn(),
+  stopListening: vi.fn(),
+  addBase: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  syncToFirestore: vi.fn(),
+  getAllLocal: vi.fn(),
+  toFirestoreData: vi.fn(),
+};
+
 describe('RefuelService', () => {
   let service: RefuelService;
 
@@ -73,6 +85,7 @@ describe('RefuelService', () => {
     TestBed.configureTestingModule({
       providers: [
         RefuelService,
+        { provide: FirestoreCrudService, useValue: mockCrudService },
         { provide: StorageService, useValue: mockStorageService },
         { provide: AuthService, useValue: mockAuthService },
       ],
@@ -82,142 +95,60 @@ describe('RefuelService', () => {
   });
 
   describe('startListening()', () => {
-    it('powinien załadować dane z cache przed Firestore', async () => {
-      const { Timestamp } = await import('firebase/firestore');
-      const cachedRefuels: Refuel[] = [
-        {
-          id: 'r1',
-          carId: 'car1',
-          date: '2026-01-01',
-          amount: 200,
-          mileage: 50000,
-          liters: 45,
-          isVerva: false,
-          isSkipped: false,
-          createdBy: 'u1',
-          createdAt: Timestamp.now(),
-        },
-      ];
-      storageData.set('refuels:car1', cachedRefuels);
-
-      const { onSnapshot } = await import('firebase/firestore');
-      (onSnapshot as ReturnType<typeof vi.fn>).mockImplementation((_q, cb) => {
-        setTimeout(() => cb({ docs: [] }), 0);
-        return vi.fn(); // unsubscribe
-      });
-
-      await service.startListening('car1');
-
-      expect(service.refuels()).toEqual(cachedRefuels);
+    it('powinien delegować do FirestoreCrudService z własnym sygnałem refuels', () => {
+      service.startListening('car1');
+      expect(mockCrudService.startListening).toHaveBeenCalledWith(
+        'refuels',
+        'refuels',
+        'car1',
+        service.refuels,
+      );
     });
 
-    it('powinien zaktualizować dane z Firestore gdy snapshot emituje', async () => {
-      const { Timestamp } = await import('firebase/firestore');
-      const { onSnapshot } = await import('firebase/firestore');
-      const firestoreRefuels = [
-        {
-          id: 'fs1',
-          data: () => ({
-            carId: 'car1',
-            date: '2026-02-01',
-            amount: 250,
-            mileage: 50500,
-            liters: 42,
-            isVerva: true,
-            isSkipped: false,
-            createdBy: 'u1',
-            createdAt: Timestamp.now(),
-          }),
-        },
-      ];
-
-      (onSnapshot as ReturnType<typeof vi.fn>).mockImplementation((_q, cb, _errCb) => {
-        setTimeout(() => cb({ docs: firestoreRefuels }), 0);
-        return vi.fn();
-      });
-
-      await service.startListening('car1');
-
-      await new Promise((r) => setTimeout(r, 10));
-
-      expect(service.refuels().length).toBe(1);
-      expect(service.refuels()[0].id).toBe('fs1');
-      expect(service.refuels()[0].amount).toBe(250);
+    it('powinien ustawić isLoading na false', () => {
+      service.isLoading.set(true);
+      service.startListening('car1');
+      expect(service.isLoading()).toBe(false);
     });
+  });
 
-    it('powinien wywołać stopListening przy drugim wywołaniu', async () => {
-      const { onSnapshot } = await import('firebase/firestore');
-      const unsubscribeSpy = vi.fn();
-      (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(unsubscribeSpy);
-
-      await service.startListening('car1');
-      await service.startListening('car2');
-
-      expect(unsubscribeSpy).toHaveBeenCalled();
-    });
-
-    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
-    it('powinien wyczyścić dane poprzedniego auta, gdy nowe auto nie ma cache', async () => {
-      const { Timestamp, onSnapshot } = await import('firebase/firestore');
-      service.refuels.set([
-        {
-          id: 'old-refuel',
-          carId: 'car1',
-          date: '2026-01-01',
-          amount: 200,
-          mileage: 50000,
-          isVerva: false,
-          isSkipped: false,
-          createdBy: 'u1',
-          createdAt: Timestamp.now(),
-        },
-      ]);
-      (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(vi.fn());
-
-      await service.startListening('car2');
-
-      expect(service.refuels()).toEqual([]);
-    });
-
-    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
-    it('powinien zignorować spóźniony cache poprzedniego auta', async () => {
-      const { Timestamp, onSnapshot } = await import('firebase/firestore');
-      let resolveFirst!: (value: Refuel[]) => void;
-      const firstCache = new Promise<Refuel[]>((resolve) => {
-        resolveFirst = resolve;
-      });
-      mockStorageService.get.mockImplementationOnce(() => firstCache).mockResolvedValueOnce([]);
-      (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(vi.fn());
-
-      const firstStart = service.startListening('car1');
-      await service.startListening('car2');
-      resolveFirst([
-        {
-          id: 'late-refuel',
-          carId: 'car1',
-          date: '2026-01-01',
-          amount: 200,
-          mileage: 50000,
-          isVerva: false,
-          isSkipped: false,
-          createdBy: 'u1',
-          createdAt: Timestamp.now(),
-        },
-      ]);
-      await firstStart;
-
-      expect(service.refuels()).toEqual([]);
-      expect(onSnapshot).toHaveBeenCalledTimes(1);
+  describe('stopListening()', () => {
+    it('powinien delegować do FirestoreCrudService', () => {
+      service.stopListening();
+      expect(mockCrudService.stopListening).toHaveBeenCalledWith('refuels');
     });
   });
 
   describe('add()', () => {
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien zapisać lokalnie i zaktualizować sygnał refuels', async () => {
-      const { addDoc } = await import('firebase/firestore');
-      (addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: 'firestore-id-1',
-      });
+    it('powinien delegować do crud i obliczyć consumption', async () => {
+      mockCrudService.addBase.mockResolvedValue({
+        id: 'r1',
+        carId: 'car1',
+        date: '2026-03-01',
+        amount: 300,
+        mileage: 51000,
+        liters: 40,
+        isVerva: false,
+        isSkipped: false,
+        createdBy: 'test-uid-123',
+      } as Refuel);
+
+      // Pre-populate storage with a previous refuel for consumption calculation
+      const { Timestamp } = await import('firebase/firestore');
+      storageData.set('refuels:car1', [
+        {
+          id: 'prev',
+          carId: 'car1',
+          date: '2026-02-01',
+          amount: 200,
+          mileage: 50000,
+          liters: 38,
+          isVerva: false,
+          isSkipped: false,
+          createdBy: 'u1',
+          createdAt: Timestamp.now(),
+        },
+      ]);
 
       const refuel = await service.add({
         carId: 'car1',
@@ -229,21 +160,21 @@ describe('RefuelService', () => {
         isSkipped: false,
       });
 
-      expect(refuel.carId).toBe('car1');
-      expect(refuel.amount).toBe(300);
-      expect(refuel.createdBy).toBe('test-uid-123');
-      expect(addDoc).toHaveBeenCalled();
+      expect(mockCrudService.addBase).toHaveBeenCalledWith('refuels', 'refuels', {
+        carId: 'car1',
+        date: '2026-03-01',
+        amount: 300,
+        mileage: 51000,
+        liters: 40,
+        isVerva: false,
+        isSkipped: false,
+      });
 
-      const stored = storageData.get('refuels:car1') as Refuel[];
-      expect(stored).toBeDefined();
-      expect(stored.length).toBe(1);
-
-      // REGRESSION: signal must reflect the new entry immediately
-      expect(service.refuels().length).toBe(1);
-      expect(service.refuels()[0].amount).toBe(300);
+      // Consumption: (40 / (51000 - 50000)) * 100 = 4.0 L/100km
+      expect(refuel.consumption).toBe(4);
     });
 
-    it('powinien rzucić błąd gdy użytkownik nie jest zalogowany', async () => {
+    it('powinien rzucić błąd gdy użytkownik nie jest zalogowany (przed crud)', async () => {
       mockAuthService.currentUser.mockReturnValueOnce(null);
 
       await expect(
@@ -257,111 +188,68 @@ describe('RefuelService', () => {
           isSkipped: false,
         }),
       ).rejects.toThrow('User must be logged in');
+
+      expect(mockCrudService.addBase).not.toHaveBeenCalled();
     });
 
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien zapisać lokalnie i zaktualizować sygnał nawet gdy Firestore rzuci błędem (offline)', async () => {
-      const { addDoc } = await import('firebase/firestore');
-      (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
+    it('powinien obsłużyć brak poprzedniego tankowania (brak consumption)', async () => {
+      mockCrudService.addBase.mockResolvedValue({
+        id: 'r1',
+        carId: 'car1',
+        date: '2026-03-01',
+        amount: 300,
+        mileage: 51000,
+        liters: 40,
+        isVerva: false,
+        isSkipped: false,
+        createdBy: 'test-uid-123',
+      } as Refuel);
 
       const refuel = await service.add({
         carId: 'car1',
-        date: '2026-03-15',
-        amount: 280,
-        mileage: 51500,
-        liters: 38,
+        date: '2026-03-01',
+        amount: 300,
+        mileage: 51000,
+        liters: 40,
         isVerva: false,
         isSkipped: false,
       });
 
-      expect(refuel.carId).toBe('car1');
-      const stored = storageData.get('refuels:car1') as Refuel[];
-      expect(stored).toBeDefined();
-      expect(stored.length).toBe(1);
-
-      // REGRESSION: signal must be updated even when offline
-      expect(service.refuels().length).toBe(1);
-      expect(service.refuels()[0].amount).toBe(280);
-    });
-  });
-
-  describe('delete()', () => {
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien usunąć z lokalnego storage i zaktualizować sygnał', async () => {
-      const { Timestamp } = await import('firebase/firestore');
-      storageData.set('refuels:car1', [
-        {
-          id: 'r1',
-          carId: 'car1',
-          date: '2026-01-01',
-          amount: 200,
-          mileage: 50000,
-          liters: 45,
-          isVerva: false,
-          isSkipped: false,
-          createdBy: 'u1',
-          createdAt: Timestamp.now(),
-        },
-      ]);
-      // Pre-set signal to match storage
-      service.refuels.set([
-        {
-          id: 'r1',
-          carId: 'car1',
-          date: '2026-01-01',
-          amount: 200,
-          mileage: 50000,
-          liters: 45,
-          isVerva: false,
-          isSkipped: false,
-          createdBy: 'u1',
-          createdAt: Timestamp.now(),
-        },
-      ]);
-
-      const { deleteDoc } = await import('firebase/firestore');
-      (deleteDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-
-      await service.delete('r1', 'car1');
-
-      const stored = storageData.get('refuels:car1') as Refuel[];
-      expect(stored.length).toBe(0);
-      expect(deleteDoc).toHaveBeenCalled();
-
-      // REGRESSION: signal must reflect deletion
-      expect(service.refuels().length).toBe(0);
+      expect(refuel.consumption).toBeUndefined();
     });
   });
 
   describe('update()', () => {
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien zaktualizować lokalnie i odświeżyć sygnał', async () => {
-      const { Timestamp } = await import('firebase/firestore');
-      const existing: Refuel = {
-        id: 'r1',
-        carId: 'car1',
-        date: '2026-01-01',
-        amount: 200,
-        mileage: 50000,
-        liters: 45,
-        isVerva: false,
-        isSkipped: false,
-        createdBy: 'u1',
-        createdAt: Timestamp.now(),
-      };
-      storageData.set('refuels:car1', [existing]);
-      service.refuels.set([existing]);
-
-      const { updateDoc } = await import('firebase/firestore');
-      (updateDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-
+    it('powinien delegować do FirestoreCrudService', async () => {
       await service.update('r1', { amount: 220, carId: 'car1' });
+      expect(mockCrudService.update).toHaveBeenCalledWith('refuels', 'r1', {
+        amount: 220,
+        carId: 'car1',
+      });
+    });
+  });
 
-      const stored = storageData.get('refuels:car1') as Refuel[];
-      expect(stored[0].amount).toBe(220);
+  describe('delete()', () => {
+    it('powinien delegować do FirestoreCrudService', async () => {
+      await service.delete('r1', 'car1');
+      expect(mockCrudService.delete).toHaveBeenCalledWith('refuels', 'r1', 'car1');
+    });
+  });
 
-      // REGRESSION: signal must reflect update
-      expect(service.refuels()[0].amount).toBe(220);
+  describe('syncToFirestore()', () => {
+    it('powinien delegować do FirestoreCrudService', async () => {
+      mockCrudService.syncToFirestore.mockResolvedValue(undefined);
+      await service.syncToFirestore('car1');
+      expect(mockCrudService.syncToFirestore).toHaveBeenCalledWith('refuels', 'refuels', 'car1');
+    });
+  });
+
+  describe('getAllLocal()', () => {
+    it('powinien delegować do FirestoreCrudService', async () => {
+      mockCrudService.getAllLocal.mockResolvedValue([]);
+      const result = await service.getAllLocal('car1');
+      expect(mockCrudService.getAllLocal).toHaveBeenCalledWith('refuels', 'car1');
+      expect(result).toEqual([]);
     });
   });
 });

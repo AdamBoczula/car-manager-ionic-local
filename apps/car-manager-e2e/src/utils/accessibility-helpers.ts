@@ -13,7 +13,7 @@ import AxeBuilder from '@axe-core/playwright';
  */
 export interface AccessibilityCheckOptions {
   /** Only include violations with these impact levels. Default: ['critical', 'serious'] */
-  includedImpacts?: Array<'minor' | 'moderate' | 'serious' | 'critical'>;
+  includedImpacts?: ('minor' | 'moderate' | 'serious' | 'critical')[];
   /** Rules to disable (by rule ID). Useful for known false positives. */
   disabledRules?: string[];
   /** Custom snapshot file name (without path). Default: auto-generated from the page URL. */

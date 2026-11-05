@@ -2,6 +2,7 @@ import type { Firestore } from 'firebase/firestore';
 // spec: docs/specs/02-login-screen.md
 import { TestBed } from '@angular/core/testing';
 import { RepairService } from './repair.service';
+import { FirestoreCrudService } from './firestore-crud.service';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
 import type { Repair } from '../models/repair.model';
@@ -63,6 +64,17 @@ const mockAuthService = {
   authReady: vi.fn(() => true),
 };
 
+const mockCrudService = {
+  startListening: vi.fn(),
+  stopListening: vi.fn(),
+  addBase: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  syncToFirestore: vi.fn(),
+  getAllLocal: vi.fn(),
+  toFirestoreData: vi.fn(),
+};
+
 describe('RepairService', () => {
   let service: RepairService;
 
@@ -73,6 +85,7 @@ describe('RepairService', () => {
     TestBed.configureTestingModule({
       providers: [
         RepairService,
+        { provide: FirestoreCrudService, useValue: mockCrudService },
         { provide: StorageService, useValue: mockStorageService },
         { provide: AuthService, useValue: mockAuthService },
       ],
@@ -82,70 +95,39 @@ describe('RepairService', () => {
   });
 
   describe('startListening()', () => {
-    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
-    it('powinien wyczyścić dane poprzedniego auta, gdy nowe auto nie ma cache', async () => {
-      const { Timestamp, onSnapshot } = await import('firebase/firestore');
-      service.repairs.set([
-        {
-          id: 'old-repair',
-          carId: 'car1',
-          date: '2026-01-01',
-          amount: 500,
-          mileage: 60000,
-          location: 'Serwis',
-          description: 'Naprawa',
-          mechanicNote: '',
-          createdBy: 'u1',
-          createdAt: Timestamp.now(),
-        },
-      ]);
-      (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(vi.fn());
-
-      await service.startListening('car2');
-
-      expect(service.repairs()).toEqual([]);
+    it('powinien delegować do FirestoreCrudService z własnym sygnałem repairs', () => {
+      service.startListening('car1');
+      expect(mockCrudService.startListening).toHaveBeenCalledWith(
+        'repairs',
+        'repairs',
+        'car1',
+        service.repairs,
+      );
     });
+  });
 
-    // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
-    it('powinien zignorować spóźniony cache poprzedniego auta', async () => {
-      const { Timestamp, onSnapshot } = await import('firebase/firestore');
-      let resolveFirst!: (value: Repair[]) => void;
-      const firstCache = new Promise<Repair[]>((resolve) => {
-        resolveFirst = resolve;
-      });
-      mockStorageService.get.mockImplementationOnce(() => firstCache).mockResolvedValueOnce([]);
-      (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(vi.fn());
-
-      const firstStart = service.startListening('car1');
-      await service.startListening('car2');
-      resolveFirst([
-        {
-          id: 'late-repair',
-          carId: 'car1',
-          date: '2026-01-01',
-          amount: 500,
-          mileage: 60000,
-          location: 'Serwis',
-          description: 'Naprawa',
-          mechanicNote: '',
-          createdBy: 'u1',
-          createdAt: Timestamp.now(),
-        },
-      ]);
-      await firstStart;
-
-      expect(service.repairs()).toEqual([]);
-      expect(onSnapshot).toHaveBeenCalledTimes(1);
+  describe('stopListening()', () => {
+    it('powinien delegować do FirestoreCrudService', () => {
+      service.stopListening();
+      expect(mockCrudService.stopListening).toHaveBeenCalledWith('repairs');
     });
   });
 
   describe('add()', () => {
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien zapisać naprawę lokalnie i zaktualizować sygnał repairs', async () => {
-      const { addDoc } = await import('firebase/firestore');
-      (addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: 'fs-repair-1',
-      });
+    it('powinien delegować do crud i zwrócić naprawę', async () => {
+      const expected: Repair = {
+        id: 'r1',
+        carId: 'car1',
+        date: '2026-03-01',
+        amount: 500,
+        mileage: 60000,
+        location: 'AutoSerwis Kraków',
+        description: 'Wymiana klocków',
+        mechanicNote: '',
+        createdBy: 'test-uid-123',
+        createdAt: null as unknown as object,
+      };
+      mockCrudService.addBase.mockResolvedValue(expected);
 
       const repair = await service.add({
         carId: 'car1',
@@ -153,128 +135,72 @@ describe('RepairService', () => {
         amount: 500,
         mileage: 60000,
         location: 'AutoSerwis Kraków',
-        description: 'Wymiana klocków i tarcz hamulcowych',
-        mechanicNote: 'Mechanik poleca wymianę płynu hamulcowego za 5000 km',
-      });
-
-      expect(repair.carId).toBe('car1');
-      expect(repair.amount).toBe(500);
-      expect(repair.location).toBe('AutoSerwis Kraków');
-      expect(repair.createdBy).toBe('test-uid-123');
-      expect(addDoc).toHaveBeenCalled();
-
-      // REGRESSION: signal must reflect the new entry immediately
-      expect(service.repairs().length).toBe(1);
-      expect(service.repairs()[0].amount).toBe(500);
-    });
-
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien zapisać lokalnie i zaktualizować sygnał nawet gdy Firestore jest niedostępny (offline)', async () => {
-      const { addDoc } = await import('firebase/firestore');
-      (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
-
-      const repair = await service.add({
-        carId: 'car1',
-        date: '2026-04-01',
-        amount: 1200,
-        mileage: 65000,
-        location: 'ASO Toyota',
-        description: 'Wymiana rozrządu',
+        description: 'Wymiana klocków',
         mechanicNote: '',
       });
 
-      expect(repair.carId).toBe('car1');
-      const stored = storageData.get('repairs:car1') as Repair[];
-      expect(stored).toBeDefined();
-      expect(stored.length).toBe(1);
-
-      // REGRESSION: signal must be updated even when offline
-      expect(service.repairs().length).toBe(1);
-      expect(service.repairs()[0].amount).toBe(1200);
+      expect(mockCrudService.addBase).toHaveBeenCalledWith('repairs', 'repairs', {
+        carId: 'car1',
+        date: '2026-03-01',
+        amount: 500,
+        mileage: 60000,
+        location: 'AutoSerwis Kraków',
+        description: 'Wymiana klocków',
+        mechanicNote: '',
+      });
+      expect(repair).toEqual(expected);
     });
 
-    it('powinien rzucić błąd gdy użytkownik nie jest zalogowany', async () => {
+    it('powinien rzucić błąd gdy użytkownik nie jest zalogowany (przed crud)', async () => {
       mockAuthService.currentUser.mockReturnValueOnce(null);
 
       await expect(
         service.add({
           carId: 'car1',
-          date: '2026-04-01',
-          amount: 1200,
-          mileage: 65000,
+          date: '2026-03-01',
+          amount: 500,
+          mileage: 60000,
           location: 'ASO',
           description: 'Naprawa',
           mechanicNote: '',
         }),
       ).rejects.toThrow('User must be logged in');
+
+      expect(mockCrudService.addBase).not.toHaveBeenCalled();
     });
   });
 
   describe('update()', () => {
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien zaktualizować lokalnie i odświeżyć sygnał', async () => {
-      const { Timestamp } = await import('firebase/firestore');
-      const existing: Repair = {
-        id: 'r1',
-        carId: 'car1',
-        date: '2026-01-01',
-        amount: 500,
-        mileage: 60000,
-        location: 'AutoSerwis',
-        description: 'Stary opis',
-        mechanicNote: '',
-        createdBy: 'u1',
-        createdAt: Timestamp.now(),
-      };
-      storageData.set('repairs:car1', [existing]);
-      service.repairs.set([existing]);
-
-      const { updateDoc } = await import('firebase/firestore');
-      (updateDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-
-      await service.update('r1', {
-        description: 'Nowy opis naprawy',
+    it('powinien delegować do FirestoreCrudService', async () => {
+      await service.update('r1', { description: 'Nowy opis', carId: 'car1' });
+      expect(mockCrudService.update).toHaveBeenCalledWith('repairs', 'r1', {
+        description: 'Nowy opis',
         carId: 'car1',
       });
-
-      const stored = storageData.get('repairs:car1') as Repair[];
-      expect(stored[0].description).toBe('Nowy opis naprawy');
-
-      // REGRESSION: signal must reflect update
-      expect(service.repairs()[0].description).toBe('Nowy opis naprawy');
     });
   });
 
   describe('delete()', () => {
-    // covers: docs/bugs/04-add-not-refreshing-list.md
-    it('powinien usunąć z lokalnego storage i zaktualizować sygnał', async () => {
-      const { Timestamp } = await import('firebase/firestore');
-      const existing: Repair = {
-        id: 'r1',
-        carId: 'car1',
-        date: '2026-01-01',
-        amount: 500,
-        mileage: 60000,
-        location: 'ASO',
-        description: 'Naprawa',
-        mechanicNote: '',
-        createdBy: 'u1',
-        createdAt: Timestamp.now(),
-      };
-      storageData.set('repairs:car1', [existing]);
-      service.repairs.set([existing]);
-
-      const { deleteDoc } = await import('firebase/firestore');
-      (deleteDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-
+    it('powinien delegować do FirestoreCrudService', async () => {
       await service.delete('r1', 'car1');
+      expect(mockCrudService.delete).toHaveBeenCalledWith('repairs', 'r1', 'car1');
+    });
+  });
 
-      const stored = storageData.get('repairs:car1') as Repair[];
-      expect(stored.length).toBe(0);
-      expect(deleteDoc).toHaveBeenCalled();
+  describe('syncToFirestore()', () => {
+    it('powinien delegować do FirestoreCrudService', async () => {
+      mockCrudService.syncToFirestore.mockResolvedValue(undefined);
+      await service.syncToFirestore('car1');
+      expect(mockCrudService.syncToFirestore).toHaveBeenCalledWith('repairs', 'repairs', 'car1');
+    });
+  });
 
-      // REGRESSION: signal must reflect deletion
-      expect(service.repairs().length).toBe(0);
+  describe('getAllLocal()', () => {
+    it('powinien delegować do FirestoreCrudService', async () => {
+      mockCrudService.getAllLocal.mockResolvedValue([]);
+      const result = await service.getAllLocal('car1');
+      expect(mockCrudService.getAllLocal).toHaveBeenCalledWith('repairs', 'car1');
+      expect(result).toEqual([]);
     });
   });
 });

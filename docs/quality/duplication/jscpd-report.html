@@ -58,19 +58,19 @@
         <div class="dashboard">
           <div class="stat-card stat-blue">
             <h3>Total Files</h3>
-            <div class="val">26</div>
+            <div class="val">27</div>
           </div>
           <div class="stat-card stat-green">
             <h3>Total Lines of Code</h3>
-            <div class="val">3864</div>
+            <div class="val">3837</div>
           </div>
           <div class="stat-card stat-yellow">
             <h3>Number of Clones</h3>
-            <div class="val">11</div>
+            <div class="val">8</div>
           </div>
           <div class="stat-card stat-red">
             <h3>Duplicated Lines</h3>
-            <div class="val">242 (6.26%)</div>
+            <div class="val">177 (4.61%)</div>
           </div>
         </div>
       </section>
@@ -94,20 +94,20 @@
             
             <tr>
               <td><a href="#typescript-clones">typescript</a></td>
-              <td>26</td>
-              <td>3864</td>
-              <td>11</td>
-              <td>242 (6.26%)</td>
-              <td>1230 (7.70%)</td>
+              <td>27</td>
+              <td>3837</td>
+              <td>8</td>
+              <td>177 (4.61%)</td>
+              <td>953 (6.17%)</td>
             </tr>
             
             <tr style="font-weight: 700;">
               <td>Total</td>
-              <td>26</td>
-              <td>3864</td>
-              <td>11</td>
-              <td>242 (6.26%)</td>
-              <td>1230 (7.70%)</td>
+              <td>27</td>
+              <td>3837</td>
+              <td>8</td>
+              <td>177 (4.61%)</td>
+              <td>953 (6.17%)</td>
             </tr>
           </tbody>
         </table>
@@ -124,108 +124,13 @@
           
           <div class="clone-item">
             <div class="clone-info">
-              \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\core\services\refuel.service.ts (Line 33:35 - Line 50:10),
-              \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\core\services\repair.service.ts (Line 32:35 - Line 44:10)
-            </div>
-            <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-1')">Show code</button>
-            </div>
-            <pre id="code-typescript-1" class="code-block">  readonly refuels = signal&#60;Refuel[]&#62;([]);
-  readonly isLoading = signal(false);
-
-  private firestoreUnsubscribe: Unsubscribe | null = null;
-  private activeCarId: string | null = null;
-  private listenerGeneration = 0;
-
-  /**
-   * Start listening to refuels for a given car.
-   * Loads from Ionic Storage first (fast), then syncs with Firestore.
-   * Call `stopListening()` when navigating away.
-   */
-  async startListening(carId: string): Promise&#60;void&#62; {
-    this.stopListening();
-    const generation = ++this.listenerGeneration;
-    this.activeCarId = carId;
-    this.isLoading.set(true);
-    this.refuels.set([]);</pre>
-          </div>
-          
-          <div class="clone-item">
-            <div class="clone-info">
-              \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\core\services\refuel.service.ts (Line 59:52 - Line 73:18),
-              \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\core\services\repair.service.ts (Line 53:52 - Line 67:18)
-            </div>
-            <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-2')">Show code</button>
-            </div>
-            <pre id="code-typescript-2" class="code-block">      collection(this.firestore, REFUELS_COLLECTION),
-      where(&#39;carId&#39;, &#39;==&#39;, carId),
-      orderBy(&#39;date&#39;, &#39;desc&#39;),
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) =&#62; {
-        if (!this.isCurrentListener(generation, carId)) return;
-        const remote = snapshot.docs.map(
-          (docSnap) =&#62;
-            ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            }) as Refuel,</pre>
-          </div>
-          
-          <div class="clone-item">
-            <div class="clone-info">
-              \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\core\services\refuel.service.ts (Line 83:67 - Line 114:24),
-              \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\core\services\repair.service.ts (Line 76:67 - Line 101:24)
-            </div>
-            <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-3')">Show code</button>
-            </div>
-            <pre id="code-typescript-3" class="code-block">        console.warn(&#39;Refuel Firestore listener error (offline?):&#39;, error);
-        // Keep showing cached data on Firestore errors
-        this.isLoading.set(false);
-      },
-    );
-
-    if (this.isCurrentListener(generation, carId)) {
-      this.firestoreUnsubscribe = unsubscribe;
-    } else {
-      unsubscribe();
-    }
-  }
-
-  /** Stop the Firestore listener. Call on component destroy. */
-  stopListening(): void {
-    this.listenerGeneration++;
-    if (this.firestoreUnsubscribe) {
-      this.firestoreUnsubscribe();
-      this.firestoreUnsubscribe = null;
-    }
-    this.activeCarId = null;
-  }
-
-  private isCurrentListener(generation: number, carId: string): boolean {
-    return this.listenerGeneration === generation &#38;&#38; this.activeCarId === carId;
-  }
-
-  /**
-   * Add a new refuel. Saves locally first, then syncs to Firestore.
-   * Automatically calculates consumption if previous refuel data is available.
-   */
-  async add(data: Omit&#60;Refuel, &#39;id&#39; | &#39;createdAt&#39; | &#39;createdBy&#39;&#62;): Promise&#60;Refuel&#62; {</pre>
-          </div>
-          
-          <div class="clone-item">
-            <div class="clone-info">
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\dashboard\dashboard.page.ts (Line 290:28 - Line 308:21),
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\repair-form\repair-form.page.ts (Line 290:6 - Line 308:21)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-4')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-1')">Show code</button>
             </div>
-            <pre id="code-typescript-4" class="code-block">    return formatPln(amount);
+            <pre id="code-typescript-1" class="code-block">    return formatPln(amount);
   }
 
   /** Handle a new car added from the car-switcher modal. */
@@ -252,9 +157,9 @@
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\repair-list\repair-list.page.ts (Line 270:21 - Line 288:21)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-5')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-2')">Show code</button>
             </div>
-            <pre id="code-typescript-5" class="code-block">    return formatPln(amount);
+            <pre id="code-typescript-2" class="code-block">    return formatPln(amount);
   }
 
   /** Handle a new car added from the car-switcher modal. */
@@ -281,9 +186,9 @@
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\refuel-form\refuel-form.page.ts (Line 247:3 - Line 264:21)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-6')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-3')">Show code</button>
             </div>
-            <pre id="code-typescript-6" class="code-block">  }
+            <pre id="code-typescript-3" class="code-block">  }
 
   /** Handle a new car added from the car-switcher modal. */
   async handleCarAdded(data: {
@@ -309,9 +214,9 @@
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\register\register.page.ts (Line 62:38 - Line 90:13)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-7')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-4')">Show code</button>
             </div>
-            <pre id="code-typescript-7" class="code-block">      await this.authService.login(this.email(), this.password());
+            <pre id="code-typescript-4" class="code-block">      await this.authService.login(this.email(), this.password());
     } catch (err) {
       this.errorMessage.set(this.getErrorMessage(err));
     } finally {
@@ -349,9 +254,9 @@
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\repair-form\repair-form.page.ts (Line 216:25 - Line 232:11)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-8')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-5')">Show code</button>
             </div>
-            <pre id="code-typescript-8" class="code-block">  readonly skippedReason = signal(&#39;&#39;);
+            <pre id="code-typescript-5" class="code-block">  readonly skippedReason = signal(&#39;&#39;);
 
   // Toast
   readonly toastOpen = signal(false);
@@ -376,9 +281,9 @@
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\refuel-list\refuel-list.page.ts (Line 281:42 - Line 300:21)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-9')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-6')">Show code</button>
             </div>
-            <pre id="code-typescript-9" class="code-block">      this.showToast(&#39;Nie udało się zapisać tankowania.&#39;, &#39;danger&#39;);
+            <pre id="code-typescript-6" class="code-block">      this.showToast(&#39;Nie udało się zapisać tankowania.&#39;, &#39;danger&#39;);
     }
   }
 
@@ -406,9 +311,9 @@
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\repair-list\repair-list.page.ts (Line 173:34 - Line 202:6)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-10')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-7')">Show code</button>
             </div>
-            <pre id="code-typescript-10" class="code-block">    const list = [...this.refuels()];
+            <pre id="code-typescript-7" class="code-block">    const list = [...this.refuels()];
     const { selectedMonth, selectedYear, sortBy, sortDirection } = this.preferences();
 
     // Filter by month
@@ -446,9 +351,9 @@
               \\?\C:\Users\aboczula\Projects\car-manager\apps\car-manager\src\app\pages\repair-list\repair-list.page.ts (Line 222:23 - Line 245:42)
             </div>
             <div>
-              <button class="toggle-btn" onclick="toggle('code-typescript-11')">Show code</button>
+              <button class="toggle-btn" onclick="toggle('code-typescript-8')">Show code</button>
             </div>
-            <pre id="code-typescript-11" class="code-block">    this.refuelService.stopListening();
+            <pre id="code-typescript-8" class="code-block">    this.refuelService.stopListening();
   }
 
   /** Load persisted filter/sort preferences from Ionic Storage. */
