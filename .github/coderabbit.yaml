@@ -1,0 +1,38 @@
+# CodeRabbit AI Code Review Configuration
+# Docs: https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  path_filters:
+    - "!**/*.spec.backup.ts"
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+    - "!**/coverage/**"
+    - "!**/.angular/**"
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+  tools:
+    shellcheck:
+      enabled: false
+    markdownlint:
+      enabled: true
+    github-checks:
+      enabled: true
+    languagetool:
+      enabled: false
+    biome:
+      enabled: false
+    hadolint:
+      enabled: false
+    ast-grep:
+      enabled: false
