@@ -7,3 +7,6 @@ coverage/
 qa-screenshots/
 .tour/
 playwright-report/
+
+# OpenCode environment — contains secrets (e.g. GITHUB_TOKEN)
+.opencode/env
