@@ -121,13 +121,7 @@ jobs:
       - name: Build for e2e
         run: npx nx build car-manager --configuration=e2e
 
-      - name: Start dev server + Firebase emulators
-        run: |
-          npx nx run car-manager:serve:e2e &
-          npx firebase emulators:start --only auth,firestore --project carmanager-local &
-          sleep 10
-
-      - name: Run Playwright tests
+      - name: Run Playwright tests (webServer starts dev server automatically)
         run: npx nx run car-manager-e2e:e2e
 
       - name: Upload Playwright report
@@ -161,13 +155,7 @@ jobs:
       - name: Build for e2e
         run: npx nx build car-manager --configuration=e2e
 
-      - name: Start dev server + Firebase emulators
-        run: |
-          npx nx run car-manager:serve:e2e &
-          npx firebase emulators:start --only auth,firestore --project carmanager-local &
-          sleep 10
-
-      - name: Run a11y tests
+      - name: Run a11y tests (webServer starts dev server automatically)
         run: npx nx run car-manager-e2e:a11y
 
       - name: Upload a11y report

@@ -17,15 +17,9 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
-  /* Run Firebase emulators + Angular dev server before starting the tests */
+  /* Start Angular dev server before running tests */
+  /* Firebase emulators not needed for E2E — mock Firebase data via Ionic Storage */
   webServer: [
-    {
-      command: 'npx firebase emulators:start --only auth,firestore --project carmanager-local',
-      url: 'http://127.0.0.1:9099',
-      reuseExistingServer: !process.env.CI,
-      cwd: workspaceRoot,
-      timeout: 180_000,
-    },
     {
       command: 'npm exec nx run car-manager:serve:e2e',
       url: 'http://localhost:4200',
