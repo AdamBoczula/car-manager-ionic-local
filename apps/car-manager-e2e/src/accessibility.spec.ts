@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test';
 import { checkAccessibility } from './utils/accessibility-helpers';
 import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helpers';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 const TEST_USER = {
@@ -34,6 +34,7 @@ const KNOWN_IONIC_VIOLATIONS = [
 ];
 
 test.describe('Accessibility – Statyczny audyt a11y', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.beforeEach(async ({ page }) => {
     await clearAuthState(page).catch(() => {});
     await clearStorage(page).catch(() => {});
@@ -59,6 +60,7 @@ test.describe('Accessibility – Statyczny audyt a11y', () => {
 });
 
 test.describe('Accessibility – Formularze', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.beforeEach(async ({ page }) => {
     await clearAuthState(page).catch(() => {});
     await clearStorage(page).catch(() => {});

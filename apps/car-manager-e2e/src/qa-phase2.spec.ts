@@ -1,7 +1,7 @@
 // QA Phase 2 screenshots — visual verification of Phase 2 features
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 import {
   navigateToDashboard,
@@ -13,6 +13,7 @@ import {
 const SCREENSHOT_DIR = path.resolve('qa-screenshots');
 
 test.describe('QA Phase 2 — Screenshot verification', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {

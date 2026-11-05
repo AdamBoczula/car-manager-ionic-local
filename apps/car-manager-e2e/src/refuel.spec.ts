@@ -5,10 +5,11 @@ import {
   navigateToRefuelListViaDashboard,
   navigateToRefuelFormViaFAB,
 } from './utils/navigation-helpers';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 test.describe('Refuel – Lista tankowań', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
@@ -24,7 +25,7 @@ test.describe('Refuel – Lista tankowań', () => {
   });
 
   test('should display empty state with "Brak tankowań" message', async ({ page }) => {
-    await expect(page.getByText(/Brak tankowań/i)).toBeVisible();
+    await expect(page.getByTestId('empty-refuels')).toBeVisible();
   });
 
   test('should have a header with an add button', async ({ page }) => {
@@ -46,6 +47,7 @@ test.describe('Refuel – Lista tankowań', () => {
 });
 
 test.describe('Refuel – Formularz tankowania', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {

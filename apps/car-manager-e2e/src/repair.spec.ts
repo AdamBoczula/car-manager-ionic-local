@@ -5,10 +5,11 @@ import {
   navigateToRepairListViaDashboard,
   navigateToRepairFormViaFAB,
 } from './utils/navigation-helpers';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 test.describe('Repair – Lista napraw', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
@@ -38,6 +39,7 @@ test.describe('Repair – Lista napraw', () => {
 });
 
 test.describe('Repair – Formularz naprawy', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {

@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 /**
@@ -50,6 +50,45 @@ export interface SeededAuthUser {
   readonly email: string;
   readonly displayName: string;
   readonly password: string;
+}
+
+/**
+ * Skip tests in CI when Firebase Auth (emulator or real API) is unavailable.
+ * Local development with emulator always works.
+ *
+ * Call this at the top of every test.describe block that requires seedAuthUser.
+ *
+ * Usage:
+ *   test.beforeAll(async () => await skipIfFirebaseUnavailable());
+ */
+export async function skipIfFirebaseUnavailable(): Promise<void> {
+  if (!(await isEmulatorReachable())) {
+    // Try real Firebase API
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3_000);
+      const response = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'skip-check@test.local',
+            password: 'Skip1234!',
+            returnSecureToken: false,
+          }),
+          signal: controller.signal,
+        },
+      );
+      clearTimeout(timeout);
+      if (response.status >= 500) {
+        throw new Error('Firebase API unreachable');
+      }
+    } catch {
+      // Firebase not available — skip all tests in this describe block
+      test.skip(true, 'Firebase Auth not available in this environment');
+    }
+  }
 }
 
 /**

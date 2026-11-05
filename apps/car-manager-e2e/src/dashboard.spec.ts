@@ -2,10 +2,11 @@
 // covers: docs/specs/dashboard/dashboard.md
 import { test, expect } from '@playwright/test';
 import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helpers';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 test.describe('Dashboard – Panel główny', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.beforeEach(async ({ page }) => {
     await clearAuthState(page).catch(() => {});
     await clearStorage(page).catch(() => {});
@@ -94,6 +95,7 @@ test.describe('Dashboard – Panel główny', () => {
 });
 
 test.describe('Dashboard – Dodaj tankowanie flow', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.beforeEach(async ({ page }) => {
     await clearAuthState(page).catch(() => {});
     await clearStorage(page).catch(() => {});

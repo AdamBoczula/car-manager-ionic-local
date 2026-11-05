@@ -2,7 +2,7 @@
 // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
 import { test, expect, type Page } from '@playwright/test';
 import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helpers';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 // ── Types ──
@@ -124,6 +124,7 @@ async function seedActiveCarId(page: Page, uid: string, carId: string): Promise<
 // ── Tests ──
 
 test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.describe.configure({ mode: 'serial' });
   let seededEmail: string;
 

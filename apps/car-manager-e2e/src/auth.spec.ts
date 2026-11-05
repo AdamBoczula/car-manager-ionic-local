@@ -6,10 +6,11 @@ import {
   navigateToDashboard,
   waitForIonicPage,
 } from './utils/navigation-helpers';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 test.describe('System logowania – E2E', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.beforeEach(async ({ page }) => {
     // Wyczyść stan przed każdym testem
     await clearAuthState(page).catch(() => {});

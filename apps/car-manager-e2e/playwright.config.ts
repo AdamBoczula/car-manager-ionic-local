@@ -33,11 +33,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // Firefox and WebKit are enabled only in CI where the browsers are
-    // pre-installed. Running them locally requires `npx playwright install
-    // firefox webkit` first.
+    // Firefox and WebKit are available only when explicitly installed.
+    // In CI (GitHub Actions) we only install chromium to save time.
+    // Run `npx playwright install firefox webkit` locally for multi-browser.
     ...(process.env.CI
-      ? [
+      ? []
+      : [
           {
             name: 'firefox',
             use: { ...devices['Desktop Firefox'] },
@@ -46,7 +47,6 @@ export default defineConfig({
             name: 'webkit',
             use: { ...devices['Desktop Safari'] },
           },
-        ]
-      : []),
+        ]),
   ],
 });

@@ -1,10 +1,11 @@
 // covers: docs/bugs/02-router-navigate-in-ionic.md
 import { test, expect } from '@playwright/test';
-import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
+import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 import { navigateToLogin } from './utils/navigation-helpers';
 
 test.describe('Regresja nawigacji Ionic z dashboardu', () => {
+  test.beforeAll(async () => await skipIfFirebaseUnavailable());
   test.afterEach(async ({ page }) => {
     await clearStorage(page).catch(() => undefined);
     await clearAuthState(page).catch(() => undefined);
