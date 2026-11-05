@@ -58,8 +58,8 @@ Aby dostosować, edytuj `.github/coderabbit.yaml`:
 ```yaml
 language: 'en-US'
 reviews:
-  profile: 'chill'      # 'chill' | 'assertive' | 'strict'
-  request_changes_workflow: true  # może żądać zmian w PR
+  profile: 'chill' # 'chill' | 'assertive' | 'strict'
+  request_changes_workflow: true # może żądać zmian w PR
   auto_review:
     enabled: true
     base_branches: ['main']

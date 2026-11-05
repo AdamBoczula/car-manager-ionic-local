@@ -42,7 +42,7 @@
         "enabled": true,
         "timeout": 30000,
         "env": {
-          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
         },
         "comment": "GitHub MCP — issue creation, PR management, branch operations"
       },
