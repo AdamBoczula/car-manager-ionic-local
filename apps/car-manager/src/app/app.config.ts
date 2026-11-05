@@ -14,9 +14,24 @@ import './core/firebase';
 
 import { appRoutes } from './app.routes';
 import { StorageService } from './core/services/storage.service';
+import { MigrationService } from './core/services/migration.service';
 
-function initializeStorage(storageService: StorageService): () => Promise<void> {
-  return () => storageService.init();
+/**
+ * APP_INITIALIZER: sekwencja startowa aplikacji.
+ * Kolejność gwarantowana — wszystkie kroki w jednej fabryce.
+ *
+ * 1. Inicjalizacja Ionic Storage
+ * 2. Migracja schematu danych (jeśli potrzebna)
+ * 3. Reszta aplikacji (Auth, CarService, Dashboard) ładuje się później
+ */
+function initializeApp(
+  storageService: StorageService,
+  migrationService: MigrationService
+): () => Promise<void> {
+  return async () => {
+    await storageService.init();
+    await migrationService.run();
+  };
 }
 
 export const appConfig: ApplicationConfig = {
@@ -35,10 +50,12 @@ export const appConfig: ApplicationConfig = {
           driverOrder: [Drivers.IndexedDB, Drivers.LocalStorage],
         }),
     },
+
+    // ── Startup: Storage.init() → MigrationService.run() → Aplikacja ──
     {
       provide: APP_INITIALIZER,
-      useFactory: initializeStorage,
-      deps: [StorageService],
+      useFactory: initializeApp,
+      deps: [StorageService, MigrationService],
       multi: true,
     },
   ],
