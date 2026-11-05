@@ -34,19 +34,6 @@ jobs:
       - name: Build
         run: npx nx affected -t build --base=origin/main
 
-  sonarcloud:
-    name: SonarCloud Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
   lighthouse:
     name: Lighthouse Audit
     runs-on: ubuntu-latest
@@ -76,6 +63,41 @@ jobs:
         with:
           name: lighthouse-report
           path: '.lighthouseci/'
+
+  accessibility:
+    name: Accessibility (axe-core)
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build for e2e
+        run: npx nx build car-manager
+
+      - name: Start dev server + Firebase emulators
+        run: |
+          npx nx run car-manager:serve:e2e &
+          npx firebase emulators:start --only auth,firestore --project carmanager-local &
+          sleep 10
+
+      - name: Run accessibility tests
+        run: npx nx run car-manager-e2e:a11y
+
+      - name: Upload a11y report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-report
+          path: playwright-report/
 
   dependency-review:
     name: Dependency Review

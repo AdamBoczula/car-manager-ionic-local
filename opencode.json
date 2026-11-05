@@ -52,17 +52,6 @@
         "enabled": true,
         "timeout": 60000,
         "comment": "Firebase MCP — Firestore, Auth, emulators, security rules (firebase-tools is large, needs extra time)"
-      },
-      "sonarqube": {
-        "type": "local",
-        "command": ["npx", "-y", "sonarqube-mcp-server@latest"],
-        "enabled": true,
-        "timeout": 30000,
-        "env": {
-          "SONARQUBE_URL": "${SONARQUBE_URL}",
-          "SONARQUBE_TOKEN": "${SONARQUBE_TOKEN}"
-        },
-        "comment": "SonarQube MCP — code quality metrics, issues, hotspots, quality gate status"
       }
     }
   }
