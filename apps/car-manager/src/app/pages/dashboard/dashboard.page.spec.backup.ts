@@ -1,6 +1,7 @@
 ﻿// spec: docs/specs/05-car-management.md
 // covers: docs/specs/05-car-management.md#AC-8, AC-9, AC-18, AC-20
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { NavController, provideIonicAngular } from '@ionic/angular';
 import { signal } from '@angular/core';
@@ -31,9 +32,11 @@ describe('DashboardPage', () => {
       authService: {
         currentUser: vi.fn(() => {
           if (overrides?.userEmail === null) return null;
-          return (overrides?.userEmail
-            ? { uid: 'u1', email: overrides.userEmail, displayName: null }
-            : mockUser) as User;
+          return (
+            overrides?.userEmail
+              ? { uid: 'u1', email: overrides.userEmail, displayName: null }
+              : mockUser
+          ) as User;
         }),
         isLoggedIn: vi.fn(() => true),
         authReady: vi.fn(() => true),
@@ -57,7 +60,7 @@ describe('DashboardPage', () => {
           name: 'New Car',
           ownerId: 'u1',
           createdAt: Timestamp.now(),
-        } as Car),
+        }),
         updateCar: vi.fn().mockResolvedValue(undefined),
         deleteCar: vi.fn().mockResolvedValue(undefined),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
@@ -90,10 +93,6 @@ describe('DashboardPage', () => {
     fixture = TestBed.createComponent(DashboardPage);
 
     return { mocks, navControllerMock };
-  }
-
-  function render(): void {
-    fixture.detectChanges();
   }
 
   async function renderAndWait(): Promise<void> {
@@ -165,7 +164,9 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const card = fixture.nativeElement.querySelector('[data-testid="card-refuel"]') as HTMLElement;
+      const card = fixture.nativeElement.querySelector(
+        '[data-testid="card-refuel"]',
+      ) as HTMLElement;
       card.click();
       await fixture.whenStable();
 
@@ -177,7 +178,9 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const card = fixture.nativeElement.querySelector('[data-testid="card-repair"]') as HTMLElement;
+      const card = fixture.nativeElement.querySelector(
+        '[data-testid="card-repair"]',
+      ) as HTMLElement;
       card.click();
       await fixture.whenStable();
 
@@ -214,7 +217,9 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const fabRefuel = fixture.nativeElement.querySelector('[data-testid="fab-refuel"]') as HTMLElement;
+      const fabRefuel = fixture.nativeElement.querySelector(
+        '[data-testid="fab-refuel"]',
+      ) as HTMLElement;
       fabRefuel.click();
       await fixture.whenStable();
 
@@ -226,7 +231,9 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      const fabRepair = fixture.nativeElement.querySelector('[data-testid="fab-repair"]') as HTMLElement;
+      const fabRepair = fixture.nativeElement.querySelector(
+        '[data-testid="fab-repair"]',
+      ) as HTMLElement;
       fabRepair.click();
       await fixture.whenStable();
 

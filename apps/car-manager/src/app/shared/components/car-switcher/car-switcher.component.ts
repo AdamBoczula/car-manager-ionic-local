@@ -1,14 +1,6 @@
 // spec: docs/specs/05-car-management.md
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
-import {
-  Component,
-  inject,
-  input,
-  output,
-  signal,
-  viewChild,
-  NgZone,
-} from '@angular/core';
+import { Component, inject, input, output, signal, viewChild, NgZone } from '@angular/core';
 import {
   AlertController,
   IonButton,
@@ -28,14 +20,7 @@ import {
   IonNote,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import {
-  chevronDown,
-  checkmark,
-  add,
-  copyOutline,
-  create,
-  trash,
-} from 'ionicons/icons';
+import { chevronDown, checkmark, add, copyOutline, create, trash } from 'ionicons/icons';
 import type { Car } from '../../../core/models/car.model';
 
 @Component({
@@ -88,12 +73,7 @@ import type { Car } from '../../../core/models/car.model';
             >
               <ion-label>{{ car.name }}</ion-label>
               @if (car.id === activeCar()?.id) {
-                <ion-icon
-                  name="checkmark"
-                  slot="end"
-                  color="primary"
-                  aria-label="Aktywne auto"
-                />
+                <ion-icon name="checkmark" slot="end" color="primary" aria-label="Aktywne auto" />
               }
               <ion-button
                 slot="end"
@@ -134,9 +114,7 @@ import type { Car } from '../../../core/models/car.model';
           <ion-toolbar>
             <ion-title>Dodaj nowe auto</ion-title>
             <ion-buttons slot="end">
-              <ion-button (click)="cancelModal()" aria-label="Anuluj">
-                Anuluj
-              </ion-button>
+              <ion-button (click)="cancelModal()" aria-label="Anuluj"> Anuluj </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
@@ -197,9 +175,7 @@ import type { Car } from '../../../core/models/car.model';
               <ion-icon name="copy-outline" slot="icon-only" />
             </ion-button>
             @if (vinCopied()) {
-              <span class="car-switcher__vin-copied" role="status"
-                >Skopiowano!</span
-              >
+              <span class="car-switcher__vin-copied" role="status">Skopiowano!</span>
             }
           </div>
         </ion-content>
@@ -230,9 +206,7 @@ import type { Car } from '../../../core/models/car.model';
           <ion-toolbar>
             <ion-title>Edytuj auto</ion-title>
             <ion-buttons slot="end">
-              <ion-button (click)="cancelEditModal()" aria-label="Zamknij">
-                Zamknij
-              </ion-button>
+              <ion-button (click)="cancelEditModal()" aria-label="Zamknij"> Zamknij </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>

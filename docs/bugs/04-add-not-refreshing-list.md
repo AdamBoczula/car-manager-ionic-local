@@ -36,6 +36,7 @@ nawet bez połączenia z siecią (offline-first).
 
 Sygnały `refuels` i `repairs` w serwisach `RefuelService` i `RepairService` są aktualizowane
 tylko w dwóch miejscach:
+
 1. `startListening()` — przy pierwszym załadowaniu z cache (Ionic Storage)
 2. Callback `onSnapshot` — gdy Firestore wyemituje zmianę
 
@@ -51,6 +52,7 @@ Kontrast: `CarService.addCar()` (linia 190) robi to poprawnie — po zapisie lok
 natychmiast woła `this.cars.set(list)`.
 
 **Dotknięte pliki:**
+
 - `apps/car-manager/src/app/core/services/refuel.service.ts` — `add()`, `update()`, `delete()`
 - `apps/car-manager/src/app/core/services/repair.service.ts` — `add()`, `update()`, `delete()`
 
@@ -87,8 +89,8 @@ Wzorzec zgodny z `CarService.addCar()` (linia 190) i `CarService.deleteCar()` (l
 
 ## Naprawione pliki
 
-| Plik | Zmiana |
-|------|--------|
+| Plik                                                       | Zmiana                                                                                                                                           |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `apps/car-manager/src/app/core/services/refuel.service.ts` | `add()`: sygnał aktualizowany po `saveLocal()`; `update()`: sygnał aktualizowany po storage.set; `delete()`: sygnał aktualizowany po storage.set |
 | `apps/car-manager/src/app/core/services/repair.service.ts` | `add()`: sygnał aktualizowany po `saveLocal()`; `update()`: sygnał aktualizowany po storage.set; `delete()`: sygnał aktualizowany po storage.set |
 

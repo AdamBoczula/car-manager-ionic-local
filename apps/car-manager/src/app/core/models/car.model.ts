@@ -1,5 +1,5 @@
 // spec: docs/specs/05-car-management.md
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from 'firebase/firestore';
 
 /**
  * Samochód – encja nadrzędna.

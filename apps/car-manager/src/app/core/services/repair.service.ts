@@ -2,6 +2,7 @@
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 // bugfix: docs/bugs/04-add-not-refreshing-list.md
 import { Injectable, inject, signal } from '@angular/core';
+import type { Unsubscribe } from 'firebase/firestore';
 import {
   collection,
   addDoc,
@@ -13,12 +14,11 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
-  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
-import { Repair } from '../models/repair.model';
+import type { Repair } from '../models/repair.model';
 
 const REPAIRS_COLLECTION = 'repairs';
 const STORAGE_KEY = 'repairs';
@@ -52,7 +52,7 @@ export class RepairService {
     const q = query(
       collection(this.firestore, REPAIRS_COLLECTION),
       where('carId', '==', carId),
-      orderBy('date', 'desc')
+      orderBy('date', 'desc'),
     );
 
     const unsubscribe = onSnapshot(
@@ -64,7 +64,7 @@ export class RepairService {
             ({
               id: docSnap.id,
               ...docSnap.data(),
-            }) as Repair
+            }) as Repair,
         );
 
         this.repairs.set(remote);
@@ -75,7 +75,7 @@ export class RepairService {
         if (!this.isCurrentListener(generation, carId)) return;
         console.warn('Repair Firestore listener error (offline?):', error);
         this.isLoading.set(false);
-      }
+      },
     );
 
     if (this.isCurrentListener(generation, carId)) {
@@ -98,9 +98,7 @@ export class RepairService {
     return this.listenerGeneration === generation && this.activeCarId === carId;
   }
 
-  async add(
-    data: Omit<Repair, 'id' | 'createdAt' | 'createdBy'>
-  ): Promise<Repair> {
+  async add(data: Omit<Repair, 'id' | 'createdAt' | 'createdBy'>): Promise<Repair> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to add a repair.');
 
@@ -116,16 +114,14 @@ export class RepairService {
 
     // Update the signal immediately so the UI reflects the new repair
     // without waiting for the Firestore onSnapshot round-trip.
-    const allLocal = await this.storage.get<Repair[]>(
-      this.storageKey(repair.carId)
-    );
+    const allLocal = await this.storage.get<Repair[]>(this.storageKey(repair.carId));
     this.repairs.set(allLocal ?? []);
 
     // Sync to Firestore
     try {
       const docRef = await addDoc(
         collection(this.firestore, REPAIRS_COLLECTION),
-        this.toFirestoreData(repair)
+        this.toFirestoreData(repair),
       );
       repair.id = docRef.id;
       await this.updateLocalId(repair.carId, repair);
@@ -138,17 +134,15 @@ export class RepairService {
 
   async update(
     id: string,
-    data: Partial<Omit<Repair, 'id' | 'createdAt' | 'createdBy'>>
+    data: Partial<Omit<Repair, 'id' | 'createdAt' | 'createdBy'>>,
   ): Promise<void> {
-    const carId = data.carId || this.activeCarId;
+    const carId = data.carId ?? this.activeCarId;
     if (!carId) throw new Error('carId is required to update a repair.');
 
     // Update local
     const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
     if (cached) {
-      const updated = cached.map((r) =>
-        r.id === id ? { ...r, ...data, id } : r
-      );
+      const updated = cached.map((r) => (r.id === id ? { ...r, ...data, id } : r));
       await this.storage.set(this.storageKey(carId), updated);
       // Update the signal immediately so the UI reflects changes
       this.repairs.set(updated);
@@ -187,10 +181,7 @@ export class RepairService {
     for (const repair of cached) {
       try {
         if (repair.id.length === 36) {
-          const docRef = await addDoc(
-            firestoreRepairs,
-            this.toFirestoreData(repair)
-          );
+          const docRef = await addDoc(firestoreRepairs, this.toFirestoreData(repair));
           repair.id = docRef.id;
         }
       } catch (err) {
@@ -203,7 +194,7 @@ export class RepairService {
 
   async getAllLocal(carId: string): Promise<Repair[]> {
     const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
-    return cached || [];
+    return cached ?? [];
   }
 
   // ── Private helpers ──
@@ -221,9 +212,7 @@ export class RepairService {
   private async updateLocalId(carId: string, repair: Repair): Promise<void> {
     const cached = await this.storage.get<Repair[]>(this.storageKey(carId));
     if (cached) {
-      const updated = cached.map((r) =>
-        r.id === repair.id ? { ...repair } : r
-      );
+      const updated = cached.map((r) => (r.id === repair.id ? { ...repair } : r));
       await this.storage.set(this.storageKey(carId), updated);
     }
   }
@@ -236,8 +225,6 @@ export class RepairService {
     const { id: _id, ...data } = repair;
     void _id; // explicitly unused — stripped before Firestore write
     // Remove undefined fields — Firestore does not accept them
-    return Object.fromEntries(
-      Object.entries(data).filter(([, v]) => v !== undefined)
-    );
+    return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
   }
 }

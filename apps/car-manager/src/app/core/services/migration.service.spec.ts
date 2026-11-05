@@ -7,11 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Storage } from '@ionic/storage';
 import { StorageService } from './storage.service';
 import { MigrationService } from './migration.service';
-import {
-  Migration,
-  SCHEMA_VERSION_KEY,
-  EXPECTED_SCHEMA_VERSION,
-} from '../utils/migration';
+import { Migration, SCHEMA_VERSION_KEY, EXPECTED_SCHEMA_VERSION } from '../utils/migration';
 
 describe('MigrationService', () => {
   let storageService: StorageService;
@@ -93,7 +89,7 @@ describe('MigrationService', () => {
     // Set nie powinien być wywołany (wersja już zgodna, nic do roboty)
     // Ale jeśli EXPECTED_VERSION = 1 i nie dodaliśmy go, to też OK
     const schemaSetCalls = mockSet.mock.calls.filter(
-      ([key]: string[]) => key === SCHEMA_VERSION_KEY
+      ([key]: string[]) => key === SCHEMA_VERSION_KEY,
     );
     // Wersja już była zgodna — nie ma potrzeby zapisywać
     // Jeśli EXPECTED_VERSION = 1 i wersja = 1 → 0 zapisów
@@ -146,10 +142,7 @@ describe('MigrationService', () => {
     await service.run();
 
     // Żadnych problemów przy drugim wywołaniu
-    expect(mockSet).not.toHaveBeenCalledWith(
-      '_app:schema_version',
-      EXPECTED_SCHEMA_VERSION + 1
-    );
+    expect(mockSet).not.toHaveBeenCalledWith('_app:schema_version', EXPECTED_SCHEMA_VERSION + 1);
   });
 
   // ─── Test 6: isRunning blokuje równoległe wywołanie ──────────────────
@@ -158,11 +151,7 @@ describe('MigrationService', () => {
     setupMocks({ schemaVersion: 1 });
 
     // Sprawdzamy, że run() da się wywołać wielokrotnie bez błędu
-    const results = await Promise.allSettled([
-      service.run(),
-      service.run(),
-      service.run(),
-    ]);
+    const results = await Promise.allSettled([service.run(), service.run(), service.run()]);
 
     // Wszystkie powinny się zakończyć (żadne wiszące)
     for (const r of results) {
@@ -245,9 +234,7 @@ describe('MigrationService with mocked migration config', () => {
     vi.doMock('../utils/migration', () => ({
       SCHEMA_VERSION_KEY: '_app:schema_version',
       EXPECTED_SCHEMA_VERSION: 2,
-      MIGRATIONS: [
-        { description: 'test v1→v2', migrate: migrateSpy },
-      ] as const,
+      MIGRATIONS: [{ description: 'test v1→v2', migrate: migrateSpy }] as const,
       Migration: {} as any,
     }));
 
@@ -271,10 +258,7 @@ describe('MigrationService with mocked migration config', () => {
     if (EXPECTED_SCHEMA_VERSION > 1) {
       mockGet.mockResolvedValue(EXPECTED_SCHEMA_VERSION - 1);
       await service.run();
-      expect(mockSet).toHaveBeenCalledWith(
-        SCHEMA_VERSION_KEY,
-        EXPECTED_SCHEMA_VERSION
-      );
+      expect(mockSet).toHaveBeenCalledWith(SCHEMA_VERSION_KEY, EXPECTED_SCHEMA_VERSION);
     } else {
       // EXPECTED_VERSION = 1 — nie ma migracji do wykonania
       expect(EXPECTED_SCHEMA_VERSION).toBe(1);

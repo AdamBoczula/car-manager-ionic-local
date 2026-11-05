@@ -1,3 +1,4 @@
+import type { Firestore } from 'firebase/firestore';
 // spec: docs/specs/02-login-screen.md
 import { TestBed } from '@angular/core/testing';
 import { RepairService } from './repair.service';
@@ -31,15 +32,14 @@ vi.mock('firebase/firestore', () => ({
 
 // Mock the ../firebase module to provide a mock db instance
 vi.mock('../firebase', () => ({
-  db: {} as import('firebase/firestore').Firestore,
+  db: {} as Firestore,
 }));
 
 const storageData = new Map<string, unknown>();
 
 const mockStorageService = {
   get: vi.fn(
-    async <T>(key: string): Promise<T | null> =>
-      (storageData.get(key) as T | null) ?? null
+    async <T>(key: string): Promise<T | null> => (storageData.get(key) as T | null) ?? null,
   ),
   set: vi.fn(async (key: string, value: unknown) => {
     storageData.set(key, value);
@@ -113,9 +113,7 @@ describe('RepairService', () => {
       const firstCache = new Promise<Repair[]>((resolve) => {
         resolveFirst = resolve;
       });
-      mockStorageService.get
-        .mockImplementationOnce(() => firstCache)
-        .mockResolvedValueOnce([]);
+      mockStorageService.get.mockImplementationOnce(() => firstCache).mockResolvedValueOnce([]);
       (onSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(vi.fn());
 
       const firstStart = service.startListening('car1');
@@ -173,9 +171,7 @@ describe('RepairService', () => {
     // covers: docs/bugs/04-add-not-refreshing-list.md
     it('powinien zapisać lokalnie i zaktualizować sygnał nawet gdy Firestore jest niedostępny (offline)', async () => {
       const { addDoc } = await import('firebase/firestore');
-      (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Network error')
-      );
+      (addDoc as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
 
       const repair = await service.add({
         carId: 'car1',
@@ -209,7 +205,7 @@ describe('RepairService', () => {
           location: 'ASO',
           description: 'Naprawa',
           mechanicNote: '',
-        })
+        }),
       ).rejects.toThrow('User must be logged in');
     });
   });

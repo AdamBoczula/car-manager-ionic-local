@@ -1,7 +1,18 @@
 {
+  "semi": true,
   "singleQuote": true,
-  "trailingComma": "es5",
-  "printWidth": 80,
+  "trailingComma": "all",
+  "printWidth": 100,
   "tabWidth": 2,
-  "semi": true
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": ["*.html", "*.component.html"],
+      "options": {
+        "parser": "angular"
+      }
+    }
+  ]
 }

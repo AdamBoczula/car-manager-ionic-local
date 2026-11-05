@@ -1,10 +1,7 @@
 // spec: docs/specs/04-filter-sort-lists.md
 // covers: docs/specs/04-filter-sort-lists.md#AC-1, AC-5, AC-7, AC-8, AC-9, AC-16, AC-17
 import { render, screen, fireEvent } from '@testing-library/angular';
-import {
-  FilterSortBarComponent,
-  type ListPreferences,
-} from './filter-sort-bar.component';
+import { FilterSortBarComponent, type ListPreferences } from './filter-sort-bar.component';
 
 const DEFAULT_PREFS: ListPreferences = {
   selectedMonth: 'all',
@@ -25,10 +22,7 @@ describe('FilterSortBarComponent', () => {
     }
   });
 
-  async function setup(
-    prefs: ListPreferences = DEFAULT_PREFS,
-    availableYears: number[] = []
-  ) {
+  async function setup(prefs: ListPreferences = DEFAULT_PREFS, availableYears: number[] = []) {
     const emitted: unknown[] = [];
     const result = await render(FilterSortBarComponent, {
       componentInputs: { prefs, availableYears },
@@ -61,15 +55,10 @@ describe('FilterSortBarComponent', () => {
     });
 
     const segment = document.querySelector('ion-segment')!;
-    fireEvent(
-      segment,
-      new CustomEvent('ionChange', { detail: { value: 'all' } })
-    );
+    fireEvent(segment, new CustomEvent('ionChange', { detail: { value: 'all' } }));
     fixture.detectChanges();
 
-    expect(emitted).toEqual([
-      { month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' },
-    ]);
+    expect(emitted).toEqual([{ month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' }]);
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-1
@@ -77,15 +66,10 @@ describe('FilterSortBarComponent', () => {
     const { fixture, emitted } = await setup();
 
     const segment = document.querySelector('ion-segment')!;
-    fireEvent(
-      segment,
-      new CustomEvent('ionChange', { detail: { value: '10' } })
-    );
+    fireEvent(segment, new CustomEvent('ionChange', { detail: { value: '10' } }));
     fixture.detectChanges();
 
-    expect(emitted).toEqual([
-      { month: 10, year: 'all', sortBy: 'date', sortDirection: 'desc' },
-    ]);
+    expect(emitted).toEqual([{ month: 10, year: 'all', sortBy: 'date', sortDirection: 'desc' }]);
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-2
@@ -93,34 +77,21 @@ describe('FilterSortBarComponent', () => {
     const { fixture, emitted } = await setup(DEFAULT_PREFS, [2025, 2026]);
 
     const select = document.querySelector('ion-select')!;
-    fireEvent(
-      select,
-      new CustomEvent('ionChange', { detail: { value: 2025 } })
-    );
+    fireEvent(select, new CustomEvent('ionChange', { detail: { value: 2025 } }));
     fixture.detectChanges();
 
-    expect(emitted).toEqual([
-      { month: 'all', year: 2025, sortBy: 'date', sortDirection: 'desc' },
-    ]);
+    expect(emitted).toEqual([{ month: 'all', year: 2025, sortBy: 'date', sortDirection: 'desc' }]);
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-2
   it('should emit prefsChange when year is reset to "all"', async () => {
-    const { fixture, emitted } = await setup(
-      { ...DEFAULT_PREFS, selectedYear: 2026 },
-      [2026]
-    );
+    const { fixture, emitted } = await setup({ ...DEFAULT_PREFS, selectedYear: 2026 }, [2026]);
 
     const select = document.querySelector('ion-select')!;
-    fireEvent(
-      select,
-      new CustomEvent('ionChange', { detail: { value: 'all' } })
-    );
+    fireEvent(select, new CustomEvent('ionChange', { detail: { value: 'all' } }));
     fixture.detectChanges();
 
-    expect(emitted).toEqual([
-      { month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' },
-    ]);
+    expect(emitted).toEqual([{ month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' }]);
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-7
@@ -154,9 +125,7 @@ describe('FilterSortBarComponent', () => {
     fireEvent.click(sortBtn);
     fixture.detectChanges();
 
-    expect(emitted).toEqual([
-      { month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' },
-    ]);
+    expect(emitted).toEqual([{ month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' }]);
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-8
@@ -167,9 +136,7 @@ describe('FilterSortBarComponent', () => {
     fireEvent.click(dirBtn);
     fixture.detectChanges();
 
-    expect(emitted).toEqual([
-      { month: 'all', year: 'all', sortBy: 'date', sortDirection: 'asc' },
-    ]);
+    expect(emitted).toEqual([{ month: 'all', year: 'all', sortBy: 'date', sortDirection: 'asc' }]);
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-8
@@ -183,9 +150,7 @@ describe('FilterSortBarComponent', () => {
     fireEvent.click(dirBtn);
     fixture.detectChanges();
 
-    expect(emitted).toEqual([
-      { month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' },
-    ]);
+    expect(emitted).toEqual([{ month: 'all', year: 'all', sortBy: 'date', sortDirection: 'desc' }]);
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-10

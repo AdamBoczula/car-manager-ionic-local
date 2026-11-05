@@ -12,42 +12,42 @@ This document is the authoritative map of the repository. Use it to understand w
 
 ### Active Projects
 
-| Project | Path | Purpose | Tags |
-| ------- | ---- | ------- | ---- |
-| `car-manager` | `apps/car-manager` | Ionic/Angular mobile app (main application, shell, routing, i18n, theme) | `type:app` |
-| `car-manager-e2e` | `apps/car-manager-e2e` | Playwright e2e tests for the application | — |
-| `shared-models` | `libs/shared/models` | Shared TypeScript interfaces (Refuel, Repair, Car, User) | `type:data` |
-| `shared-services` | `libs/shared/services` | Shared business logic services (Auth, Sync, Storage) | `type:feature` |
+| Project           | Path                   | Purpose                                                                  | Tags           |
+| ----------------- | ---------------------- | ------------------------------------------------------------------------ | -------------- |
+| `car-manager`     | `apps/car-manager`     | Ionic/Angular mobile app (main application, shell, routing, i18n, theme) | `type:app`     |
+| `car-manager-e2e` | `apps/car-manager-e2e` | Playwright e2e tests for the application                                 | —              |
+| `shared-models`   | `libs/shared/models`   | Shared TypeScript interfaces (Refuel, Repair, Car, User)                 | `type:data`    |
+| `shared-services` | `libs/shared/services` | Shared business logic services (Auth, Sync, Storage)                     | `type:feature` |
 
 ### Future Projects (to be created as the app grows)
 
-| Project | Path | Purpose | Tags |
-| ------- | ---- | ------- | ---- |
-| `feature-refuel` | `libs/refuel/feature-refuel` | Refuel feature (list, form, consumption calculation) | `type:feature` |
-| `data-access-refuel` | `libs/refuel/data-access-refuel` | Refuel data access (Firestore CRUD, Ionic Storage) | `type:data` |
-| `ui-refuel` | `libs/refuel/ui-refuel` | Reusable refuel UI components | `type:ui` |
-| `feature-repair` | `libs/repair/feature-repair` | Repair feature (list, form, speech-to-text) | `type:feature` |
-| `data-access-repair` | `libs/repair/data-access-repair` | Repair data access (Firestore CRUD, Ionic Storage) | `type:data` |
-| `ui-repair` | `libs/repair/ui-repair` | Reusable repair UI components | `type:ui` |
-| `feature-dashboard` | `libs/dashboard/feature-dashboard` | Dashboard feature (summary, stats, quick actions) | `type:feature` |
+| Project              | Path                               | Purpose                                              | Tags           |
+| -------------------- | ---------------------------------- | ---------------------------------------------------- | -------------- |
+| `feature-refuel`     | `libs/refuel/feature-refuel`       | Refuel feature (list, form, consumption calculation) | `type:feature` |
+| `data-access-refuel` | `libs/refuel/data-access-refuel`   | Refuel data access (Firestore CRUD, Ionic Storage)   | `type:data`    |
+| `ui-refuel`          | `libs/refuel/ui-refuel`            | Reusable refuel UI components                        | `type:ui`      |
+| `feature-repair`     | `libs/repair/feature-repair`       | Repair feature (list, form, speech-to-text)          | `type:feature` |
+| `data-access-repair` | `libs/repair/data-access-repair`   | Repair data access (Firestore CRUD, Ionic Storage)   | `type:data`    |
+| `ui-repair`          | `libs/repair/ui-repair`            | Reusable repair UI components                        | `type:ui`      |
+| `feature-dashboard`  | `libs/dashboard/feature-dashboard` | Dashboard feature (summary, stats, quick actions)    | `type:feature` |
 
 ## Path Mappings (`tsconfig.base.json`)
 
-| Alias | Target |
-| ----- | ------ |
-| `@car-manager/shared-models` | `libs/shared/models/src/index.ts` |
+| Alias                          | Target                              |
+| ------------------------------ | ----------------------------------- |
+| `@car-manager/shared-models`   | `libs/shared/models/src/index.ts`   |
 | `@car-manager/shared-services` | `libs/shared/services/src/index.ts` |
 
 ## Module Boundaries (ESLint `enforce-module-boundaries`)
 
 Dependency constraints from `eslint.config.mjs`:
 
-| Source tag | May depend on |
-| ---------- | ------------- |
-| `type:app` | `type:app`, `type:feature` |
+| Source tag     | May depend on                          |
+| -------------- | -------------------------------------- |
+| `type:app`     | `type:app`, `type:feature`             |
 | `type:feature` | `type:feature`, `type:data`, `type:ui` |
-| `type:data` | `type:data` |
-| `type:ui` | — |
+| `type:data`    | `type:data`                            |
+| `type:ui`      | —                                      |
 
 Implications:
 
@@ -58,15 +58,15 @@ Implications:
 
 ## Where To Put New Code
 
-| Concern | Location |
-| ------- | -------- |
-| New screen/page | `apps/car-manager/src/app/pages/<feature>/` |
-| New shared UI component | `apps/car-manager/src/app/shared/components/` |
-| New service (auth, sync, storage) | `apps/car-manager/src/app/core/services/` or `libs/shared/services/` |
-| New data model (interface/type) | `libs/shared/models/` |
-| New utility function | `apps/car-manager/src/app/core/utils/` |
-| App-shell concerns (routing, theme) | `apps/car-manager/src/app/` |
-| E2E tests | `apps/car-manager-e2e/src/` |
+| Concern                             | Location                                                             |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| New screen/page                     | `apps/car-manager/src/app/pages/<feature>/`                          |
+| New shared UI component             | `apps/car-manager/src/app/shared/components/`                        |
+| New service (auth, sync, storage)   | `apps/car-manager/src/app/core/services/` or `libs/shared/services/` |
+| New data model (interface/type)     | `libs/shared/models/`                                                |
+| New utility function                | `apps/car-manager/src/app/core/utils/`                               |
+| App-shell concerns (routing, theme) | `apps/car-manager/src/app/`                                          |
+| E2E tests                           | `apps/car-manager-e2e/src/`                                          |
 
 Rules of thumb:
 
@@ -95,14 +95,14 @@ interface Car {
 interface Refuel {
   id: string;
   carId: string;
-  date: string;           // ISO 8601
-  amount: number;          // PLN
-  mileage: number;         // km
-  liters?: number;         // optional
+  date: string; // ISO 8601
+  amount: number; // PLN
+  mileage: number; // km
+  liters?: number; // optional
   isVerva: boolean;
   isSkipped: boolean;
   skippedReason?: string;
-  consumption?: number;    // l/100km, auto-calculated
+  consumption?: number; // l/100km, auto-calculated
   createdBy: string;
   createdAt: Timestamp;
 }
@@ -114,9 +114,9 @@ interface Refuel {
 interface Repair {
   id: string;
   carId: string;
-  date: string;           // ISO 8601
-  amount: number;          // PLN
-  mileage: number;         // km
+  date: string; // ISO 8601
+  amount: number; // PLN
+  mileage: number; // km
   location: string;
   description: string;
   mechanicNote: string;

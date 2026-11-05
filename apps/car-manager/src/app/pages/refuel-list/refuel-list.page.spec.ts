@@ -74,7 +74,7 @@ function createMockCarService(overrides?: {
     cars: signal<Car[]>(overrides?.cars ?? [mockCar]),
     activeCar: signal<Car | null>(overrides?.activeCar ?? mockCar),
     activeCarId: signal<string | null>(
-      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc'
+      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc',
     ),
     hasCars: signal(true),
     isLoading: signal(false),
@@ -106,9 +106,7 @@ describe('RefuelListPage', () => {
       ],
     });
 
-    expect(
-      screen.getByText('Brak tankowań – dodaj pierwsze!')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Brak tankowań – dodaj pierwsze!')).toBeInTheDocument();
   });
 
   it('should display refuel list with formatted data when refuels exist', async () => {
@@ -322,9 +320,7 @@ describe('RefuelListPage', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(
-      screen.getByText('Brak wpisów w wybranym okresie.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Brak wpisów w wybranym okresie.')).toBeInTheDocument();
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-16

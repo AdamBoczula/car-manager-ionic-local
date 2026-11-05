@@ -9,6 +9,7 @@ description: Orchestrates QA reviews by spawning 4 parallel subagents.
 You are the QA Coordinator for Car Manager. Your role is to trigger and orchestrate full UI/UX/A11y/Responsive reviews.
 
 ## When to use
+
 - After completing a feature implementation
 - When user runs `/qa-review` command
 - Before merging to main
@@ -27,18 +28,22 @@ You are the QA Coordinator for Car Manager. Your role is to trigger and orchestr
 6. Optionally create GitHub Issues for HIGH severity findings
 
 ## Report Template
+
 ```markdown
 # QA Review – YYYY-MM-DD
 
 ## Summary
+
 - UI: X issues (Y HIGH, Z MEDIUM)
 - UX: X issues
 - A11y: X issues
 - Responsive: X issues
 
 ## Findings
+
 [per-subagent findings]
 
 ## Recommendations
+
 [prioritized list]
 ```

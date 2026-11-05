@@ -31,6 +31,7 @@ linking directly to files and line numbers.
 ### Step 1: Discover the repo
 
 Before asking the user anything, analyze:
+
 - Folder structure 2 levels deep
 - Configuration: `nx.json`, `package.json`, `tsconfig.base.json`
 - Main entry points: `apps/car-manager/src/main.ts`, routing
@@ -39,15 +40,15 @@ Before asking the user anything, analyze:
 
 ### Step 2: Infer intent
 
-| User says | Persona | Depth |
-|-----------|---------|-------|
-| "new to the project", "first time" | new-joiner | standard |
-| "debug X", "find the bug" | bug-fixer | standard |
-| "architecture", "how it works" | architect | deep |
-| "quick tour", "overview" | vibecoder | quick (5-8 steps) |
-| "PR review", "changes in #123" | pr-reviewer | standard |
-| "security", "auth" | security-reviewer | standard |
-| "refactoring" | refactorer | standard |
+| User says                          | Persona           | Depth             |
+| ---------------------------------- | ----------------- | ----------------- |
+| "new to the project", "first time" | new-joiner        | standard          |
+| "debug X", "find the bug"          | bug-fixer         | standard          |
+| "architecture", "how it works"     | architect         | deep              |
+| "quick tour", "overview"           | vibecoder         | quick (5-8 steps) |
+| "PR review", "changes in #123"     | pr-reviewer       | standard          |
+| "security", "auth"                 | security-reviewer | standard          |
+| "refactoring"                      | refactorer        | standard          |
 
 ### Step 3: Read actual files
 
@@ -69,6 +70,7 @@ Save to `.tours/<persona>-<focus>.tour`. Structure:
 ```
 
 **Step types:**
+
 - `content` — intro/conclusion (max 2)
 - `directory` — "here's what's in this folder"
 - `file+line` — specific line in a file
@@ -82,6 +84,7 @@ because VS Code CodeTour shows an empty page for content-only first steps.
 ### Step 5: SMIG formula for every description
 
 Every step description must answer 4 questions:
+
 - **S**ituation — What does the reader see?
 - **M**echanism — How does it work? What pattern?
 - **I**mplication — Why does it matter for THIS persona?
@@ -90,16 +93,17 @@ Every step description must answer 4 questions:
 ### Step 6: Summary
 
 After writing the tour, tell the user:
+
 - File path
 - One-sentence summary
 - 2-3 suggested follow-up tours
 
 ## Anti-patterns
 
-| Bad | Good |
-|-----|------|
-| Listing files "this file contains..." | Telling a story, each step builds on the previous one |
-| Generic descriptions | Name the specific pattern/gotcha unique to THIS codebase |
-| Guessing line numbers | Read the file and verify |
-| Ignoring persona | Cut every step that doesn't serve their goal |
-| Hallucinated files | If a file doesn't exist, skip the step |
+| Bad                                   | Good                                                     |
+| ------------------------------------- | -------------------------------------------------------- |
+| Listing files "this file contains..." | Telling a story, each step builds on the previous one    |
+| Generic descriptions                  | Name the specific pattern/gotcha unique to THIS codebase |
+| Guessing line numbers                 | Read the file and verify                                 |
+| Ignoring persona                      | Cut every step that doesn't serve their goal             |
+| Hallucinated files                    | If a file doesn't exist, skip the step                   |

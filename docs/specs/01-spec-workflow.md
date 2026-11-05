@@ -12,17 +12,17 @@ działają jednocześnie po zatwierdzeniu architektury, co skraca całkowity cza
 
 Proces wykorzystuje następujące role agenta:
 
-| Rola | Odpowiedzialność | Wyzwalacz |
-|------|-----------------|-----------|
-| **Analityk biznesowy (BA)** | Zbiera wymagania metodą drill-down, tworzy draft speca | Użytkownik zgłasza potrzebę / pomysł |
-| **Architekt** | Projektuje architekturę, tworzy ADR-y, rozszerza spec o sekcję "Architektura" | Spec zatwierdzony |
-| **Developer (Dev)** | Implementuje kod metodą TDD, aktualizuje "Implemented in" na bieżąco | Architektura zatwierdzona |
-| **Tester (QA)** | Tworzy i aktualizuje testy E2E, odpala quality gate | Architektura zatwierdzona (równolegle z Devem) |
-| **QA Coordinator** | Orkiestruje przegląd UI/UX/A11y/Responsive, generuje raport QA | Użytkownik wywołuje `/qa-review` (faza [4b]) |
-| **UI Reviewer** | Analizuje spójność wizualną, layout, typografię, stany komponentów | Wywoływany przez QA Coordinator |
-| **UX Analyzer** | Ocenia user experience, heurystyki Nielsena, efektywność kliknięć | Wywoływany przez QA Coordinator |
-| **A11y Auditor** | Audytuje dostępność WCAG 2.1 AA, Axe-core, ARIA, klawiatura | Wywoływany przez QA Coordinator |
-| **Responsive Checker** | Testuje viewporty, touch targety, overflow, adaptację layoutu | Wywoływany przez QA Coordinator |
+| Rola                        | Odpowiedzialność                                                              | Wyzwalacz                                      |
+| --------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Analityk biznesowy (BA)** | Zbiera wymagania metodą drill-down, tworzy draft speca                        | Użytkownik zgłasza potrzebę / pomysł           |
+| **Architekt**               | Projektuje architekturę, tworzy ADR-y, rozszerza spec o sekcję "Architektura" | Spec zatwierdzony                              |
+| **Developer (Dev)**         | Implementuje kod metodą TDD, aktualizuje "Implemented in" na bieżąco          | Architektura zatwierdzona                      |
+| **Tester (QA)**             | Tworzy i aktualizuje testy E2E, odpala quality gate                           | Architektura zatwierdzona (równolegle z Devem) |
+| **QA Coordinator**          | Orkiestruje przegląd UI/UX/A11y/Responsive, generuje raport QA                | Użytkownik wywołuje `/qa-review` (faza [4b])   |
+| **UI Reviewer**             | Analizuje spójność wizualną, layout, typografię, stany komponentów            | Wywoływany przez QA Coordinator                |
+| **UX Analyzer**             | Ocenia user experience, heurystyki Nielsena, efektywność kliknięć             | Wywoływany przez QA Coordinator                |
+| **A11y Auditor**            | Audytuje dostępność WCAG 2.1 AA, Axe-core, ARIA, klawiatura                   | Wywoływany przez QA Coordinator                |
+| **Responsive Checker**      | Testuje viewporty, touch targety, overflow, adaptację layoutu                 | Wywoływany przez QA Coordinator                |
 
 ## Sekwencja (Pipeline)
 
@@ -112,15 +112,16 @@ Każdy spec w sekcji "Implemented in" (aktualizowanej na bieżąco przez Deva) z
 ```markdown
 ## Implemented in
 
-| Plik | Data | AC pokryte |
-|------|------|------------|
-| `apps/car-manager/src/app/.../file.ts` | 2026-11-01 | AC-1, AC-2 |
-| `apps/car-manager-e2e/src/.../file.spec.ts` | 2026-11-01 | AC-1 |
+| Plik                                        | Data       | AC pokryte |
+| ------------------------------------------- | ---------- | ---------- |
+| `apps/car-manager/src/app/.../file.ts`      | 2026-11-01 | AC-1, AC-2 |
+| `apps/car-manager-e2e/src/.../file.spec.ts` | 2026-11-01 | AC-1       |
 ```
 
 ### Walidacja
 
 Skrypt `npm run spec:validate` (przyszłe zadanie) będzie sprawdzał:
+
 - Czy każdy AC ma co najmniej jeden test z `// covers:`
 - Czy każdy plik kodu ma `// spec:` referencję
 - Czy pliki wymienione w "Implemented in" istnieją
@@ -128,16 +129,19 @@ Skrypt `npm run spec:validate` (przyszłe zadanie) będzie sprawdzał:
 ## Bramki decyzyjne (gates)
 
 ### Bramka 1: Spec zatwierdzony
+
 - Użytkownik mówi "zatwierdzam", "ok", "zapisuj"
 - Agent (BA) zapisuje plik `docs/specs/<domain>/<name>.md` ze statusem `confirmed`
 
 ### Bramka 2: Architektura zatwierdzona
+
 - Użytkownik mówi "zatwierdzam architekturę"
 - Agent (Architekt) aktualizuje spec dodając sekcję "Architektura"
 - Agent tworzy ADR(y) w `docs/adr/` jeśli architektura wymaga udokumentowanej decyzji
 - Po zatwierdzeniu startują **równolegle** Dev (3A) i Tester (3B)
 
 ### Bramka 3: Quality gate
+
 - `npm exec nx affected -t lint test build e2e` przechodzi
 - Agent (QA/Tester) raportuje wyniki
 - Po przejściu: **Done** — kod gotowy, wdrożony lokalnie
@@ -145,6 +149,7 @@ Skrypt `npm run spec:validate` (przyszłe zadanie) będzie sprawdzał:
 ## ADR (Architecture Decision Records)
 
 Architekt w fazie [2] tworzy ADR-y dla decyzji architektonicznych, które:
+
 - Dotyczą wyboru między wieloma rozwiązaniami
 - Mają długoterminowy wpływ na projekt
 - Mogą być kontrowersyjne lub wymagają uzasadnienia
@@ -152,6 +157,7 @@ Architekt w fazie [2] tworzy ADR-y dla decyzji architektonicznych, które:
 Szablon ADR: `docs/adr/adr-template.md`
 
 Istniejące ADR-y są przechowywane w `docs/adr/` z konwencją nazewniczą:
+
 ```
 docs/adr/<NNN>-<title>.md
 ```
@@ -170,6 +176,7 @@ Automatyczny przegląd UI/UX przez QA Coordinator jest opisany w `.opencode/agen
 ### Automatyczny przegląd UI/UX (faza [4b])
 
 Wywołaj `/qa-review` w OpenCode aby uruchomić automatyczny przegląd:
+
 - **UI Reviewer** — spójność wizualna, layout, typografia, stany komponentów
 - **UX Analyzer** — user experience, heurystyki Nielsena, efektywność
 - **A11y Auditor** — dostępność WCAG 2.1 AA, Axe-core, klawiatura, ARIA

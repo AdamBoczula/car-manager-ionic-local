@@ -37,15 +37,13 @@ describe('SpeechService', () => {
 
     // Constructor returns mockRecognition directly so all
     // property mutations (onresult, onerror, onend) are visible
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const SR: any = function (this: any) {
       return mockRecognition;
     };
 
-    (window as unknown as Record<string, unknown>)['SpeechRecognition'] = SR;
-    delete (window as unknown as Record<string, unknown>)[
-      'webkitSpeechRecognition'
-    ];
+    (window as unknown as Record<string, unknown>).SpeechRecognition = SR;
+    delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
 
     TestBed.configureTestingModule({
       providers: [SpeechService],
@@ -55,10 +53,8 @@ describe('SpeechService', () => {
   });
 
   afterEach(() => {
-    delete (window as unknown as Record<string, unknown>)['SpeechRecognition'];
-    delete (window as unknown as Record<string, unknown>)[
-      'webkitSpeechRecognition'
-    ];
+    delete (window as unknown as Record<string, unknown>).SpeechRecognition;
+    delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
   });
 
   // ── AC-5: isSupported ──
@@ -69,23 +65,23 @@ describe('SpeechService', () => {
 
   it('powinien ustawić isSupported na false gdy SpeechRecognition nie istnieje', () => {
     const win = window as unknown as Record<string, unknown>;
-    delete win['SpeechRecognition'];
+    delete win.SpeechRecognition;
     const svc = new SpeechService();
     expect(svc.isSupported()).toBe(false);
   });
 
   it('powinien obsłużyć webkitSpeechRecognition jako fallback', () => {
     const win = window as unknown as Record<string, unknown>;
-    delete win['SpeechRecognition'];
+    delete win.SpeechRecognition;
     const fallbackRecognition = createMockRecognition();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const SR: any = function (this: any) {
       return fallbackRecognition;
     };
-    win['webkitSpeechRecognition'] = SR;
+    win.webkitSpeechRecognition = SR;
     const svc = new SpeechService();
     expect(svc.isSupported()).toBe(true);
-    delete win['webkitSpeechRecognition'];
+    delete win.webkitSpeechRecognition;
   });
 
   // ── AC-5: startListening ──
@@ -120,11 +116,11 @@ describe('SpeechService', () => {
 
   it('powinien zwrócić błąd gdy SpeechRecognition nie jest wspierane', async () => {
     const win = window as unknown as Record<string, unknown>;
-    delete win['SpeechRecognition'];
+    delete win.SpeechRecognition;
     const svc = new SpeechService();
 
     await expect(firstValueFrom(svc.startListening())).rejects.toBe(
-      'Speech recognition not supported'
+      'Speech recognition not supported',
     );
   });
 

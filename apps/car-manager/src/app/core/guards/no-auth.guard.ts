@@ -19,19 +19,13 @@ export const noAuthGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (authService.authReady()) {
-    return !authService.isLoggedIn()
-      ? true
-      : router.createUrlTree(['/dashboard']);
+    return !authService.isLoggedIn() ? true : router.createUrlTree(['/dashboard']);
   }
 
   // Auth not yet initialized — wait for onAuthStateChanged
   return toObservable(authService.authReady).pipe(
     filter((ready) => ready),
     take(1),
-    map(() =>
-      !authService.isLoggedIn()
-        ? true
-        : router.createUrlTree(['/dashboard'])
-    )
+    map(() => (!authService.isLoggedIn() ? true : router.createUrlTree(['/dashboard']))),
   );
 };

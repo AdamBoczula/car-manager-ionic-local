@@ -7,10 +7,7 @@ import { RegisterPage } from './register.page';
 import { AuthService } from '../../core/services/auth.service';
 import { FirebaseError } from 'firebase/app';
 
-function createMockAuthService(overrides?: {
-  isLoggedIn?: boolean;
-  authReady?: boolean;
-}) {
+function createMockAuthService(overrides?: { isLoggedIn?: boolean; authReady?: boolean }) {
   return {
     isLoggedIn: signal(overrides?.isLoggedIn ?? false),
     authReady: signal(overrides?.authReady ?? true),
@@ -30,9 +27,7 @@ vi.mock('../../core/firebase', () => ({
 
 /** Get the native <input> element by its placeholder. Ionic renders both <ion-input> and <input>. */
 function getNativeInput(placeholder: string): HTMLInputElement {
-  return document.querySelector(
-    `input[placeholder="${placeholder}"]`
-  ) as HTMLInputElement;
+  return document.querySelector(`input[placeholder="${placeholder}"]`)!;
 }
 
 describe('RegisterPage', () => {
@@ -46,10 +41,7 @@ describe('RegisterPage', () => {
   async function setup(overrides?: { isLoggedIn?: boolean; authReady?: boolean }) {
     mockAuth = createMockAuthService(overrides);
     return render(RegisterPage, {
-      providers: [
-        provideRouter([]),
-        { provide: AuthService, useValue: mockAuth },
-      ],
+      providers: [provideRouter([]), { provide: AuthService, useValue: mockAuth }],
     });
   }
 
@@ -157,50 +149,50 @@ describe('RegisterPage', () => {
   describe('mapowanie błędów Firebase', () => {
     it('auth/email-already-in-use → konto już istnieje', () => {
       const err = Object.assign(new FirebaseError('auth/email-already-in-use', ''));
-      const msg = RegisterPage.prototype['getErrorMessage'](err);
+      const msg = RegisterPage.prototype.getErrorMessage(err);
       expect(msg).toBe('Konto z tym adresem email już istnieje.');
     });
 
     it('auth/weak-password → hasło zbyt słabe', () => {
       const err = Object.assign(new FirebaseError('auth/weak-password', ''));
-      const msg = RegisterPage.prototype['getErrorMessage'](err);
+      const msg = RegisterPage.prototype.getErrorMessage(err);
       expect(msg).toBe('Hasło jest zbyt słabe. Użyj co najmniej 6 znaków.');
     });
 
     it('auth/network-request-failed → brak połączenia', () => {
       const err = Object.assign(new FirebaseError('auth/network-request-failed', ''));
-      const msg = RegisterPage.prototype['getErrorMessage'](err);
+      const msg = RegisterPage.prototype.getErrorMessage(err);
       expect(msg).toBe('Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.');
     });
 
     it('nieznany kod → ogólny komunikat z kodem błędu', () => {
       const err = Object.assign(new FirebaseError('auth/unknown', ''));
-      const msg = RegisterPage.prototype['getErrorMessage'](err);
+      const msg = RegisterPage.prototype.getErrorMessage(err);
       expect(msg).toContain('Wystąpił błąd rejestracji.');
       expect(msg).toContain('auth/unknown');
     });
 
     it('auth/operation-not-allowed → komunikat o konfiguracji Firebase', () => {
       const err = Object.assign(new FirebaseError('auth/operation-not-allowed', ''));
-      const msg = RegisterPage.prototype['getErrorMessage'](err);
+      const msg = RegisterPage.prototype.getErrorMessage(err);
       expect(msg).toContain('Email/Password');
       expect(msg).toContain('Firebase');
     });
 
     it('auth/configuration-not-found → komunikat o konfiguracji Google', () => {
       const err = Object.assign(new FirebaseError('auth/configuration-not-found', ''));
-      const msg = RegisterPage.prototype['getErrorMessage'](err);
+      const msg = RegisterPage.prototype.getErrorMessage(err);
       expect(msg).toContain('Google');
       expect(msg).toContain('Firebase');
     });
 
     it('REDIRECT_INITIATED → nieoczekiwany błąd (już nie wspierany)', () => {
-      const msg = RegisterPage.prototype['getErrorMessage'](new Error('REDIRECT_INITIATED'));
+      const msg = RegisterPage.prototype.getErrorMessage(new Error('REDIRECT_INITIATED'));
       expect(msg).toBe('Wystąpił nieoczekiwany błąd.');
     });
 
     it('nie-FirebaseError → nieoczekiwany błąd', () => {
-      const msg = RegisterPage.prototype['getErrorMessage'](new Error('oops'));
+      const msg = RegisterPage.prototype.getErrorMessage(new Error('oops'));
       expect(msg).toBe('Wystąpił nieoczekiwany błąd.');
     });
   });

@@ -231,6 +231,7 @@ npm run static:checks
 ```
 
 This runs:
+
 - `lint` — ESLint (TypeScript + Angular template accessibility rules)
 - `format:check` — Prettier formatting validation
 

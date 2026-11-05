@@ -3,12 +3,8 @@
 
 import { Injectable, inject, signal } from '@angular/core';
 import { StorageService } from './storage.service';
-import {
-  Migration,
-  SCHEMA_VERSION_KEY,
-  EXPECTED_SCHEMA_VERSION,
-  MIGRATIONS,
-} from '../utils/migration';
+import type { Migration } from '../utils/migration';
+import { SCHEMA_VERSION_KEY, EXPECTED_SCHEMA_VERSION, MIGRATIONS } from '../utils/migration';
 
 /** Maximum time (ms) a single migration step may take before being aborted. */
 const MIGRATION_TIMEOUT_MS = 30_000;
@@ -72,8 +68,8 @@ export class MigrationService {
       // Nie możemy migrować w dół — zatrzymujemy startup.
       throw new Error(
         `[MigrationService] Wersja danych (v${storedVersion}) jest nowsza niż ` +
-        `wersja aplikacji (v${EXPECTED_SCHEMA_VERSION}). ` +
-        `Zaktualizuj aplikację do najnowszej wersji.`
+          `wersja aplikacji (v${EXPECTED_SCHEMA_VERSION}). ` +
+          `Zaktualizuj aplikację do najnowszej wersji.`,
       );
     }
 
@@ -89,8 +85,8 @@ export class MigrationService {
         const migrationsDefined = migrations.length;
         throw new Error(
           `[MigrationService] Cannot migrate v${current}→v${current + 1}: ` +
-          `migration index ${migrationIndex} is out of bounds. ` +
-          `Expected ${EXPECTED_SCHEMA_VERSION - 1} migration(s), found ${migrationsDefined}.`
+            `migration index ${migrationIndex} is out of bounds. ` +
+            `Expected ${EXPECTED_SCHEMA_VERSION - 1} migration(s), found ${migrationsDefined}.`,
         );
       }
 
@@ -102,24 +98,15 @@ export class MigrationService {
     }
 
     console.info(
-      `[MigrationService] All migrations complete. Schema is now v${EXPECTED_SCHEMA_VERSION}.`
+      `[MigrationService] All migrations complete. Schema is now v${EXPECTED_SCHEMA_VERSION}.`,
     );
   }
 
-  private async executeMigration(
-    from: number,
-    to: number,
-    migration: Migration,
-  ): Promise<void> {
-    console.info(
-      `[MigrationService] Running migration v${from}→v${to}: ${migration.description}`
-    );
+  private async executeMigration(from: number, to: number, migration: Migration): Promise<void> {
+    console.info(`[MigrationService] Running migration v${from}→v${to}: ${migration.description}`);
 
     // Timeout: prevent infinite loops or hung migrations.
-    await Promise.race([
-      migration.migrate(this.storage),
-      this.timeout(from, to),
-    ]);
+    await Promise.race([migration.migrate(this.storage), this.timeout(from, to)]);
   }
 
   private async timeout(from: number, to: number): Promise<never> {
@@ -127,8 +114,8 @@ export class MigrationService {
       setTimeout(() => {
         reject(
           new Error(
-            `[MigrationService] Migration v${from}→v${to} timed out after ${MIGRATION_TIMEOUT_MS}ms.`
-          )
+            `[MigrationService] Migration v${from}→v${to} timed out after ${MIGRATION_TIMEOUT_MS}ms.`,
+          ),
         );
       }, MIGRATION_TIMEOUT_MS);
     });
@@ -150,7 +137,7 @@ export class MigrationService {
 
     if (typeof raw !== 'number' || isNaN(raw) || raw < 0) {
       console.warn(
-        `[MigrationService] Invalid schema_version value: ${JSON.stringify(raw)}. Resetting to 1.`
+        `[MigrationService] Invalid schema_version value: ${JSON.stringify(raw)}. Resetting to 1.`,
       );
       await this.storage.set(SCHEMA_VERSION_KEY, 1);
       return 1;

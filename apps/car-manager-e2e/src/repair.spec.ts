@@ -23,18 +23,16 @@ test.describe('Repair – Lista napraw', () => {
     await navigateToRepairListViaDashboard(page);
   });
 
-  test('should display empty state with "Brak napraw" message', async ({
-    page,
-  }) => {
-    await expect(
-      page.getByTestId('empty-repairs')
-    ).toBeVisible();
+  test('should display empty state with "Brak napraw" message', async ({ page }) => {
+    await expect(page.getByTestId('empty-repairs')).toBeVisible();
   });
 
   test('should have a header with an add button', async ({ page }) => {
-    const addButton = page.locator(
-      'ion-fab-button, ion-button[routerLink*="repair-form"], ion-button:has-text("Dodaj"), ion-header ion-button'
-    ).first();
+    const addButton = page
+      .locator(
+        'ion-fab-button, ion-button[routerLink*="repair-form"], ion-button:has-text("Dodaj"), ion-header ion-button',
+      )
+      .first();
     await expect(addButton).toBeVisible();
   });
 });
@@ -61,32 +59,41 @@ test.describe('Repair – Formularz naprawy', () => {
     expect(inputCount).toBeGreaterThanOrEqual(2);
 
     // Opis textarea — .first() to avoid strict mode violation
-    await expect(page.locator('ion-textarea').or(page.locator('ion-input[label*="Opis"]')).first()).toBeVisible();
+    await expect(
+      page.locator('ion-textarea').or(page.locator('ion-input[label*="Opis"]')).first(),
+    ).toBeVisible();
   });
 
   test('should have a microphone/speech input button', async ({ page }) => {
-    const micButton = page.locator(
-      'ion-button:has(ion-icon[name="mic"]), ion-button[aria-label*="mikrofon"], ion-button:has-text("Mów")'
-    ).first();
+    const micButton = page
+      .locator(
+        'ion-button:has(ion-icon[name="mic"]), ion-button[aria-label*="mikrofon"], ion-button:has-text("Mów")',
+      )
+      .first();
     const micExists = await micButton.isVisible().catch(() => false);
-    if (!micExists) { test.skip(true, 'Microphone button not implemented yet'); return; }
+    if (!micExists) {
+      test.skip(true, 'Microphone button not implemented yet');
+      return;
+    }
     await expect(micButton).toBeVisible();
   });
 
-  test('should stay on form page when submitted empty (form validation)', async ({
-    page,
-  }) => {
-    const saveButton = page.locator(
-      'ion-button:has-text("Zapisz"), ion-button[type="submit"], ion-button:has-text("Dodaj naprawę")'
-    ).first();
+  test('should stay on form page when submitted empty (form validation)', async ({ page }) => {
+    const saveButton = page
+      .locator(
+        'ion-button:has-text("Zapisz"), ion-button[type="submit"], ion-button:has-text("Dodaj naprawę")',
+      )
+      .first();
     await saveButton.click({ force: true });
     await expect(page).toHaveURL(/repair-form/, { timeout: 3000 });
   });
 
   test('should have a save/submit button', async ({ page }) => {
-    const saveButton = page.locator(
-      'ion-button:has-text("Zapisz"), ion-button:has-text("Dodaj"), ion-button[type="submit"]'
-    ).first();
+    const saveButton = page
+      .locator(
+        'ion-button:has-text("Zapisz"), ion-button:has-text("Dodaj"), ion-button[type="submit"]',
+      )
+      .first();
     await expect(saveButton).toBeVisible();
   });
 });

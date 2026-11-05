@@ -47,11 +47,13 @@ and translate that into concrete engineering actions.
 ## Investigation Process
 
 ### 1. Establish Scope
+
 - URL, route, user flow
 - What is the problem: initial load, interaction, scroll, animation, layout instability
 - Is the issue local, production, mobile, regression-related?
 
 ### 2. Collect Evidence
+
 - **Lighthouse audit** — for page-level quality
 - **Performance trace** — for slow loads and interactions
 - **Network waterfall** — blocking resources, cache, payload size
@@ -61,12 +63,14 @@ and translate that into concrete engineering actions.
 ### 3. Diagnose by Category
 
 #### Initial Load (Ionic PWA / Capacitor)
+
 - LCP delayed by: Ionic bundle size, fonts, hero images, render-blocking CSS
 - Excessive JS parse/compile cost (Angular compiler + Ionic components)
 - Delayed interactive readiness due to framework boot
 - Service worker / Ionic Storage cache vs. fresh Firestore data
 
 #### Interaction Performance
+
 - Long tasks causing poor INP
 - Heavy event handlers, synchronous state updates
 - Excessive re-renders in Ionic/Angular components
@@ -74,17 +78,20 @@ and translate that into concrete engineering actions.
 - Firestore `onSnapshot` listeners — is there cleanup
 
 #### Visual Stability
+
 - CLS from missing dimensions, late-loading fonts, async content without placeholders
 - Ionic components without defined sizes (especially `ion-img`, `ion-skeleton-text`)
 - Sudden layout changes when `ion-fab` or `ion-footer` appears
 
 #### Network and Delivery
+
 - Large bundles, uncompressed assets, duplicate requests
 - Inefficient caching for Ionic Storage
 - Missing preload/prefetch for critical resources
 - Firestore queries — are they limited and indexed
 
 ### 4. Link Evidence to Code
+
 - Map observed bottlenecks to specific files, components, routes
 - Search code before recommending changes
 - Leverage existing optimization patterns in the codebase
@@ -92,6 +99,7 @@ and translate that into concrete engineering actions.
 ### 5. Recommend Fixes
 
 For each recommendation, provide:
+
 - The specific problem it solves
 - The likely code area to investigate
 - Why it will help
@@ -113,19 +121,24 @@ For each recommendation, provide:
 ## Performance Investigation Report
 
 ### Scope
+
 - URL/route, device, reproduction path
 
 ### Evidence
+
 - Trace findings, Lighthouse scores, console/network observations
 
 ### Root Causes
+
 - Concise explanation of what is slow and why
 
 ### Recommended Fixes (sorted by priority)
+
 1. 🔴 **Fix:** [description] → [code area] → [why] → [validation]
 2. 🟠 ...
 
 ### Validation Plan
+
 - How to verify improvement after changes
 ```
 

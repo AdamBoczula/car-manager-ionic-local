@@ -22,9 +22,7 @@ function createMockCar(name: string, id: string): Car {
 @Component({ standalone: true, template: '' })
 class DummyDashboardComponent {}
 
-const routes: Routes = [
-  { path: 'dashboard', component: DummyDashboardComponent },
-];
+const routes: Routes = [{ path: 'dashboard', component: DummyDashboardComponent }];
 
 describe('AddCarPage', () => {
   describe('wizard mode (0 cars)', () => {
@@ -79,9 +77,9 @@ describe('AddCarPage', () => {
       const mockCarService = {
         hasCars: signal(false),
         cars: signal<Car[]>([]),
-        addCar: vi.fn().mockImplementation(async (name: string) =>
-          createMockCar(name, `car-${Date.now()}`)
-        ),
+        addCar: vi
+          .fn()
+          .mockImplementation(async (name: string) => createMockCar(name, `car-${Date.now()}`)),
         deleteCar: vi.fn(),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
       };
@@ -182,8 +180,8 @@ describe('AddCarPage', () => {
               currentMileage?: number;
               year?: number;
               vin?: string;
-            }
-          ) => createMockCar(name, `car-${Date.now()}`)
+            },
+          ) => createMockCar(name, `car-${Date.now()}`),
         ),
         deleteCar: vi.fn(),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
@@ -217,8 +215,8 @@ describe('AddCarPage', () => {
               currentMileage?: number;
               year?: number;
               vin?: string;
-            }
-          ) => createMockCar(name, `car-${Date.now()}`)
+            },
+          ) => createMockCar(name, `car-${Date.now()}`),
         ),
         deleteCar: vi.fn(),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
@@ -263,9 +261,7 @@ describe('AddCarPage', () => {
         ],
       });
 
-      const copyBtn = screen.getByTestId(
-        'copy-vin-button'
-      ) as HTMLIonButtonElement;
+      const copyBtn = screen.getByTestId('copy-vin-button') as HTMLIonButtonElement;
       expect(copyBtn.disabled).toBe(true);
     });
 
@@ -321,9 +317,9 @@ describe('AddCarPage', () => {
       const mockCarService = {
         hasCars: signal(true),
         cars: signal<Car[]>([]),
-        addCar: vi.fn().mockImplementation(async (name: string) =>
-          createMockCar(name, `car-${Date.now()}`)
-        ),
+        addCar: vi
+          .fn()
+          .mockImplementation(async (name: string) => createMockCar(name, `car-${Date.now()}`)),
         deleteCar: vi.fn(),
         setActiveCar: vi.fn().mockResolvedValue(undefined),
       };

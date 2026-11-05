@@ -87,11 +87,7 @@ addIcons({ mic });
             <ion-input
               type="number"
               [value]="amount()"
-              (ionInput)="
-                amount.set(
-                  $any($event).detail.value ? +$any($event).detail.value : 0
-                )
-              "
+              (ionInput)="amount.set($any($event).detail.value ? +$any($event).detail.value : 0)"
               placeholder="0.00"
               aria-label="Kwota w PLN"
             />
@@ -108,11 +104,7 @@ addIcons({ mic });
             <ion-input
               type="number"
               [value]="mileage()"
-              (ionInput)="
-                mileage.set(
-                  $any($event).detail.value ? +$any($event).detail.value : 0
-                )
-              "
+              (ionInput)="mileage.set($any($event).detail.value ? +$any($event).detail.value : 0)"
               placeholder="0"
               aria-label="Przebieg w kilometrach"
             />
@@ -147,9 +139,7 @@ addIcons({ mic });
                 fill="clear"
                 size="small"
                 (click)="startSpeechRecognition()"
-                [disabled]="
-                  !speechService.isSupported() || speechService.isListening()
-                "
+                [disabled]="!speechService.isSupported() || speechService.isListening()"
                 aria-label="Dyktuj opis prac"
                 data-testid="mic-button"
                 class="repair-form__mic-button"
@@ -234,19 +224,19 @@ export class RepairFormPage {
 
   // Validation errors (computed)
   readonly amountError = computed(() =>
-    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null
+    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null,
   );
 
   readonly mileageError = computed(() =>
-    this.mileage() <= 0 ? 'Przebieg musi być większy od 0' : null
+    this.mileage() <= 0 ? 'Przebieg musi być większy od 0' : null,
   );
 
   readonly locationError = computed(() =>
-    this.location().trim() === '' ? 'Miejsce jest wymagane' : null
+    this.location().trim() === '' ? 'Miejsce jest wymagane' : null,
   );
 
   readonly descriptionError = computed(() =>
-    this.description().trim() === '' ? 'Opis prac jest wymagany' : null
+    this.description().trim() === '' ? 'Opis prac jest wymagany' : null,
   );
 
   readonly isFormValid = computed(
@@ -254,7 +244,7 @@ export class RepairFormPage {
       !this.amountError() &&
       !this.mileageError() &&
       !this.locationError() &&
-      !this.descriptionError()
+      !this.descriptionError(),
   );
 
   async handleSubmit(event?: Event): Promise<void> {
@@ -288,8 +278,7 @@ export class RepairFormPage {
   }
 
   startSpeechRecognition(): void {
-    if (!this.speechService.isSupported() || this.speechService.isListening())
-      return;
+    if (!this.speechService.isSupported() || this.speechService.isListening()) return;
 
     this.speechService.startListening().subscribe({
       next: (transcript) => {

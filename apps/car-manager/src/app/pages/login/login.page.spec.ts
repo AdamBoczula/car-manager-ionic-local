@@ -7,10 +7,7 @@ import { LoginPage } from './login.page';
 import { AuthService } from '../../core/services/auth.service';
 import { FirebaseError } from 'firebase/app';
 
-function createMockAuthService(overrides?: {
-  isLoggedIn?: boolean;
-  authReady?: boolean;
-}) {
+function createMockAuthService(overrides?: { isLoggedIn?: boolean; authReady?: boolean }) {
   return {
     isLoggedIn: signal(overrides?.isLoggedIn ?? false),
     authReady: signal(overrides?.authReady ?? true),
@@ -30,9 +27,7 @@ vi.mock('../../core/firebase', () => ({
 
 /** Get the native <input> element by its placeholder. Ionic renders both <ion-input> and <input>. */
 function getNativeInput(placeholder: string): HTMLInputElement {
-  return document.querySelector(
-    `input[placeholder="${placeholder}"]`
-  ) as HTMLInputElement;
+  return document.querySelector(`input[placeholder="${placeholder}"]`)!;
 }
 
 describe('LoginPage', () => {
@@ -46,10 +41,7 @@ describe('LoginPage', () => {
   async function setup(overrides?: { isLoggedIn?: boolean; authReady?: boolean }) {
     mockAuth = createMockAuthService(overrides);
     return render(LoginPage, {
-      providers: [
-        provideRouter([]),
-        { provide: AuthService, useValue: mockAuth },
-      ],
+      providers: [provideRouter([]), { provide: AuthService, useValue: mockAuth }],
     });
   }
 
@@ -158,50 +150,50 @@ describe('LoginPage', () => {
     it('auth/invalid-credential → Nieprawidłowy email lub hasło.', () => {
       const err = Object.assign(new FirebaseError('auth/invalid-credential', ''));
       // getErrorMessage jest prywatne, testujemy przez pośrednią logikę
-      const msg = LoginPage.prototype['getErrorMessage'](err);
+      const msg = LoginPage.prototype.getErrorMessage(err);
       expect(msg).toBe('Nieprawidłowy email lub hasło.');
     });
 
     it('auth/too-many-requests → Zbyt wiele prób.', () => {
       const err = Object.assign(new FirebaseError('auth/too-many-requests', ''));
-      const msg = LoginPage.prototype['getErrorMessage'](err);
+      const msg = LoginPage.prototype.getErrorMessage(err);
       expect(msg).toBe('Zbyt wiele prób. Spróbuj ponownie za chwilę.');
     });
 
     it('auth/network-request-failed → Brak połączenia.', () => {
       const err = Object.assign(new FirebaseError('auth/network-request-failed', ''));
-      const msg = LoginPage.prototype['getErrorMessage'](err);
+      const msg = LoginPage.prototype.getErrorMessage(err);
       expect(msg).toBe('Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.');
     });
 
     it('nieznany kod → ogólny komunikat z kodem błędu', () => {
       const err = Object.assign(new FirebaseError('auth/unknown-error', ''));
-      const msg = LoginPage.prototype['getErrorMessage'](err);
+      const msg = LoginPage.prototype.getErrorMessage(err);
       expect(msg).toContain('Wystąpił błąd logowania.');
       expect(msg).toContain('auth/unknown-error');
     });
 
     it('auth/operation-not-allowed → komunikat o konfiguracji Firebase', () => {
       const err = Object.assign(new FirebaseError('auth/operation-not-allowed', ''));
-      const msg = LoginPage.prototype['getErrorMessage'](err);
+      const msg = LoginPage.prototype.getErrorMessage(err);
       expect(msg).toContain('Firebase');
       expect(msg).toContain('Authentication');
     });
 
     it('auth/configuration-not-found → komunikat o konfiguracji Google', () => {
       const err = Object.assign(new FirebaseError('auth/configuration-not-found', ''));
-      const msg = LoginPage.prototype['getErrorMessage'](err);
+      const msg = LoginPage.prototype.getErrorMessage(err);
       expect(msg).toContain('Google');
       expect(msg).toContain('Firebase');
     });
 
     it('REDIRECT_INITIATED → nieoczekiwany błąd (już nie wspierany)', () => {
-      const msg = LoginPage.prototype['getErrorMessage'](new Error('REDIRECT_INITIATED'));
+      const msg = LoginPage.prototype.getErrorMessage(new Error('REDIRECT_INITIATED'));
       expect(msg).toBe('Wystąpił nieoczekiwany błąd.');
     });
 
     it('nie-FirebaseError → nieoczekiwany błąd', () => {
-      const msg = LoginPage.prototype['getErrorMessage'](new Error('oops'));
+      const msg = LoginPage.prototype.getErrorMessage(new Error('oops'));
       expect(msg).toBe('Wystąpił nieoczekiwany błąd.');
     });
   });
@@ -214,7 +206,7 @@ describe('LoginPage', () => {
 
       // mock must be configured AFTER setup(), which creates a fresh mock
       mockAuth.login.mockRejectedValue(
-        Object.assign(new FirebaseError('auth/network-request-failed', ''))
+        Object.assign(new FirebaseError('auth/network-request-failed', '')),
       );
 
       fixture.componentInstance.email.set('test@user.com');
@@ -222,7 +214,7 @@ describe('LoginPage', () => {
       await fixture.componentInstance.handleLogin();
 
       expect(fixture.componentInstance.errorMessage()).toBe(
-        'Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.'
+        'Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.',
       );
     });
 
@@ -230,7 +222,7 @@ describe('LoginPage', () => {
       const { fixture } = await setup();
 
       mockAuth.login.mockRejectedValue(
-        Object.assign(new FirebaseError('auth/operation-not-allowed', ''))
+        Object.assign(new FirebaseError('auth/operation-not-allowed', '')),
       );
 
       fixture.componentInstance.email.set('test@user.com');

@@ -9,17 +9,17 @@ Dwa główne moduły: **tankowanie** i **naprawy**. Mobile-first, działa offlin
 
 ## 2. Stos technologiczny
 
-| Warstwa | Technologia | Uzasadnienie |
-|---|---|---|
-| **Framework UI** | Ionic 9 + Angular 22 | Komponenty gotowe pod mobile, dojrzały ekosystem |
-| **Native runtime** | Capacitor 8 | Most do API natywnych (Android/iOS), plugin do speech-to-text |
-| **Backend (start)** | Firebase v13 (Auth + Firestore) | Darmowy start, real-time sync, brak serwera |
-| **Backend (future)** | NestJS + PostgreSQL | Gdy potrzeba własnego API, więcej kontroli |
-| **Offline storage** | `@ionic/storage` (IndexedDB) + Firestore offline persistence | Dane lokalnie, sync gdy online |
-| **Stan aplikacji** | Signals + RxJS | Angularowy standard, reaktywność |
-| **Speech-to-text** | `@capacitor-community/speech-recognition` | Dyktowanie treści napraw podczas jazdy |
-| **Auth** | Firebase Auth (email lub Google) | Proste logowanie dla 2 osób |
-| **Hosting** | Firebase Hosting (PWA) + App Store / Google Play (Capacitor) | Szeroki zasięg |
+| Warstwa              | Technologia                                                  | Uzasadnienie                                                  |
+| -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------- |
+| **Framework UI**     | Ionic 9 + Angular 22                                         | Komponenty gotowe pod mobile, dojrzały ekosystem              |
+| **Native runtime**   | Capacitor 8                                                  | Most do API natywnych (Android/iOS), plugin do speech-to-text |
+| **Backend (start)**  | Firebase v13 (Auth + Firestore)                              | Darmowy start, real-time sync, brak serwera                   |
+| **Backend (future)** | NestJS + PostgreSQL                                          | Gdy potrzeba własnego API, więcej kontroli                    |
+| **Offline storage**  | `@ionic/storage` (IndexedDB) + Firestore offline persistence | Dane lokalnie, sync gdy online                                |
+| **Stan aplikacji**   | Signals + RxJS                                               | Angularowy standard, reaktywność                              |
+| **Speech-to-text**   | `@capacitor-community/speech-recognition`                    | Dyktowanie treści napraw podczas jazdy                        |
+| **Auth**             | Firebase Auth (email lub Google)                             | Proste logowanie dla 2 osób                                   |
+| **Hosting**          | Firebase Hosting (PWA) + App Store / Google Play (Capacitor) | Szeroki zasięg                                                |
 
 ---
 
@@ -72,52 +72,57 @@ Alternatywa prostsza: standardowy projekt Ionic-Angular bez Nx (szybszy start).
 ## 4. Modele danych
 
 ### 4.1 Samochód (`cars`)
+
 ```typescript
 interface Car {
   id: string;
-  name: string;           // np. "Toyota Corolla"
-  ownerId: string;        // uid użytkownika (garaż)
+  name: string; // np. "Toyota Corolla"
+  ownerId: string; // uid użytkownika (garaż)
   createdAt: Timestamp;
 }
 ```
+
 > **ADR-002**: Jeden garaż na konto. Mąż i żona używają tego samego konta (współdzielone logowanie).
 > Pole `sharedWith` usunięte – zbędne przy tym modelu. Patrz `docs/specs/05-car-management.md`.
 
 ### 4.2 Tankowanie (`refuels`)
+
 ```typescript
 interface Refuel {
   id: string;
   carId: string;
-  date: string;           // ISO 8601
-  amount: number;         // zapłacona kwota
-  mileage: number;        // przebieg (km)
-  liters?: number;        // opcjonalnie – ilość litrów
-  isVerva: boolean;       // czy tankowano Vervę / paliwo premium
-  isSkipped: boolean;     // pominięty wpis (ktoś zatankował bez wiedzy)
+  date: string; // ISO 8601
+  amount: number; // zapłacona kwota
+  mileage: number; // przebieg (km)
+  liters?: number; // opcjonalnie – ilość litrów
+  isVerva: boolean; // czy tankowano Vervę / paliwo premium
+  isSkipped: boolean; // pominięty wpis (ktoś zatankował bez wiedzy)
   skippedReason?: string; // powód pominięcia
-  consumption?: number;   // l/100km – wyliczane automatycznie
+  consumption?: number; // l/100km – wyliczane automatycznie
   createdBy: string;
   createdAt: Timestamp;
 }
 ```
 
 **Logika wyliczania spalania (l/100km):**
+
 1. Znajdź poprzednie tankowanie dla tego samego auta (posortowane po dacie).
 2. Jeśli poprzednie istnieje – oblicz: `(liters / (mileage - prevMileage)) * 100`.
 3. Pomiń wyliczenie jeśli `isSkipped = true` lub brak poprzedniego wpisu.
 4. Uwzględnij flagę Vervy: jeśli poprzednie tankowanie miało Vervę, wyświetl informację, że spalanie mogło być inne.
 
 ### 4.3 Naprawa (`repairs`)
+
 ```typescript
 interface Repair {
   id: string;
   carId: string;
-  date: string;           // ISO 8601
-  amount: number;         // zapłacona kwota
-  mileage: number;        // przebieg
-  location: string;       // gdzie robiono (warsztat, adres)
-  description: string;    // co robiono (textarea, dużo tekstu)
-  mechanicNote: string;   // komentarz o wykonawcy (textarea)
+  date: string; // ISO 8601
+  amount: number; // zapłacona kwota
+  mileage: number; // przebieg
+  location: string; // gdzie robiono (warsztat, adres)
+  description: string; // co robiono (textarea, dużo tekstu)
+  mechanicNote: string; // komentarz o wykonawcy (textarea)
   createdBy: string;
   createdAt: Timestamp;
 }
@@ -136,12 +141,14 @@ Login → Dashboard → [Lista tankowań] → [Formularz tankowania]
 ```
 
 ### 5.2 Dashboard
+
 - Ostatnie tankowanie + wyliczone spalanie
 - Suma wydatków w tym miesiącu (tankowanie + naprawy)
 - Szybkie przyciski: ➕ Tankowanie, 🔧 Naprawa
 - Mini wykres spalania (ostatnie 5 wpisów)
 
 ### 5.3 Formularz tankowania
+
 - **Data** – date picker, domyślnie dzisiejsza
 - **Kwota** – number input
 - **Przebieg** – number input
@@ -151,6 +158,7 @@ Login → Dashboard → [Lista tankowań] → [Formularz tankowania]
 - Automatyczne wyliczenie spalania widoczne po zapisie (lub komunikat "Brak danych do wyliczenia")
 
 ### 5.4 Formularz naprawy
+
 - **Data** – date picker, domyślnie dzisiejsza
 - **Kwota** – number input
 - **Przebieg** – number input
@@ -160,6 +168,7 @@ Login → Dashboard → [Lista tankowań] → [Formularz tankowania]
 - **🎤 Przycisk mowy** – uruchamia speech-to-text, wypełnia pole tekstowe
 
 ### 5.5 Listy z filtrowaniem
+
 - Sortowanie po dacie (domyślnie malejąco)
 - Filtry: miesiąc, rok
 - Swipe-to-delete lub długie przytrzymanie → edycja/usuwanie
@@ -183,6 +192,7 @@ Login → Dashboard → [Lista tankowań] → [Formularz tankowania]
 ```
 
 **Strategia:**
+
 1. **Zapis**: zawsze najpierw do Ionic Storage (lokalnie), potem w tle do Firestore.
 2. **Odczyt**: z Ionic Storage (szybkie), Firestore jako source-of-truth + listener na zmiany.
 3. **Konflikt**: prosty – ostatni zapis wygrywa (Last-Write-Wins). Dla 2 osób to wystarczy.
@@ -192,21 +202,22 @@ Login → Dashboard → [Lista tankowań] → [Formularz tankowania]
 
 ## 7. Firebase – plan wdrożenia
 
-| Usługa | Zastosowanie |
-|---|---|
-| **Firebase Auth** | Email/Password lub Google Sign-In. Użytkownik + żona, współdzielone auto. |
-| **Firestore** | Kolekcje: `cars`, `refuels`, `repairs`. Proste reguły bezpieczeństwa. |
-| **Firestore Rules** | Tylko właściciel/współdzielący widzi dane swojego auta. |
-| **Firebase Hosting** | Opcjonalnie – PWA jako fallback. |
+| Usługa               | Zastosowanie                                                              |
+| -------------------- | ------------------------------------------------------------------------- |
+| **Firebase Auth**    | Email/Password lub Google Sign-In. Użytkownik + żona, współdzielone auto. |
+| **Firestore**        | Kolekcje: `cars`, `refuels`, `repairs`. Proste reguły bezpieczeństwa.     |
+| **Firestore Rules**  | Tylko właściciel/współdzielący widzi dane swojego auta.                   |
+| **Firebase Hosting** | Opcjonalnie – PWA jako fallback.                                          |
 
 ### Reguły Firestore (szkielet):
+
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /cars/{carId} {
-      allow read, write: if request.auth != null 
-        && (resource.data.ownerId == request.auth.uid 
+      allow read, write: if request.auth != null
+        && (resource.data.ownerId == request.auth.uid
             || request.auth.uid in resource.data.sharedWith);
     }
     match /refuels/{id} {
@@ -225,6 +236,7 @@ service cloud.firestore {
 ## 8. Migracja na NestJS + PostgreSQL (plan przyszły)
 
 Gdy zajdzie potrzeba:
+
 1. **API Gateway**: NestJS wystawia REST API (lub GraphQL).
 2. **Baza**: PostgreSQL z TypeORM lub Prisma.
 3. **Auth**: JWT zamiast Firebase Auth.
@@ -252,6 +264,7 @@ Gdy zajdzie potrzeba:
 ## 10. Harmonogram prac (propozycja)
 
 ### Faza 1 – Fundament (MVP) ✅
+
 - [x] Inicjalizacja projektu Ionic + Angular + Capacitor
 - [x] Konfiguracja Firebase (projekt, Auth, Firestore)
 - [x] Ekran logowania (email + Google)
@@ -259,6 +272,7 @@ Gdy zajdzie potrzeba:
 - [x] Ionic Storage – offline-first
 
 ### Faza 2 – Główne funkcje ✅
+
 - [x] Dashboard (podsumowanie, szybkie akcje)
 - [x] CRUD tankowania (lista + formularz)
 - [x] Automatyczne wyliczanie spalania
@@ -266,11 +280,13 @@ Gdy zajdzie potrzeba:
 - [x] Speech-to-text dla napraw
 
 ### Faza 3 – Szlify ✅
+
 - [x] **Car Wizard + Car Service** – dodawanie aut w wizardzie (pierwsze użycie), car-switcher w headerze, zastąpienie `default-car`
 - [x] **Filtrowanie i sortowanie list** ✅ (spec: `docs/specs/04-filter-sort-lists.md`)
 - [ ] ~~Współdzielenie auta między użytkownikami~~ (usunięte – ADR-002: jeden garaż na konto)
 
 ### Faza 4 – Opcjonalne dodatki
+
 - [ ] Wykresy spalania (Chart.js / ngx-charts)
 - [ ] Eksport danych do CSV/PDF
 - [ ] Powiadomienia push (przypomnienie o przeglądzie)
@@ -278,6 +294,7 @@ Gdy zajdzie potrzeba:
 - [ ] Przypomnienia serwisowe – na podstawie przebiegu lub daty
 
 ### Faza 5 – Deployment i testy natywne
+
 - [ ] PWA + deployment (Firebase Hosting)
 - [ ] Testy na Android/iOS (Capacitor build)
 
@@ -304,4 +321,4 @@ Gdy zajdzie potrzeba:
 
 ---
 
-*Ostatnia aktualizacja: 04.11.2026*
+_Ostatnia aktualizacja: 04.11.2026_

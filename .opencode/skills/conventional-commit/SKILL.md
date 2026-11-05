@@ -31,23 +31,24 @@ You generate conventional commit messages compliant with the
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation |
-| `style` | Formatting, no logic impact |
+| Type       | Description                        |
+| ---------- | ---------------------------------- |
+| `feat`     | New feature                        |
+| `fix`      | Bug fix                            |
+| `docs`     | Documentation                      |
+| `style`    | Formatting, no logic impact        |
 | `refactor` | Refactoring (neither feat nor fix) |
-| `perf` | Performance improvement |
-| `test` | Adding/changing tests |
-| `build` | Build system changes, dependencies |
-| `ci` | CI/CD changes |
-| `chore` | Other changes (updates, config) |
-| `revert` | Reverting a previous commit |
+| `perf`     | Performance improvement            |
+| `test`     | Adding/changing tests              |
+| `build`    | Build system changes, dependencies |
+| `ci`       | CI/CD changes                      |
+| `chore`    | Other changes (updates, config)    |
+| `revert`   | Reverting a previous commit        |
 
 ### Scope (optional)
 
 For Car Manager, use scopes corresponding to modules:
+
 - `refuel` — for refuel/tanking functionality
 - `repair` — for repair functionality
 - `dashboard` — for dashboard functionality

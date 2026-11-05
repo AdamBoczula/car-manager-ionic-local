@@ -91,7 +91,8 @@ internally calls `stopListening()` before starting, so cleanup is automatic.
 <ion-back-button defaultHref="/dashboard" />
 
 <!-- ❌ WRONG: skips a level, confusing navigation -->
-<ion-back-button defaultHref="/dashboard" />  <!-- on refuel-form -->
+<ion-back-button defaultHref="/dashboard" />
+<!-- on refuel-form -->
 ```
 
 **Hierarchy:** `dashboard → list → form`
@@ -146,11 +147,11 @@ deliberate tradeoff: data preservation > context clarity.
 
 ## 7. Route guard composition
 
-| Route | Guards | Why |
-|-------|--------|-----|
-| `dashboard`, `refuel-list`, `repair-list`, `refuel-form`, `repair-form` | `authGuard` + `carGuard` | Must be logged in AND have at least one car |
-| `add-car` | `authGuard` only | `carGuard` redirects to `/add-car` when empty — putting it here would cause infinite loop |
-| `login`, `register` | `noAuthGuard` | Blocks logged-in users from auth pages |
+| Route                                                                   | Guards                   | Why                                                                                       |
+| ----------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------- |
+| `dashboard`, `refuel-list`, `repair-list`, `refuel-form`, `repair-form` | `authGuard` + `carGuard` | Must be logged in AND have at least one car                                               |
+| `add-car`                                                               | `authGuard` only         | `carGuard` redirects to `/add-car` when empty — putting it here would cause infinite loop |
+| `login`, `register`                                                     | `noAuthGuard`            | Blocks logged-in users from auth pages                                                    |
 
 **Never** put `carGuard` on `/add-car` — infinite redirect loop.
 
@@ -158,10 +159,10 @@ deliberate tradeoff: data preservation > context clarity.
 
 ## Quick reference: What to use when
 
-| Scenario | Method | Wrap in zone? |
-|----------|--------|---------------|
-| Navigate to a new page | `navigateForward(url)` | ✅ Yes |
-| Go back in history | `navigateBack()` (no URL) or `back()` | ✅ Yes |
-| Replace entire stack (e.g., login → dashboard, car switch) | `navigateRoot(url, { animated: false })` | ✅ Yes |
-| Post-form-submit redirect | `navigateForward('/dashboard')` | ✅ Yes |
-| `ion-back-button` fallback | `defaultHref` one level up | N/A |
+| Scenario                                                   | Method                                   | Wrap in zone? |
+| ---------------------------------------------------------- | ---------------------------------------- | ------------- |
+| Navigate to a new page                                     | `navigateForward(url)`                   | ✅ Yes        |
+| Go back in history                                         | `navigateBack()` (no URL) or `back()`    | ✅ Yes        |
+| Replace entire stack (e.g., login → dashboard, car switch) | `navigateRoot(url, { animated: false })` | ✅ Yes        |
+| Post-form-submit redirect                                  | `navigateForward('/dashboard')`          | ✅ Yes        |
+| `ion-back-button` fallback                                 | `defaultHref` one level up               | N/A           |

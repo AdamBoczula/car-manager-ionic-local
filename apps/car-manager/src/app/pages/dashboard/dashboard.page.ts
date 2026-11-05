@@ -1,16 +1,7 @@
 // spec: docs/specs/05-car-management.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
-import {
-  Component,
-  inject,
-  signal,
-  computed,
-  OnInit,
-  OnDestroy,
-  effect,
-  DestroyRef,
-  NgZone,
-} from '@angular/core';
+import type { OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, effect, DestroyRef, NgZone } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { NavController } from '@ionic/angular';
 import {
@@ -142,9 +133,7 @@ import { formatPln } from '../../core/utils/consumption.util';
                       <h3>{{ refuel.date | date: 'dd.MM.yyyy' }}</h3>
                       <p>{{ formatAmount(refuel.amount) }} &middot; {{ refuel.mileage }} km</p>
                       @if (refuel.consumption != null) {
-                        <p class="consumption-info">
-                          Spalanie: {{ refuel.consumption }} L/100km
-                        </p>
+                        <p class="consumption-info">Spalanie: {{ refuel.consumption }} L/100km</p>
                       }
                     </ion-label>
                     @if (refuel.isVerva) {
@@ -251,14 +240,10 @@ export class DashboardPage implements OnInit, OnDestroy {
   readonly storageReady = signal(false);
 
   /** Last 5 refuels sorted by date descending (newest first). */
-  readonly recentRefuels = computed(() =>
-    this.refuelService.refuels().slice(0, 5)
-  );
+  readonly recentRefuels = computed(() => this.refuelService.refuels().slice(0, 5));
 
   /** Last 5 repairs sorted by date descending (newest first). */
-  readonly recentRepairs = computed(() =>
-    this.repairService.repairs().slice(0, 5)
-  );
+  readonly recentRepairs = computed(() => this.repairService.repairs().slice(0, 5));
 
   constructor() {
     addIcons({
@@ -359,9 +344,7 @@ export class DashboardPage implements OnInit, OnDestroy {
   // bugfix: docs/bugs/01-car-switcher-confirmation-redirect.md
   async handleCarSelected(id: string): Promise<void> {
     await this.carService.setActiveCar(id);
-    await this.zone.run(() =>
-      this.navController.navigateRoot('/dashboard', { animated: false })
-    );
+    await this.zone.run(() => this.navController.navigateRoot('/dashboard', { animated: false }));
   }
 
   navigateTo(path: string): void {

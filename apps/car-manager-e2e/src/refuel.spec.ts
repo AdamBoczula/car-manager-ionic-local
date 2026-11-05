@@ -23,27 +23,23 @@ test.describe('Refuel – Lista tankowań', () => {
     await navigateToRefuelListViaDashboard(page);
   });
 
-  test('should display empty state with "Brak tankowań" message', async ({
-    page,
-  }) => {
-    await expect(
-      page.getByText(/Brak tankowań/i)
-    ).toBeVisible();
+  test('should display empty state with "Brak tankowań" message', async ({ page }) => {
+    await expect(page.getByText(/Brak tankowań/i)).toBeVisible();
   });
 
   test('should have a header with an add button', async ({ page }) => {
-    const addButton = page.locator(
-      'ion-fab-button, ion-button[routerLink*="refuel-form"], ion-button:has-text("Dodaj"), ion-header ion-button'
-    ).first();
+    const addButton = page
+      .locator(
+        'ion-fab-button, ion-button[routerLink*="refuel-form"], ion-button:has-text("Dodaj"), ion-header ion-button',
+      )
+      .first();
     await expect(addButton).toBeVisible();
   });
 
-  test('should navigate to /refuel-form via programmatic navigation', async ({
-    page,
-  }) => {
+  test('should navigate to /refuel-form via programmatic navigation', async ({ page }) => {
     await page.evaluate(() => {
       const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
-      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/refuel-form');
+      return (e2e.navigateTo as (path: string) => Promise<unknown>)('/refuel-form');
     });
     await expect(page).toHaveURL(/refuel-form/, { timeout: 5000 });
   });
@@ -75,31 +71,34 @@ test.describe('Refuel – Formularz tankowania', () => {
     await expect(page.locator('ion-toggle')).toBeVisible();
 
     // Pomiń checkbox — .first() to avoid strict mode violation from Ionic stacked pages
-    await expect(page.locator('ion-checkbox').or(page.locator('ion-item:has-text("Pomiń")')).first()).toBeVisible();
+    await expect(
+      page.locator('ion-checkbox').or(page.locator('ion-item:has-text("Pomiń")')).first(),
+    ).toBeVisible();
   });
 
-  test('should reveal skip reason field when skip checkbox is checked', async ({
-    page,
-  }) => {
-    const skipToggle = page.locator(
-      'ion-toggle[label*="Pomiń"], ion-checkbox, ion-item:has-text("Pomiń") ion-toggle'
-    ).first();
+  test('should reveal skip reason field when skip checkbox is checked', async ({ page }) => {
+    const skipToggle = page
+      .locator('ion-toggle[label*="Pomiń"], ion-checkbox, ion-item:has-text("Pomiń") ion-toggle')
+      .first();
     const skipExists = await skipToggle.isVisible().catch(() => false);
-    if (!skipExists) { test.skip(true, 'Skip toggle not implemented yet'); return; }
+    if (!skipExists) {
+      test.skip(true, 'Skip toggle not implemented yet');
+      return;
+    }
     await skipToggle.click();
     await page.waitForTimeout(300);
-    const reasonField = page.locator(
-      'ion-item:has(ion-label:text("Powód pominięcia")) ion-textarea'
-    ).first();
+    const reasonField = page
+      .locator('ion-item:has(ion-label:text("Powód pominięcia")) ion-textarea')
+      .first();
     await expect(reasonField).toBeVisible({ timeout: 3000 });
   });
 
-  test('should stay on form page when submitted empty (form validation)', async ({
-    page,
-  }) => {
-    const saveButton = page.locator(
-      'ion-button:has-text("Zapisz"), ion-button[type="submit"], ion-button:has-text("Dodaj tankowanie")'
-    ).first();
+  test('should stay on form page when submitted empty (form validation)', async ({ page }) => {
+    const saveButton = page
+      .locator(
+        'ion-button:has-text("Zapisz"), ion-button[type="submit"], ion-button:has-text("Dodaj tankowanie")',
+      )
+      .first();
     // The submit button is disabled when form is invalid. Use force:true
     // to bypass actionability checks — the <form> element may intercept
     // pointer events on the disabled button in Ionic's rendering.
@@ -108,9 +107,11 @@ test.describe('Refuel – Formularz tankowania', () => {
   });
 
   test('should have a save/submit button', async ({ page }) => {
-    const saveButton = page.locator(
-      'ion-button:has-text("Zapisz"), ion-button:has-text("Dodaj"), ion-button[type="submit"]'
-    ).first();
+    const saveButton = page
+      .locator(
+        'ion-button:has-text("Zapisz"), ion-button:has-text("Dodaj"), ion-button[type="submit"]',
+      )
+      .first();
     await expect(saveButton).toBeVisible();
   });
 });

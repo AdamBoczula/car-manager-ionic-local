@@ -69,7 +69,7 @@ function createMockCarService(overrides?: {
     cars: signal<Car[]>(overrides?.cars ?? [mockCar]),
     activeCar: signal<Car | null>(overrides?.activeCar ?? mockCar),
     activeCarId: signal<string | null>(
-      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc'
+      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc',
     ),
     hasCars: signal(true),
     isLoading: signal(false),
@@ -102,9 +102,7 @@ describe('RepairListPage', () => {
       ],
     });
 
-    expect(
-      screen.getByText('Brak napraw – dodaj pierwszą!')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Brak napraw – dodaj pierwszą!')).toBeInTheDocument();
   });
 
   // ── AC-1: Lista napraw ──
@@ -134,7 +132,7 @@ describe('RepairListPage', () => {
     expect(screen.getByText('AutoSerwis Kraków')).toBeInTheDocument();
     expect(screen.getByText('ASO Toyota')).toBeInTheDocument();
     expect(
-      screen.getByText('Wymiana klocków i tarcz hamulcowych — przód + tył')
+      screen.getByText('Wymiana klocków i tarcz hamulcowych — przód + tył'),
     ).toBeInTheDocument();
   });
 
@@ -322,9 +320,7 @@ describe('RepairListPage', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(
-      screen.getByText('Brak wpisów w wybranym okresie.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Brak wpisów w wybranym okresie.')).toBeInTheDocument();
   });
 
   // covers: docs/specs/04-filter-sort-lists.md#AC-16

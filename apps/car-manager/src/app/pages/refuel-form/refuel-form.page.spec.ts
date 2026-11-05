@@ -7,7 +7,8 @@
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { provideRouter, Routes } from '@angular/router';
+import type { Routes } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { NavController } from '@ionic/angular';
 import { signal } from '@angular/core';
@@ -49,12 +50,10 @@ function createMockRefuelService(overrides?: Partial<RefuelService>) {
 
 function createMockCarService(overrides?: { activeCarId?: string | null }) {
   return {
-    cars: signal<Car[]>(
-      overrides?.activeCarId !== undefined ? [mockCar] : [mockCar]
-    ),
+    cars: signal<Car[]>(overrides?.activeCarId !== undefined ? [mockCar] : [mockCar]),
     activeCar: signal<Car | null>(mockCar),
     activeCarId: signal<string | null>(
-      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc'
+      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc',
     ),
     hasCars: signal(true),
     isLoading: signal(false),
@@ -92,9 +91,7 @@ describe('RefuelFormPage', () => {
     expect(screen.getByLabelText('Data tankowania')).toBeInTheDocument();
     expect(screen.getByLabelText('Kwota w PLN')).toBeInTheDocument();
     expect(screen.getByLabelText('Przebieg w kilometrach')).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('Ilość litrów (opcjonalnie)')
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Ilość litrów (opcjonalnie)')).toBeInTheDocument();
     expect(screen.getByLabelText('Verva?')).toBeInTheDocument();
     expect(screen.getByText('Pomiń wpis')).toBeInTheDocument();
     expect(screen.getByText('Zapisz tankowanie')).toBeInTheDocument();
@@ -154,7 +151,7 @@ describe('RefuelFormPage', () => {
         liters: 40,
         isVerva: false,
         isSkipped: false,
-      })
+      }),
     );
 
     await vi.waitFor(() => {
@@ -219,7 +216,7 @@ describe('RefuelFormPage', () => {
         isVerva: true,
         isSkipped: true,
         skippedReason: 'Ktoś inny zatankował',
-      })
+      }),
     );
   });
 

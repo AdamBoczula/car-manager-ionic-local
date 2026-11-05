@@ -10,6 +10,7 @@ committed secrets, API keys, tokens, and other sensitive data.
 ## Quick Start
 
 1. Run the script:
+
    ```bash
    bash .opencode/scripts/scan-secrets.sh
    ```
@@ -23,10 +24,10 @@ committed secrets, API keys, tokens, and other sensitive data.
 
 ## Modes
 
-| Mode | Description |
-|------|-------------|
-| `warn` (default) | Logs findings, does not block |
-| `block` | Exit code != 0 when secrets found |
+| Mode             | Description                       |
+| ---------------- | --------------------------------- |
+| `warn` (default) | Logs findings, does not block     |
+| `block`          | Exit code != 0 when secrets found |
 
 ```bash
 SCAN_MODE=block bash .opencode/scripts/scan-secrets.sh
@@ -45,6 +46,7 @@ SCAN_MODE=block bash .opencode/scripts/scan-secrets.sh
 ## Allowlist
 
 For known false positives:
+
 ```bash
 SECRETS_ALLOWLIST="test_key_123,example_token" bash .opencode/scripts/scan-secrets.sh
 ```

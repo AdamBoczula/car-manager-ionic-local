@@ -18,7 +18,7 @@
 export function calculateConsumption(
   liters: number,
   currentMileage: number,
-  previousMileage: number
+  previousMileage: number,
 ): number | null {
   if (liters <= 0) return null;
 

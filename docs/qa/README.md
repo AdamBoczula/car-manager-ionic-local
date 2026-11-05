@@ -7,9 +7,9 @@ QA Coordinator subagent (phase [4b] of the SDD workflow).
 
 Reports are timestamped: `YYYY-MM-DD-qa-report.md`
 
-| Date | Overall Score | Critical Issues | Notes |
-|------|--------------|-----------------|-------|
-| — | — | — | No reports generated yet |
+| Date | Overall Score | Critical Issues | Notes                    |
+| ---- | ------------- | --------------- | ------------------------ |
+| —    | —             | —               | No reports generated yet |
 
 ## Template
 
@@ -22,6 +22,7 @@ Run the `/qa-review` command in OpenCode, or ask:
 > "Przejrzyj UI/UX aplikacji"
 
 The QA Coordinator will:
+
 1. Verify the dev server is running
 2. Spawn `ui-reviewer`, `ux-analyzer`, `a11y-auditor`, and `responsive-checker` subagents in parallel
 3. Collect results and generate a unified report

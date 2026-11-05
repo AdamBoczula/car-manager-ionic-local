@@ -5,6 +5,7 @@ Last updated: 2026-11-01
 ## Testing Stack
 
 Primary stack:
+
 - Vitest
 - Angular Testing Library
 - TestBed where needed
@@ -13,22 +14,26 @@ Primary stack:
 ## Required Test Layers
 
 1. Unit tests
+
 - Dumb/presentational components
 - Services (RefuelService, RepairService, AuthService, SyncService)
 - TypeScript utility/domain logic (consumption calculation, date boundaries, money rounding)
 - Ionic Storage and Firestore service interactions (mocked)
 
 2. Component/Integration tests
+
 - User-centric flows around refuel and repair forms
 - Dashboard summary rendering for monthly totals
 - Login/logout flow with auth state
 
 3. E2E tests
+
 - Critical path coverage for MVP flows
 
 ## Minimum Scenario Set (MVP)
 
 For each release candidate, ensure automated coverage for:
+
 1. Add refuel with mileage, liters, and amount → verify consumption auto-calculated
 2. Add refuel with skipped entry → verify consumption skipped
 3. Edit an existing refuel and verify updated consumption/totals
@@ -47,18 +52,21 @@ npm exec nx affected -t lint test build e2e
 ```
 
 And confirm:
+
 - No lint errors
 - No failing unit/component tests
 - No failing e2e tests in affected scope
 - Build succeeds
 
 Current enforcement policy:
+
 - CI does not block automatically yet for missing critical-flow tests.
 - Agents should still add those tests and explicitly report any missing coverage.
 
 ## Consumption Calculation Test Guidance
 
 Use these mandatory checks for the l/100km formula:
+
 - Two consecutive refuels: verify `(liters / (mileage - prevMileage)) * 100` returns correct value
 - Edge case: mileage difference of zero → handle gracefully (show "N/A" or message)
 - Edge case: liters is undefined → skip calculation
@@ -80,6 +88,7 @@ Use these mandatory checks for the l/100km formula:
 ## Offline/Sync Test Guidance
 
 Include scenarios for:
+
 - Create refuel while offline (Ionic Storage persists, Firestore unavailable)
 - Create repair while offline
 - Edit refuel while offline
@@ -91,6 +100,7 @@ Include scenarios for:
 ## Non-Goals For MVP Test Automation
 
 Not required yet unless a task explicitly requests it:
+
 - Multi-car sync conflict resolution
 - Speech-to-text recognition testing (native plugin, test UI integration only)
 - Push notification delivery
@@ -99,6 +109,7 @@ Not required yet unless a task explicitly requests it:
 ## Security Checklist For AI Changes
 
 Before merge, confirm:
+
 - Inputs are validated on client (form validators) and Firestore (security rules).
 - No secrets or credentials are introduced in client code.
 - User-controlled strings are sanitized before rendering (Ionic handles most but verify).
@@ -108,6 +119,7 @@ Before merge, confirm:
 ## Manual QA Checklist
 
 Before release candidate sign-off, confirm manually:
+
 1. Login with Firebase Auth (email + Google) works.
 2. Dashboard shows correct monthly totals after adding refuels and repairs.
 3. Add refuel flow works — consumption auto-calculated correctly.

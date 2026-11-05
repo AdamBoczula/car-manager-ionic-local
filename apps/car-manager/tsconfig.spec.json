@@ -8,7 +8,5 @@
     "experimentalDecorators": true
   },
   "include": ["src/**/*.spec.ts", "src/**/*.d.ts", "vite.config.mts"],
-  "references": [
-    { "path": "./tsconfig.app.json" }
-  ]
+  "references": [{ "path": "./tsconfig.app.json" }]
 }

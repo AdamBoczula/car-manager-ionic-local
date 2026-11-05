@@ -42,11 +42,14 @@ so the user can decide for themselves.
 ## Verification Process
 
 ### 1. Claim Extraction
+
 Extract all verifiable claims from the text — code quotes, API names,
 configurations, patterns.
 
 ### 2. Source Verification
+
 For each claim, search:
+
 - Ionic documentation (ionicframework.com/docs)
 - Angular documentation (angular.dev)
 - Nx documentation (nx.dev)
@@ -56,7 +59,9 @@ For each claim, search:
 - Web search for external facts
 
 ### 3. Adversarial Review
+
 Check hallucination patterns:
+
 - Does the API exist in this version of Angular (22) and Ionic (9)?
 - Is the import path correct for Firebase modular SDK v13?
 - Do function/method names match the codebase?
@@ -69,15 +74,19 @@ Check hallucination patterns:
 ## Doublecheck Report
 
 ### ✅ Verified (source + link)
+
 - C1: [claim] — confirmed by [source]
 
 ### ⚠️ Potentially Incorrect
+
 - C2: [claim] — [what's missing / what doesn't match]
 
 ### ❌ Cannot Verify
+
 - C3: [claim] — [why it cannot be verified]
 
 ### 🔴 Fabrication Risk
+
 - C4: [claim] — [hallucination pattern]
 ```
 

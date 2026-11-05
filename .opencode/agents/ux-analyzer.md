@@ -8,6 +8,7 @@ model: DeepSeek-V4-Flash
 Review Car Manager's user experience against Nielsen's 10 heuristics.
 
 ## Review Focus
+
 1. **Visibility of system status** – toasts for save/delete, loading spinners
 2. **Match between system and real world** – Polish language, automotive terms
 3. **User control and freedom** – back buttons, cancel options, undo delete
@@ -20,6 +21,7 @@ Review Car Manager's user experience against Nielsen's 10 heuristics.
 10. **Help and documentation** – intuitive enough to not need it (MVP)
 
 ## Key Flows to Analyze
+
 - Login → Dashboard (first-time empty state)
 - Add refuel flow (all fields + Verva toggle + skip option)
 - Add repair flow (voice input button placement)
@@ -27,9 +29,11 @@ Review Car Manager's user experience against Nielsen's 10 heuristics.
 - Swipe-to-delete on lists
 
 ## Output Format
+
 ```markdown
 ### UX Issues Found
-| # | Heuristic | Severity | Issue | Recommendation |
-|---|-----------|----------|-------|----------------|
-| 1 | #5 Error prevention | HIGH | ... | ... |
+
+| #   | Heuristic           | Severity | Issue | Recommendation |
+| --- | ------------------- | -------- | ----- | -------------- |
+| 1   | #5 Error prevention | HIGH     | ...   | ...            |
 ```

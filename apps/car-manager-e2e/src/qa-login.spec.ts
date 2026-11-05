@@ -89,10 +89,12 @@ test.describe('Login Flow - QA Verification', () => {
     await expect(confirmPasswordInput).toBeVisible();
 
     // Verify heading
-    await expect(page.getByText('Utwórz konto', { exact: true })
-      .or(page.getByText('Rejestracja'))
-      .or(page.getByRole('heading', { name: /Utwórz konto|Rejestracja/i }))
-      .first()
+    await expect(
+      page
+        .getByText('Utwórz konto', { exact: true })
+        .or(page.getByText('Rejestracja'))
+        .or(page.getByRole('heading', { name: /Utwórz konto|Rejestracja/i }))
+        .first(),
     ).toBeVisible();
 
     await page.screenshot({ path: `${SCREENSHOT_DIR}/04-register-3-fields.png`, fullPage: true });
@@ -107,35 +109,43 @@ test.describe('Login Flow - QA Verification', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill email
-    const emailInput = page.locator('ion-input[name="email"] input').or(
-      page.locator('ion-input[name="email"]').locator('input')
-    );
+    const emailInput = page
+      .locator('ion-input[name="email"] input')
+      .or(page.locator('ion-input[name="email"]').locator('input'));
     await emailInput.first().fill('test@example.com');
 
     // Fill short password (4 chars)
-    const passwordInput = page.locator('ion-input[name="password"] input').or(
-      page.locator('ion-input[name="password"]').locator('input')
-    );
+    const passwordInput = page
+      .locator('ion-input[name="password"] input')
+      .or(page.locator('ion-input[name="password"]').locator('input'));
     await passwordInput.first().fill('1234');
 
     // Fill confirm password differently to trigger mismatch
-    const confirmInput = page.locator('ion-input[name="confirmPassword"] input').or(
-      page.locator('ion-input[name="confirmPassword"]').locator('input')
-    );
+    const confirmInput = page
+      .locator('ion-input[name="confirmPassword"] input')
+      .or(page.locator('ion-input[name="confirmPassword"]').locator('input'));
     await confirmInput.first().fill('12345');
 
     // Click/tab to trigger validation
     await confirmInput.first().press('Tab');
     await page.waitForTimeout(500);
 
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/05-short-password-validation.png`, fullPage: true });
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}/05-short-password-validation.png`,
+      fullPage: true,
+    });
 
     // Look for validation error text
     const errorText = page.getByText(/Hasło musi mieć co najmniej|min.*6|krótkie|Hasła muszą być/i);
-    const errorInDOM = await errorText.first().isVisible().catch(() => false);
+    const errorInDOM = await errorText
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     // Also check for ion-text danger color
-    const dangerText = page.locator('ion-text[color="danger"], .validation-error, ion-note[color="danger"]').first();
+    const dangerText = page
+      .locator('ion-text[color="danger"], .validation-error, ion-note[color="danger"]')
+      .first();
     const dangerVisible = await dangerText.isVisible().catch(() => false);
 
     if (errorInDOM || dangerVisible) {
@@ -173,7 +183,10 @@ test.describe('Login Flow - QA Verification', () => {
     await page.waitForURL('**/login', { timeout: 5000 });
     await expect(page).toHaveURL(/.*login.*/);
 
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/07-dashboard-redirect-to-login.png`, fullPage: true });
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}/07-dashboard-redirect-to-login.png`,
+      fullPage: true,
+    });
     console.log('✅ /dashboard redirects to /login when not authenticated');
   });
 
@@ -186,7 +199,10 @@ test.describe('Login Flow - QA Verification', () => {
     await page.waitForURL('**/login', { timeout: 5000 });
     await expect(page).toHaveURL(/.*login.*/);
 
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/08-root-redirect-to-login.png`, fullPage: true });
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}/08-root-redirect-to-login.png`,
+      fullPage: true,
+    });
     console.log('✅ Root URL redirects to /login');
   });
 
@@ -204,7 +220,10 @@ test.describe('Login Flow - QA Verification', () => {
     await expect(page.getByRole('button', { name: /Zaloguj się/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Zarejestruj się/i })).toBeVisible();
 
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/09-mobile-login-390x844.png`, fullPage: true });
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}/09-mobile-login-390x844.png`,
+      fullPage: true,
+    });
     console.log('✅ Mobile viewport (390x844) - Login page layout is correct');
   });
 
@@ -224,7 +243,10 @@ test.describe('Login Flow - QA Verification', () => {
     const registerBtn = page.getByRole('button', { name: /Zarejestruj|Utwórz konto/i });
     await expect(registerBtn.first()).toBeVisible();
 
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/10-mobile-register-390x844.png`, fullPage: true });
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}/10-mobile-register-390x844.png`,
+      fullPage: true,
+    });
     console.log('✅ Mobile viewport (390x844) - Register page layout is correct');
   });
 });

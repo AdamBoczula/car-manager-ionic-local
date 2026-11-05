@@ -1,8 +1,5 @@
-import {
-  ApplicationConfig,
-  provideZoneChangeDetection,
-  APP_INITIALIZER,
-} from '@angular/core';
+import type { ApplicationConfig } from '@angular/core';
+import { provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter, withRouterConfig } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { IonicRouteStrategy } from '@ionic/angular';
@@ -26,7 +23,7 @@ import { MigrationService } from './core/services/migration.service';
  */
 function initializeApp(
   storageService: StorageService,
-  migrationService: MigrationService
+  migrationService: MigrationService,
 ): () => Promise<void> {
   return async () => {
     await storageService.init();

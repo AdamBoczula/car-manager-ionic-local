@@ -11,11 +11,11 @@ import { Observable } from 'rxjs';
 export class SpeechService {
   readonly isListening = signal(false);
   readonly isSupported = signal(false);
-  private recognition: unknown = null;
+  private readonly recognition: unknown = null;
 
   constructor() {
     const win = window as unknown as Record<string, unknown>;
-    const SR = win['SpeechRecognition'] || win['webkitSpeechRecognition'];
+    const SR = win['SpeechRecognition'] ?? win['webkitSpeechRecognition'];
     this.isSupported.set(!!SR);
     if (SR) {
       this.recognition = new (SR as new () => Record<string, unknown>)();
@@ -36,7 +36,7 @@ export class SpeechService {
       this.isListening.set(true);
 
       rec['onresult'] = (event: Record<string, unknown>) => {
-        const results = event['results'] as Array<Array<{ transcript: string }>>;
+        const results = event['results'] as { transcript: string }[][];
         const transcript = results[0][0].transcript;
         observer.next(transcript);
         observer.complete();
@@ -59,8 +59,7 @@ export class SpeechService {
   stopListening(): void {
     if (this.recognition) {
       const stopFn = (this.recognition as Record<string, unknown>)['stop'] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       stopFn?.();
       this.isListening.set(false);
     }

@@ -1,10 +1,6 @@
 // spec: docs/specs/05-car-management.md
 // covers: docs/specs/05-car-management.md#AC-14
-import {
-  TestBed,
-  fakeAsync,
-  tick,
-} from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { Component, signal } from '@angular/core';
 import { firstValueFrom, type Observable } from 'rxjs';
@@ -131,7 +127,9 @@ describe('carGuard', () => {
 
       mockCarService.isInitialized.set(true);
 
-      const resolved = await firstValueFrom(result as Observable<boolean | ReturnType<Router['createUrlTree']>>);
+      const resolved = await firstValueFrom(
+        result as Observable<boolean | ReturnType<Router['createUrlTree']>>,
+      );
       expect(resolved).not.toBe(true);
       expect(resolved.toString()).toBe('/add-car');
     });

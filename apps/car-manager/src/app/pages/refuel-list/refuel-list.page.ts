@@ -2,16 +2,8 @@
 // spec: docs/specs/04-filter-sort-lists.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
-import {
-  Component,
-  inject,
-  OnDestroy,
-  computed,
-  effect,
-  DestroyRef,
-  NgZone,
-  signal,
-} from '@angular/core';
+import type { OnDestroy } from '@angular/core';
+import { Component, inject, computed, effect, DestroyRef, NgZone, signal } from '@angular/core';
 import { NavController } from '@ionic/angular';
 import { DatePipe } from '@angular/common';
 import {
@@ -195,23 +187,18 @@ export class RefuelListPage implements OnDestroy {
   /** Filtered and sorted list derived from refuels() + preferences(). */
   readonly filteredRefuels = computed(() => {
     const list = [...this.refuels()];
-    const { selectedMonth, selectedYear, sortBy, sortDirection } =
-      this.preferences();
+    const { selectedMonth, selectedYear, sortBy, sortDirection } = this.preferences();
 
     // Filter by month
     if (selectedMonth !== 'all') {
-      const filtered = list.filter(
-        (r) => new Date(r.date).getMonth() === selectedMonth
-      );
+      const filtered = list.filter((r) => new Date(r.date).getMonth() === selectedMonth);
       list.length = 0;
       list.push(...filtered);
     }
 
     // Filter by year
     if (selectedYear !== 'all') {
-      const filtered = list.filter(
-        (r) => new Date(r.date).getFullYear() === selectedYear
-      );
+      const filtered = list.filter((r) => new Date(r.date).getFullYear() === selectedYear);
       list.length = 0;
       list.push(...filtered);
     }
@@ -230,9 +217,7 @@ export class RefuelListPage implements OnDestroy {
     return list;
   });
 
-  readonly hasFilteredRefuels = computed(
-    () => this.filteredRefuels().length > 0
-  );
+  readonly hasFilteredRefuels = computed(() => this.filteredRefuels().length > 0);
 
   constructor() {
     addIcons({ add, trash, searchOutline });
@@ -260,8 +245,7 @@ export class RefuelListPage implements OnDestroy {
   /** Load persisted filter/sort preferences from Ionic Storage. */
   private async loadPreferences(): Promise<void> {
     try {
-      const saved =
-        await this.storageService.get<ListPreferences>(this.STORAGE_KEY);
+      const saved = await this.storageService.get<ListPreferences>(this.STORAGE_KEY);
       if (saved) {
         this.preferences.set(saved);
       }
@@ -273,9 +257,7 @@ export class RefuelListPage implements OnDestroy {
   /** Handle filter/sort changes: update signal and persist to storage. */
   handlePrefsChange(change: FilterSortChange): void {
     this.preferences.update((p) => ({ ...p, ...change }));
-    this.storageService
-      .set(this.STORAGE_KEY, this.preferences())
-      .catch(() => false);
+    this.storageService.set(this.STORAGE_KEY, this.preferences()).catch(() => false);
   }
 
   navigateToForm(): void {
@@ -286,9 +268,7 @@ export class RefuelListPage implements OnDestroy {
 
   async handleCarSelected(id: string): Promise<void> {
     await this.carService.setActiveCar(id);
-    await this.zone.run(() =>
-      this.navController.navigateRoot('/refuel-list', { animated: false })
-    );
+    await this.zone.run(() => this.navController.navigateRoot('/refuel-list', { animated: false }));
   }
 
   formatAmount(amount: number): string {

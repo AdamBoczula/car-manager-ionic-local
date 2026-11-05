@@ -1,21 +1,18 @@
 // covers: docs/bugs/01-car-switcher-confirmation-redirect.md
 // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
 import { test, expect, type Page } from '@playwright/test';
-import {
-  navigateToDashboard,
-  waitForIonicPage,
-} from './utils/navigation-helpers';
+import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helpers';
 import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 // ── Types ──
 
-type SeedCar = {
+interface SeedCar {
   readonly id: string;
   readonly name: string;
   readonly ownerId: string;
   readonly createdAt: string;
-};
+}
 
 // ── Constants ──
 
@@ -54,11 +51,7 @@ const CAR_2: SeedCar = {
  * in IndexedDB). This happens after the dashboard finishes loading because
  * DashboardPage.ngOnInit() calls storage.init().
  */
-async function seedCarList(
-  page: Page,
-  uid: string,
-  cars: readonly SeedCar[]
-): Promise<void> {
+async function seedCarList(page: Page, uid: string, cars: readonly SeedCar[]): Promise<void> {
   const seeded = cars.map((c) => ({ ...c, ownerId: uid }));
 
   await page.evaluate(
@@ -66,14 +59,12 @@ async function seedCarList(
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open(dbName);
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed'));
       });
 
       if (database.objectStoreNames.length === 0) {
         database.close();
-        throw new Error(
-          'No object stores in IndexedDB — Ionic Storage not initialized yet.'
-        );
+        throw new Error('No object stores in IndexedDB — Ionic Storage not initialized yet.');
       }
 
       const storeName = database.objectStoreNames[0];
@@ -84,11 +75,12 @@ async function seedCarList(
 
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
+        transaction.onerror = () =>
+          reject(transaction.error ?? new Error('IndexedDB transaction failed'));
       });
       database.close();
     },
-    { dbName: DB_NAME, uid, cars: seeded }
+    { dbName: DB_NAME, uid, cars: seeded },
   );
 }
 
@@ -98,24 +90,18 @@ async function seedCarList(
  *
  * PREREQUISITE: Ionic Storage must already be initialized.
  */
-async function seedActiveCarId(
-  page: Page,
-  uid: string,
-  carId: string
-): Promise<void> {
+async function seedActiveCarId(page: Page, uid: string, carId: string): Promise<void> {
   await page.evaluate(
     async ({ dbName, uid, carId }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open(dbName);
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed'));
       });
 
       if (database.objectStoreNames.length === 0) {
         database.close();
-        throw new Error(
-          'No object stores in IndexedDB — Ionic Storage not initialized yet.'
-        );
+        throw new Error('No object stores in IndexedDB — Ionic Storage not initialized yet.');
       }
 
       const storeName = database.objectStoreNames[0];
@@ -126,11 +112,12 @@ async function seedActiveCarId(
 
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
+        transaction.onerror = () =>
+          reject(transaction.error ?? new Error('IndexedDB transaction failed'));
       });
       database.close();
     },
-    { dbName: DB_NAME, uid, carId }
+    { dbName: DB_NAME, uid, carId },
   );
 }
 
@@ -156,9 +143,9 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
 
     // Verify the dashboard is actually rendered — also confirms
     // that storage.init() has been called, creating the IndexedDB object store
-    await expect(
-      page.getByRole('heading', { name: /Tankowania/i })
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible({
+      timeout: 10000,
+    });
 
     // ── Phase 2: Replace the temporary car in initialized Ionic Storage ──
     await seedCarList(page, seededUser.uid, [CAR_1, CAR_2]);
@@ -173,9 +160,9 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     // Wait for dashboard to load again, this time with the seeded cars
     await page.waitForURL(/dashboard/, { timeout: 15000 });
     await waitForIonicPage(page);
-    await expect(
-      page.getByRole('heading', { name: /Tankowania/i })
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('should show confirmation alert when selecting a different car, then navigate to dashboard with correct content', async ({
@@ -207,9 +194,7 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     await expect(alert).toBeVisible({ timeout: 5000 });
 
     // Alert should contain the confirmation message with the target car name
-    await expect(alert).toContainText(
-      `Czy na pewno chcesz zmienić auto na ${CAR_2.name}`
-    );
+    await expect(alert).toContainText(`Czy na pewno chcesz zmienić auto na ${CAR_2.name}`);
 
     // Alert should have two buttons: "Nie" (cancel) and "Tak" (confirm)
     const alertButtons = alert.locator('.alert-button');
@@ -231,9 +216,7 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     await waitForIonicPage(page);
 
     // Dashboard heading
-    await expect(
-      page.getByRole('heading', { name: /Tankowania/i })
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible({ timeout: 5000 });
 
     // Tankowania card
     // The Ionic overlay can keep the underlying page aria-hidden while its
@@ -247,15 +230,11 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
       timeout: 5000,
     });
 
-
-
     // The selected car is active after the confirmation handler completes.
     await expect(switcherButton).toContainText(CAR_2.name);
   });
 
-  test('should cancel car change when clicking "Nie" in confirmation alert', async ({
-    page,
-  }) => {
+  test('should cancel car change when clicking "Nie" in confirmation alert', async ({ page }) => {
     // ── Arrange: verify initial state ──
     const switcherButton = page.getByTestId('car-switcher-button');
     await expect(switcherButton).toBeVisible({ timeout: 5000 });
@@ -272,9 +251,7 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     // ── Assert 1: confirmation alert appears ──
     const alert = page.locator('ion-alert:visible');
     await expect(alert).toBeVisible({ timeout: 5000 });
-    await expect(alert).toContainText(
-      `Czy na pewno chcesz zmienić auto na ${CAR_2.name}`
-    );
+    await expect(alert).toContainText(`Czy na pewno chcesz zmienić auto na ${CAR_2.name}`);
 
     // ── Act 2: cancel the change by clicking "Nie" ──
     await alert.getByRole('button', { name: /Nie/i }).click();
@@ -289,9 +266,7 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     await expect(switcherButton).toContainText(CAR_1.name);
 
     // ── Assert 5: dashboard content is still intact ──
-    await expect(
-      page.getByRole('heading', { name: /Tankowania/i })
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible({ timeout: 5000 });
   });
 
   test('should not show confirmation alert when selecting the same (already active) car', async ({
@@ -319,9 +294,7 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     // ── Assert 2: no navigation/reload, dashboard content stays intact ──
     await expect(page).toHaveURL(/dashboard/);
     await expect(switcherButton).toContainText(CAR_1.name);
-    await expect(
-      page.getByRole('heading', { name: /Tankowania/i })
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
   });
 
   for (const list of [
@@ -344,14 +317,15 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
       page,
     }) => {
       await page.evaluate((route) => {
-        const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
-        return (e2e['navigateTo'] as (path: string) => Promise<unknown>)(route);
+        const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<
+          string,
+          unknown
+        >;
+        return (e2e.navigateTo as (path: string) => Promise<unknown>)(route);
       }, list.route);
       await expect(page).toHaveURL(new RegExp(`${list.route}$`));
 
-      const activePage = page.locator(
-        `${list.pageSelector}.ion-page:not(.ion-page-hidden)`
-      );
+      const activePage = page.locator(`${list.pageSelector}.ion-page:not(.ion-page-hidden)`);
       const switcherButton = activePage.getByTestId('car-switcher-button');
       await expect(switcherButton).toContainText(CAR_1.name);
 
@@ -366,40 +340,34 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
 
       await expect(page).toHaveURL(new RegExp(`${list.route}$`));
       await expect(
-        page.locator(`${list.pageSelector}.ion-page:not(.ion-page-hidden)`)
+        page.locator(`${list.pageSelector}.ion-page:not(.ion-page-hidden)`),
       ).toBeVisible();
       await expect(page.locator('ion-popover:visible')).toHaveCount(0);
       await expect(
         page
           .locator(`${list.pageSelector}.ion-page:not(.ion-page-hidden)`)
-          .getByTestId('car-switcher-button')
+          .getByTestId('car-switcher-button'),
       ).toContainText(CAR_2.name);
       await expect(
-        page.locator(`${list.pageSelector}.ion-page:not(.ion-page-hidden)`).getByText(list.emptyText, { exact: true })
+        page
+          .locator(`${list.pageSelector}.ion-page:not(.ion-page-hidden)`)
+          .getByText(list.emptyText, { exact: true }),
       ).toBeVisible();
     });
   }
 
-  test('should return from repair list to the dashboard with the back button', async ({
-    page,
-  }) => {
+  test('should return from repair list to the dashboard with the back button', async ({ page }) => {
     await page.evaluate(() => {
       const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
-      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-list');
+      return (e2e.navigateTo as (path: string) => Promise<unknown>)('/repair-list');
     });
     await page.waitForURL(/\/repair-list$/);
 
-    const activeRepairList = page.locator(
-      'app-repair-list.ion-page:not(.ion-page-hidden)'
-    );
+    const activeRepairList = page.locator('app-repair-list.ion-page:not(.ion-page-hidden)');
     await activeRepairList.locator('ion-back-button').click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(
-      page.getByRole('heading', { name: /Tankowania/i })
-    ).toBeVisible();
-    await expect(
-      page.locator('app-dashboard.ion-page:not(.ion-page-hidden)')
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
+    await expect(page.locator('app-dashboard.ion-page:not(.ion-page-hidden)')).toBeVisible();
   });
 });

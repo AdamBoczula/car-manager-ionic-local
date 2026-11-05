@@ -1,3 +1,4 @@
+import type { Firestore } from 'firebase/firestore';
 // spec: docs/specs/05-car-management.md
 // covers: docs/specs/05-car-management.md#AC-11, AC-12, AC-13, AC-14, AC-20
 import { TestBed } from '@angular/core/testing';
@@ -40,15 +41,14 @@ vi.mock('firebase/firestore', () => ({
 
 // Mock the ../firebase module to provide a mock db instance
 vi.mock('../firebase', () => ({
-  db: {} as import('firebase/firestore').Firestore,
+  db: {} as Firestore,
 }));
 
 const storageData = new Map<string, unknown>();
 
 const mockStorageService = {
   get: vi.fn(
-    async <T>(key: string): Promise<T | null> =>
-      (storageData.get(key) as T | null) ?? null
+    async <T>(key: string): Promise<T | null> => (storageData.get(key) as T | null) ?? null,
   ),
   set: vi.fn(async (key: string, value: unknown) => {
     storageData.set(key, value);
@@ -134,17 +134,13 @@ describe('CarService', () => {
       mockAddDoc.mockResolvedValue({ id: 'fs-1' });
 
       await service.addCar('Toyota Corolla');
-      const stored = await mockStorageService.get<Car[]>(
-        'cars:test-uid-123'
-      );
+      const stored = await mockStorageService.get<Car[]>('cars:test-uid-123');
       expect(stored?.length).toBe(1);
       expect(stored![0].name).toBe('Toyota Corolla');
     });
 
     it('should allow duplicate car names', async () => {
-      mockAddDoc
-        .mockResolvedValueOnce({ id: 'fs-1' })
-        .mockResolvedValueOnce({ id: 'fs-2' });
+      mockAddDoc.mockResolvedValueOnce({ id: 'fs-1' }).mockResolvedValueOnce({ id: 'fs-2' });
 
       await service.addCar('Toyota Corolla');
       await service.addCar('Toyota Corolla');
@@ -229,9 +225,7 @@ describe('CarService', () => {
   describe('deleteCar()', () => {
     // covers: docs/specs/05-car-management.md — active car deleted
     it('should remove car and switch active to remaining car', async () => {
-      mockAddDoc
-        .mockResolvedValueOnce({ id: 'fs-1' })
-        .mockResolvedValueOnce({ id: 'fs-2' });
+      mockAddDoc.mockResolvedValueOnce({ id: 'fs-1' }).mockResolvedValueOnce({ id: 'fs-2' });
 
       const car1 = await service.addCar('Car 1');
       const car2 = await service.addCar('Car 2');
@@ -323,9 +317,7 @@ describe('CarService', () => {
 
       const car = await service.addCar('Test');
       // Should not throw
-      await expect(
-        service.updateCar(car.id, { name: 'Updated' })
-      ).resolves.toBeUndefined();
+      await expect(service.updateCar(car.id, { name: 'Updated' })).resolves.toBeUndefined();
 
       // Local state still updated
       expect(service.cars()[0].name).toBe('Updated');
@@ -334,9 +326,7 @@ describe('CarService', () => {
 
   describe('setActiveCar()', () => {
     it('should update activeCarId and persist to storage', async () => {
-      mockAddDoc
-        .mockResolvedValueOnce({ id: 'fs-1' })
-        .mockResolvedValueOnce({ id: 'fs-2' });
+      mockAddDoc.mockResolvedValueOnce({ id: 'fs-1' }).mockResolvedValueOnce({ id: 'fs-2' });
 
       await service.addCar('Car 1');
       const car2 = await service.addCar('Car 2');
@@ -344,16 +334,12 @@ describe('CarService', () => {
       await service.setActiveCar(car2.id);
 
       expect(service.activeCarId()).toBe(car2.id);
-      const stored = await mockStorageService.get<string>(
-        'active_car:test-uid-123'
-      );
+      const stored = await mockStorageService.get<string>('active_car:test-uid-123');
       expect(stored).toBe(car2.id);
     });
 
     it('should update activeCarId signal when setting active car', async () => {
-      mockAddDoc
-        .mockResolvedValueOnce({ id: 'fs-1' })
-        .mockResolvedValueOnce({ id: 'fs-2' });
+      mockAddDoc.mockResolvedValueOnce({ id: 'fs-1' }).mockResolvedValueOnce({ id: 'fs-2' });
 
       await service.addCar('Car 1');
       const car2 = await service.addCar('Car 2');

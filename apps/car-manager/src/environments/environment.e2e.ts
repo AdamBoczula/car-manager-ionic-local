@@ -1,4 +1,4 @@
-import { Environment } from './environment.interface';
+import type { Environment } from './environment.interface';
 
 /**
  * 🔧 E2E TESTING – uses Firebase emulators (auth + firestore).

@@ -1,7 +1,8 @@
 // spec: docs/specs/05-car-management.md
 // covers: docs/specs/05-car-management.md#AC-8, AC-9, AC-18, AC-20
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular, NavController } from '@ionic/angular';
 import { signal } from '@angular/core';
@@ -241,9 +242,7 @@ describe('DashboardPage', () => {
     it('powinien wyświetlić przycisk "Dodaj tankowanie"', async () => {
       await setup();
       await renderAndWait();
-      const btn = fixture.nativeElement.querySelector(
-        '[data-testid="btn-add-refuel"]'
-      );
+      const btn = fixture.nativeElement.querySelector('[data-testid="btn-add-refuel"]');
       expect(btn).toBeTruthy();
       expect(btn!.textContent).toContain('Dodaj tankowanie');
     });
@@ -251,9 +250,7 @@ describe('DashboardPage', () => {
     it('powinien wyświetlić przycisk "Dodaj naprawę"', async () => {
       await setup();
       await renderAndWait();
-      const btn = fixture.nativeElement.querySelector(
-        '[data-testid="btn-add-repair"]'
-      );
+      const btn = fixture.nativeElement.querySelector('[data-testid="btn-add-repair"]');
       expect(btn).toBeTruthy();
       expect(btn!.textContent).toContain('Dodaj naprawę');
     });
@@ -264,7 +261,7 @@ describe('DashboardPage', () => {
 
       const navigateSpy = vi.spyOn(navController, 'navigateForward');
       const btn = fixture.nativeElement.querySelector(
-        '[data-testid="btn-add-refuel"]'
+        '[data-testid="btn-add-refuel"]',
       ) as HTMLElement;
       btn.click();
       await fixture.whenStable();
@@ -278,7 +275,7 @@ describe('DashboardPage', () => {
 
       const navigateSpy = vi.spyOn(navController, 'navigateForward');
       const btn = fixture.nativeElement.querySelector(
-        '[data-testid="btn-add-repair"]'
+        '[data-testid="btn-add-repair"]',
       ) as HTMLElement;
       btn.click();
       await fixture.whenStable();
@@ -294,9 +291,7 @@ describe('DashboardPage', () => {
       await setup();
       await renderAndWait();
 
-      const empty = fixture.nativeElement.querySelector(
-        '[data-testid="empty-refuels"]'
-      );
+      const empty = fixture.nativeElement.querySelector('[data-testid="empty-refuels"]');
       expect(empty).toBeTruthy();
       expect(empty!.textContent).toContain('Brak tankowań');
     });
@@ -306,9 +301,7 @@ describe('DashboardPage', () => {
       refuelServiceRefuels.set(createMockRefuels());
       await renderAndWait();
 
-      const items = fixture.nativeElement.querySelectorAll(
-        '[data-testid="recent-refuel-item"]'
-      );
+      const items = fixture.nativeElement.querySelectorAll('[data-testid="recent-refuel-item"]');
       expect(items.length).toBe(4); // 4 items in mock, capped at 5
     });
 
@@ -317,9 +310,7 @@ describe('DashboardPage', () => {
       refuelServiceRefuels.set(createMockRefuels().slice(0, 1));
       await renderAndWait();
 
-      const link = fixture.nativeElement.querySelector(
-        '[data-testid="link-all-refuels"]'
-      );
+      const link = fixture.nativeElement.querySelector('[data-testid="link-all-refuels"]');
       expect(link).toBeTruthy();
     });
 
@@ -327,9 +318,7 @@ describe('DashboardPage', () => {
       await setup();
       await renderAndWait();
 
-      const link = fixture.nativeElement.querySelector(
-        '[data-testid="link-all-refuels"]'
-      );
+      const link = fixture.nativeElement.querySelector('[data-testid="link-all-refuels"]');
       expect(link).toBeNull();
     });
 
@@ -340,7 +329,7 @@ describe('DashboardPage', () => {
 
       const navigateSpy = vi.spyOn(navController, 'navigateForward');
       const item = fixture.nativeElement.querySelector(
-        '[data-testid="recent-refuel-item"]'
+        '[data-testid="recent-refuel-item"]',
       ) as HTMLElement;
       item.click();
       await fixture.whenStable();
@@ -354,7 +343,7 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const item = fixture.nativeElement.querySelector(
-        '[data-testid="recent-refuel-item"]'
+        '[data-testid="recent-refuel-item"]',
       ) as HTMLElement;
       expect(item.textContent).toContain('03.11.2025');
       expect(item.textContent).toContain('180,50');
@@ -367,7 +356,7 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const item = fixture.nativeElement.querySelector(
-        '[data-testid="recent-refuel-item"]'
+        '[data-testid="recent-refuel-item"]',
       ) as HTMLElement;
       expect(item.textContent).toContain('Verva');
     });
@@ -383,7 +372,7 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const item = fixture.nativeElement.querySelector(
-        '[data-testid="recent-refuel-item"]'
+        '[data-testid="recent-refuel-item"]',
       ) as HTMLElement;
       expect(item.textContent).toContain('Spalanie:');
       expect(item.textContent).toContain('7.5');
@@ -396,7 +385,7 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const item = fixture.nativeElement.querySelector(
-        '[data-testid="recent-refuel-item"]'
+        '[data-testid="recent-refuel-item"]',
       ) as HTMLElement;
       expect(item.textContent).not.toContain('Spalanie:');
     });
@@ -409,9 +398,7 @@ describe('DashboardPage', () => {
       await setup();
       await renderAndWait();
 
-      const empty = fixture.nativeElement.querySelector(
-        '[data-testid="empty-repairs"]'
-      );
+      const empty = fixture.nativeElement.querySelector('[data-testid="empty-repairs"]');
       expect(empty).toBeTruthy();
       expect(empty!.textContent).toContain('Brak napraw');
     });
@@ -421,9 +408,7 @@ describe('DashboardPage', () => {
       repairServiceRepairs.set(createMockRepairs());
       await renderAndWait();
 
-      const items = fixture.nativeElement.querySelectorAll(
-        '[data-testid="recent-repair-item"]'
-      );
+      const items = fixture.nativeElement.querySelectorAll('[data-testid="recent-repair-item"]');
       expect(items.length).toBe(3); // 3 items in mock, capped at 5
     });
 
@@ -432,9 +417,7 @@ describe('DashboardPage', () => {
       repairServiceRepairs.set(createMockRepairs().slice(0, 1));
       await renderAndWait();
 
-      const link = fixture.nativeElement.querySelector(
-        '[data-testid="link-all-repairs"]'
-      );
+      const link = fixture.nativeElement.querySelector('[data-testid="link-all-repairs"]');
       expect(link).toBeTruthy();
     });
 
@@ -442,9 +425,7 @@ describe('DashboardPage', () => {
       await setup();
       await renderAndWait();
 
-      const link = fixture.nativeElement.querySelector(
-        '[data-testid="link-all-repairs"]'
-      );
+      const link = fixture.nativeElement.querySelector('[data-testid="link-all-repairs"]');
       expect(link).toBeNull();
     });
 
@@ -455,7 +436,7 @@ describe('DashboardPage', () => {
 
       const navigateSpy = vi.spyOn(navController, 'navigateForward');
       const item = fixture.nativeElement.querySelector(
-        '[data-testid="recent-repair-item"]'
+        '[data-testid="recent-repair-item"]',
       ) as HTMLElement;
       item.click();
       await fixture.whenStable();
@@ -469,7 +450,7 @@ describe('DashboardPage', () => {
       await renderAndWait();
 
       const item = fixture.nativeElement.querySelector(
-        '[data-testid="recent-repair-item"]'
+        '[data-testid="recent-repair-item"]',
       ) as HTMLElement;
       expect(item.textContent).toContain('20.10.2025');
       expect(item.textContent).toContain('850,00');
@@ -484,27 +465,21 @@ describe('DashboardPage', () => {
     it('powinien wyrenderować główny przycisk FAB', async () => {
       await setup();
       await renderAndWait();
-      const fab = fixture.nativeElement.querySelector(
-        '[data-testid="fab-main"]'
-      );
+      const fab = fixture.nativeElement.querySelector('[data-testid="fab-main"]');
       expect(fab).toBeTruthy();
     });
 
     it('powinien wyrenderować przycisk FAB dla tankowania', async () => {
       await setup();
       await renderAndWait();
-      const fabRefuel = fixture.nativeElement.querySelector(
-        '[data-testid="fab-refuel"]'
-      );
+      const fabRefuel = fixture.nativeElement.querySelector('[data-testid="fab-refuel"]');
       expect(fabRefuel).toBeTruthy();
     });
 
     it('powinien wyrenderować przycisk FAB dla naprawy', async () => {
       await setup();
       await renderAndWait();
-      const fabRepair = fixture.nativeElement.querySelector(
-        '[data-testid="fab-repair"]'
-      );
+      const fabRepair = fixture.nativeElement.querySelector('[data-testid="fab-repair"]');
       expect(fabRepair).toBeTruthy();
     });
 
@@ -514,7 +489,7 @@ describe('DashboardPage', () => {
 
       const navigateSpy = vi.spyOn(navController, 'navigateForward');
       const fabRefuel = fixture.nativeElement.querySelector(
-        '[data-testid="fab-refuel"]'
+        '[data-testid="fab-refuel"]',
       ) as HTMLElement;
       fabRefuel.click();
       await fixture.whenStable();
@@ -528,7 +503,7 @@ describe('DashboardPage', () => {
 
       const navigateSpy = vi.spyOn(navController, 'navigateForward');
       const fabRepair = fixture.nativeElement.querySelector(
-        '[data-testid="fab-repair"]'
+        '[data-testid="fab-repair"]',
       ) as HTMLElement;
       fabRepair.click();
       await fixture.whenStable();
@@ -544,9 +519,7 @@ describe('DashboardPage', () => {
       const { mocks } = await setup();
       await renderAndWait();
 
-      const logoutBtn = fixture.nativeElement.querySelector(
-        '[data-testid="logout-button"]'
-      );
+      const logoutBtn = fixture.nativeElement.querySelector('[data-testid="logout-button"]');
 
       expect(logoutBtn).toBeTruthy();
       (logoutBtn as HTMLElement).click();
@@ -646,9 +619,7 @@ describe('DashboardPage', () => {
       const { mocks } = await setup();
       await renderAndWait();
 
-      const navigateSpy = vi
-        .spyOn(navController, 'navigateRoot')
-        .mockResolvedValue(true);
+      const navigateSpy = vi.spyOn(navController, 'navigateRoot').mockResolvedValue(true);
       await fixture.componentInstance.handleCarSelected('car-2');
 
       expect(mocks.carService.setActiveCar).toHaveBeenCalledWith('car-2');
@@ -661,9 +632,7 @@ describe('DashboardPage', () => {
       const { mocks } = await setup();
       await renderAndWait();
 
-      const navigateSpy = vi
-        .spyOn(navController, 'navigateRoot')
-        .mockResolvedValue(true);
+      const navigateSpy = vi.spyOn(navController, 'navigateRoot').mockResolvedValue(true);
       await fixture.componentInstance.handleCarSelected('car-1');
 
       expect(mocks.carService.setActiveCar).toHaveBeenCalledWith('car-1');

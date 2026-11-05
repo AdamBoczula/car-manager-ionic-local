@@ -2,6 +2,7 @@
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 // bugfix: docs/bugs/04-add-not-refreshing-list.md
 import { Injectable, inject, signal } from '@angular/core';
+import type { Unsubscribe } from 'firebase/firestore';
 import {
   collection,
   addDoc,
@@ -13,12 +14,11 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
-  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
-import { Refuel } from '../models/refuel.model';
+import type { Refuel } from '../models/refuel.model';
 
 const REFUELS_COLLECTION = 'refuels';
 const STORAGE_KEY = 'refuels';
@@ -58,7 +58,7 @@ export class RefuelService {
     const q = query(
       collection(this.firestore, REFUELS_COLLECTION),
       where('carId', '==', carId),
-      orderBy('date', 'desc')
+      orderBy('date', 'desc'),
     );
 
     const unsubscribe = onSnapshot(
@@ -70,7 +70,7 @@ export class RefuelService {
             ({
               id: docSnap.id,
               ...docSnap.data(),
-            }) as Refuel
+            }) as Refuel,
         );
 
         this.refuels.set(remote);
@@ -83,7 +83,7 @@ export class RefuelService {
         console.warn('Refuel Firestore listener error (offline?):', error);
         // Keep showing cached data on Firestore errors
         this.isLoading.set(false);
-      }
+      },
     );
 
     if (this.isCurrentListener(generation, carId)) {
@@ -111,9 +111,7 @@ export class RefuelService {
    * Add a new refuel. Saves locally first, then syncs to Firestore.
    * Automatically calculates consumption if previous refuel data is available.
    */
-  async add(
-    data: Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>
-  ): Promise<Refuel> {
+  async add(data: Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>): Promise<Refuel> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to add a refuel.');
 
@@ -126,10 +124,7 @@ export class RefuelService {
     };
 
     // Calculate consumption if possible
-    const consumption = await this.tryCalculateConsumption(
-      refuel.carId,
-      refuel
-    );
+    const consumption = await this.tryCalculateConsumption(refuel.carId, refuel);
     if (consumption !== null) {
       refuel.consumption = consumption;
     }
@@ -139,16 +134,14 @@ export class RefuelService {
 
     // Update the signal immediately so the UI reflects the new entry
     // without waiting for the Firestore onSnapshot round-trip.
-    const allLocal = await this.storage.get<Refuel[]>(
-      this.storageKey(refuel.carId)
-    );
+    const allLocal = await this.storage.get<Refuel[]>(this.storageKey(refuel.carId));
     this.refuels.set(allLocal ?? []);
 
     // 2. Sync to Firestore in background
     try {
       const docRef = await addDoc(
         collection(this.firestore, REFUELS_COLLECTION),
-        this.toFirestoreData(refuel)
+        this.toFirestoreData(refuel),
       );
       // Update local with real Firestore ID
       refuel.id = docRef.id;
@@ -163,17 +156,15 @@ export class RefuelService {
 
   async update(
     id: string,
-    data: Partial<Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>>
+    data: Partial<Omit<Refuel, 'id' | 'createdAt' | 'createdBy'>>,
   ): Promise<void> {
-    const carId = data.carId || this.activeCarId;
+    const carId = data.carId ?? this.activeCarId;
     if (!carId) throw new Error('carId is required to update a refuel.');
 
     // Update local
     const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
     if (cached) {
-      const updated = cached.map((r) =>
-        r.id === id ? { ...r, ...data, id } : r
-      );
+      const updated = cached.map((r) => (r.id === id ? { ...r, ...data, id } : r));
       await this.storage.set(this.storageKey(carId), updated);
       // Update the signal immediately so the UI reflects changes
       this.refuels.set(updated);
@@ -220,10 +211,7 @@ export class RefuelService {
         // Check if this refuel already exists in Firestore (has a real ID)
         if (refuel.id.length === 36) {
           // Looks like a UUID (temp ID), create new Firestore doc
-          const docRef = await addDoc(
-            firestoreRefuels,
-            this.toFirestoreData(refuel)
-          );
+          const docRef = await addDoc(firestoreRefuels, this.toFirestoreData(refuel));
           refuel.id = docRef.id;
         }
         // If it has a shorter ID, it's likely a Firestore-generated ID already
@@ -239,7 +227,7 @@ export class RefuelService {
   /** Get all refuels for a car (one-shot, no listener). */
   async getAllLocal(carId: string): Promise<Refuel[]> {
     const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
-    return cached || [];
+    return cached ?? [];
   }
 
   // ── Private helpers ──
@@ -257,9 +245,7 @@ export class RefuelService {
   private async updateLocalId(carId: string, refuel: Refuel): Promise<void> {
     const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
     if (cached) {
-      const updated = cached.map((r) =>
-        r.id === refuel.id ? { ...refuel } : r
-      );
+      const updated = cached.map((r) => (r.id === refuel.id ? { ...refuel } : r));
       await this.storage.set(this.storageKey(carId), updated);
     }
   }
@@ -268,10 +254,7 @@ export class RefuelService {
    * Try to calculate consumption by finding the last non-skipped refuel
    * for the same car before the given refuel.
    */
-  private async tryCalculateConsumption(
-    carId: string,
-    refuel: Refuel
-  ): Promise<number | null> {
+  private async tryCalculateConsumption(carId: string, refuel: Refuel): Promise<number | null> {
     if (refuel.isSkipped || refuel.liters == null || refuel.liters <= 0) {
       return null;
     }
@@ -283,23 +266,14 @@ export class RefuelService {
     const previous = cached
       .filter(
         (r) =>
-          r.carId === carId &&
-          !r.isSkipped &&
-          r.mileage < refuel.mileage &&
-          r.id !== refuel.id
+          r.carId === carId && !r.isSkipped && r.mileage < refuel.mileage && r.id !== refuel.id,
       )
-      .sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      )[0];
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
     if (!previous) return null;
 
     const { calculateConsumption } = await import('../utils/consumption.util');
-    return calculateConsumption(
-      refuel.liters,
-      refuel.mileage,
-      previous.mileage
-    );
+    return calculateConsumption(refuel.liters, refuel.mileage, previous.mileage);
   }
 
   /**
@@ -310,8 +284,6 @@ export class RefuelService {
     const { id: _id, ...data } = refuel;
     void _id; // explicitly unused — stripped before Firestore write
     // Remove undefined fields — Firestore does not accept them
-    return Object.fromEntries(
-      Object.entries(data).filter(([, v]) => v !== undefined)
-    );
+    return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
   }
 }

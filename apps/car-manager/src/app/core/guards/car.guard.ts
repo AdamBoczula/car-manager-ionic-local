@@ -23,8 +23,6 @@ export const carGuard: CanActivateFn = () => {
   return toObservable(carService.isInitialized).pipe(
     filter((initialized) => initialized),
     take(1),
-    map(() =>
-      carService.hasCars() ? true : router.createUrlTree(['/add-car'])
-    )
+    map(() => (carService.hasCars() ? true : router.createUrlTree(['/add-car']))),
   );
 };

@@ -1,3 +1,4 @@
+import type { Auth } from 'firebase/auth';
 // spec: docs/specs/02-login-screen.md
 // covers: docs/specs/02-login-screen.md#AC-1, AC-2, AC-3
 import { TestBed } from '@angular/core/testing';
@@ -19,7 +20,7 @@ vi.mock('firebase/auth', () => ({
 
 // Mock the ../firebase module to provide a mock auth instance
 vi.mock('../firebase', () => ({
-  auth: {} as import('firebase/auth').Auth,
+  auth: {} as Auth,
 }));
 
 import {
@@ -52,7 +53,7 @@ describe('AuthService', () => {
       (_auth: unknown, callback: (user: User | null) => void) => {
         callback(null);
         return vi.fn(); // unsubscribe
-      }
+      },
     );
     // Default: getRedirectResult returns null (no pending redirect)
     (getRedirectResult as ReturnType<typeof vi.fn>).mockResolvedValue(null);
@@ -80,7 +81,7 @@ describe('AuthService', () => {
         (_auth: unknown, callback: (user: User | null) => void) => {
           callback(null);
           return vi.fn();
-        }
+        },
       );
       (getRedirectResult as ReturnType<typeof vi.fn>).mockResolvedValue({
         user: mockUser,
@@ -117,7 +118,7 @@ describe('AuthService', () => {
       expect(signInWithEmailAndPassword).toHaveBeenCalledWith(
         expect.any(Object),
         'test@example.com',
-        'password123'
+        'password123',
       );
       // currentUser must be set BEFORE navigation to avoid race with authGuard
       expect(service.currentUser()).toBe(mockUser);
@@ -137,7 +138,7 @@ describe('AuthService', () => {
       expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
         expect.any(Object),
         'new@example.com',
-        'password123'
+        'password123',
       );
       // currentUser must be set BEFORE navigation to avoid race with authGuard
       expect(service.currentUser()).toBe(mockUser);
@@ -155,10 +156,7 @@ describe('AuthService', () => {
       await service.loginWithGoogle();
 
       expect(GoogleAuthProvider).toHaveBeenCalled();
-      expect(signInWithPopup).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object)
-      );
+      expect(signInWithPopup).toHaveBeenCalledWith(expect.any(Object), expect.any(Object));
       // currentUser must be set BEFORE navigation to avoid race with authGuard
       expect(service.currentUser()).toBe(mockUser);
       expect(service.isLoggedIn()).toBe(true);
@@ -191,7 +189,7 @@ describe('AuthService', () => {
         (_auth: unknown, callback: (user: User | null) => void) => {
           callback(mockUser);
           return vi.fn();
-        }
+        },
       );
       (getRedirectResult as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 

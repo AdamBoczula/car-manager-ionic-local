@@ -33,6 +33,7 @@
 [Wyjaśnienie techniczne dlaczego bug występuje — który komponent/serwis/util jest wadliwy]
 
 **Dotknięte pliki:**
+
 - `apps/car-manager/src/app/...`
 - `libs/shared/...`
 
@@ -53,8 +54,8 @@
 
 ## Naprawione pliki
 
-| Plik | Zmiana |
-|------|--------|
+| Plik  | Zmiana         |
+| ----- | -------------- |
 | `...` | [Co zmieniono] |
 
 ---

@@ -42,15 +42,15 @@ Aby szybko znaleźć interesujące mnie wpisy i analizować wydatki w wybranym o
 
 ### Edge Cases
 
-| Przypadek | Obsługa |
-|-----------|---------|
-| **Brak wpisów w wybranym okresie** | Empty state: „Brak wpisów w wybranym okresie. Zmień filtr lub dodaj nowy wpis." |
-| **Wszystkie wpisy w tym samym miesiącu** | Segment wyświetla tylko dostępne miesiące (disabled dla pustych) lub pokazuje wszystkie – decyzja: pokazujemy wszystkie 12 miesięcy, puste pokazują empty state |
-| **Użytkownik cofa filtr (back button / gesture)** | Nie dotyczy – filtry są zawsze widoczne, nie ma nawigacji modalnej |
-| **Zmiana filtra gdy lista jest pusta (loading)** | Filtry są interaktywne dopiero po załadowaniu danych (zapobiegamy migotaniu) |
-| **Bardzo długa lista (>100 wpisów)** | Filtrowanie i sortowanie odbywa się na sygnale w pamięci – O(n). Dla setek wpisów wydajność jest akceptowalna. |
-| **Offline – brak Firestore** | Filtry i sortowanie działają w pełni na danych z Ionic Storage |
-| **Zapisane filtry z nieistniejącego roku** | Przy odczycie z Ionic Storage walidujemy – jeśli rok nie istnieje w danych, reset do „Wszystkie" |
+| Przypadek                                         | Obsługa                                                                                                                                                         |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Brak wpisów w wybranym okresie**                | Empty state: „Brak wpisów w wybranym okresie. Zmień filtr lub dodaj nowy wpis."                                                                                 |
+| **Wszystkie wpisy w tym samym miesiącu**          | Segment wyświetla tylko dostępne miesiące (disabled dla pustych) lub pokazuje wszystkie – decyzja: pokazujemy wszystkie 12 miesięcy, puste pokazują empty state |
+| **Użytkownik cofa filtr (back button / gesture)** | Nie dotyczy – filtry są zawsze widoczne, nie ma nawigacji modalnej                                                                                              |
+| **Zmiana filtra gdy lista jest pusta (loading)**  | Filtry są interaktywne dopiero po załadowaniu danych (zapobiegamy migotaniu)                                                                                    |
+| **Bardzo długa lista (>100 wpisów)**              | Filtrowanie i sortowanie odbywa się na sygnale w pamięci – O(n). Dla setek wpisów wydajność jest akceptowalna.                                                  |
+| **Offline – brak Firestore**                      | Filtry i sortowanie działają w pełni na danych z Ionic Storage                                                                                                  |
+| **Zapisane filtry z nieistniejącego roku**        | Przy odczycie z Ionic Storage walidujemy – jeśli rok nie istnieje w danych, reset do „Wszystkie"                                                                |
 
 ---
 
@@ -73,6 +73,7 @@ interface ListPreferences {
 ```
 
 **Storage keys:**
+
 - `list_prefs:refuel` – preferencje listy tankowań
 - `list_prefs:repair` – preferencje listy napraw
 
@@ -174,27 +175,27 @@ interface FilterSortChange {
 
 ## Komponenty i pliki
 
-| Plik | Opis |
-|------|------|
-| `shared/components/filter-sort-bar/filter-sort-bar.component.ts` | Nowy komponent współdzielony – segment miesięcy, select roku, przycisk sortowania |
-| `shared/components/filter-sort-bar/filter-sort-bar.component.scss` | Style komponentu |
-| `shared/components/filter-sort-bar/filter-sort-bar.component.spec.ts` | Testy komponentu |
-| `pages/refuel-list/refuel-list.page.ts` | Integracja FilterSortBar, `computed` dla filtrowanej listy |
-| `pages/refuel-list/refuel-list.page.spec.ts` | Aktualizacja testów – testy filtrowania i sortowania |
-| `pages/repair-list/repair-list.page.ts` | Integracja FilterSortBar, `computed` dla filtrowanej listy |
-| `pages/repair-list/repair-list.page.spec.ts` | Aktualizacja testów |
-| `core/services/storage.service.ts` | (istniejący – używany do persystencji preferencji) |
+| Plik                                                                  | Opis                                                                              |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.ts`      | Nowy komponent współdzielony – segment miesięcy, select roku, przycisk sortowania |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.scss`    | Style komponentu                                                                  |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.spec.ts` | Testy komponentu                                                                  |
+| `pages/refuel-list/refuel-list.page.ts`                               | Integracja FilterSortBar, `computed` dla filtrowanej listy                        |
+| `pages/refuel-list/refuel-list.page.spec.ts`                          | Aktualizacja testów – testy filtrowania i sortowania                              |
+| `pages/repair-list/repair-list.page.ts`                               | Integracja FilterSortBar, `computed` dla filtrowanej listy                        |
+| `pages/repair-list/repair-list.page.spec.ts`                          | Aktualizacja testów                                                               |
+| `core/services/storage.service.ts`                                    | (istniejący – używany do persystencji preferencji)                                |
 
 ---
 
 ## Implemented in
 
-| Plik | Cel |
-|------|-----|
-| `shared/components/filter-sort-bar/filter-sort-bar.component.ts` | Komponent FilterSortBar – segment miesięcy, select roku, przyciski sortowania |
-| `shared/components/filter-sort-bar/filter-sort-bar.component.scss` | Style – przewijalny segment, fade-out, controls row |
-| `shared/components/filter-sort-bar/filter-sort-bar.component.spec.ts` | Testy jednostkowe (15 testów) – rendering, emisja zdarzeń, ikony |
-| `pages/refuel-list/refuel-list.page.ts` | Integracja FilterSortBar, `filteredRefuels()`, `availableYears()`, persystencja preferencji |
-| `pages/refuel-list/refuel-list.page.spec.ts` | Aktualizacja mocków (StorageService) |
-| `pages/repair-list/repair-list.page.ts` | Integracja FilterSortBar, `filteredRepairs()`, `availableYears()`, persystencja preferencji |
-| `pages/repair-list/repair-list.page.spec.ts` | Aktualizacja mocków (StorageService) |
+| Plik                                                                  | Cel                                                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.ts`      | Komponent FilterSortBar – segment miesięcy, select roku, przyciski sortowania               |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.scss`    | Style – przewijalny segment, fade-out, controls row                                         |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.spec.ts` | Testy jednostkowe (15 testów) – rendering, emisja zdarzeń, ikony                            |
+| `pages/refuel-list/refuel-list.page.ts`                               | Integracja FilterSortBar, `filteredRefuels()`, `availableYears()`, persystencja preferencji |
+| `pages/refuel-list/refuel-list.page.spec.ts`                          | Aktualizacja mocków (StorageService)                                                        |
+| `pages/repair-list/repair-list.page.ts`                               | Integracja FilterSortBar, `filteredRepairs()`, `availableYears()`, persystencja preferencji |
+| `pages/repair-list/repair-list.page.spec.ts`                          | Aktualizacja mocków (StorageService)                                                        |

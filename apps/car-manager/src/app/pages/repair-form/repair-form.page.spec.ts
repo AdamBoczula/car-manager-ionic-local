@@ -4,7 +4,8 @@
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { provideRouter, Routes } from '@angular/router';
+import type { Routes } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { provideIonicAngular, NavController } from '@ionic/angular';
 import { signal, Component } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
@@ -75,7 +76,7 @@ function createMockCarService(overrides?: { activeCarId?: string | null }) {
     cars: signal<Car[]>([mockCar]),
     activeCar: signal<Car | null>(mockCar),
     activeCarId: signal<string | null>(
-      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc'
+      overrides?.activeCarId !== undefined ? overrides.activeCarId : 'car-abc',
     ),
     hasCars: signal(true),
     isLoading: signal(false),
@@ -165,14 +166,8 @@ describe('RepairFormPage', () => {
 
     await user.type(screen.getByLabelText('Kwota w PLN'), '500');
     await user.type(screen.getByLabelText('Przebieg w kilometrach'), '65000');
-    await user.type(
-      screen.getByLabelText('Miejsce naprawy'),
-      'AutoSerwis Kraków'
-    );
-    await user.type(
-      screen.getByLabelText('Opis wykonanych prac'),
-      'Wymiana klocków'
-    );
+    await user.type(screen.getByLabelText('Miejsce naprawy'), 'AutoSerwis Kraków');
+    await user.type(screen.getByLabelText('Opis wykonanych prac'), 'Wymiana klocków');
 
     await user.click(screen.getByTestId('submit-repair-button'));
 
@@ -183,7 +178,7 @@ describe('RepairFormPage', () => {
         mileage: 65000,
         location: 'AutoSerwis Kraków',
         description: 'Wymiana klocków',
-      })
+      }),
     );
 
     await vi.waitFor(() => {
@@ -236,9 +231,7 @@ describe('RepairFormPage', () => {
     const micButton = screen.getByTestId('mic-button');
     await user.click(micButton);
 
-    const descEl = screen.getByLabelText(
-      'Opis wykonanych prac'
-    ) as HTMLTextAreaElement;
+    const descEl = screen.getByLabelText('Opis wykonanych prac') as HTMLTextAreaElement;
     expect(descEl.value).toContain('testowy transkrypt');
   });
 
@@ -246,9 +239,7 @@ describe('RepairFormPage', () => {
     const mockRepairSvc = createMockRepairService();
     const mockCarSvc = createMockCarService();
     const mockSpeechSvc = createMockSpeechService({
-      startListening: vi.fn(() =>
-        throwError(() => new Error('Speech not available'))
-      ),
+      startListening: vi.fn(() => throwError(() => new Error('Speech not available'))),
     });
     const user = userEvent.setup();
 

@@ -3,10 +3,11 @@
 Ten plik jest szablonem dla nowych specyfikacji. Kopiuj go i wypełniaj dla każdego
 nowego feature'a.
 
-```markdown
+````markdown
 # Spec: [Nazwa feature'a]
 
 ## Metadata
+
 - **Author:** [imię]
 - **Date:** [YYYY-MM-DD]
 - **Status:** draft | confirmed | implemented
@@ -19,11 +20,13 @@ nowego feature'a.
 ## Zakres (Scope)
 
 ### W scope
+
 - [Pozycja 1]
 - [Pozycja 2]
 - [Pozycja 3]
 
 ### Out of scope
+
 - [Pozycja 1]
 - [Pozycja 2]
 
@@ -87,6 +90,7 @@ type ExampleType = {
   field3?: string;
 };
 ```
+````
 
 - **Walidacja:** [Zasady walidacji dla każdego pola]
 
@@ -94,12 +98,12 @@ type ExampleType = {
 
 ### Stany komponentu
 
-| Stan | Opis | Zachowanie |
-|------|------|------------|
-| Loading | [Kiedy występuje] | [Co widać – skeleton, spinner] |
-| Empty | [Kiedy występuje] | [Co widać – komunikat "brak danych"] |
-| Error | [Kiedy występuje] | [Co widać – komunikat błędu, retry] |
-| Success | [Kiedy występuje] | [Co widać – dane] |
+| Stan    | Opis              | Zachowanie                           |
+| ------- | ----------------- | ------------------------------------ |
+| Loading | [Kiedy występuje] | [Co widać – skeleton, spinner]       |
+| Empty   | [Kiedy występuje] | [Co widać – komunikat "brak danych"] |
+| Error   | [Kiedy występuje] | [Co widać – komunikat błędu, retry]  |
+| Success | [Kiedy występuje] | [Co widać – dane]                    |
 
 ### Interakcje
 
@@ -116,10 +120,10 @@ type ExampleType = {
 
 ### Dotknięte moduły
 
-| Moduł | Plik | Zmiana |
-|-------|------|--------|
-| `apps/car-manager` | `src/app/.../file.ts` | Nowy komponent |
-| `libs/shared/models` | `src/lib/.../file.ts` | Nowy interfejs |
+| Moduł                  | Plik                  | Zmiana                 |
+| ---------------------- | --------------------- | ---------------------- |
+| `apps/car-manager`     | `src/app/.../file.ts` | Nowy komponent         |
+| `libs/shared/models`   | `src/lib/.../file.ts` | Nowy interfejs         |
 | `libs/shared/services` | `src/lib/.../file.ts` | Nowa metoda w serwisie |
 
 ### Flow danych
@@ -137,22 +141,22 @@ type ExampleType = {
 Śledzenie postępu implementacji. Każdy task przechodzi przez statusy:
 ⬜ **TODO** → 🔄 **In Progress** → ✅ **Done**
 
-| # | Task | Status | Assignee | Notes |
-|---|------|--------|----------|-------|
-| 1 | [np. dodać typ w shared/models] | ⬜ TODO | Dev | — |
-| 2 | [np. dodać metodę w serwisie] | ⬜ TODO | Dev | — |
-| 3 | [np. stworzyć komponent] | ⬜ TODO | Dev | — |
-| 4 | [np. dodać testy jednostkowe] | ⬜ TODO | Dev | — |
-| 5 | [np. dodać testy E2E] | ⬜ TODO | QA | — |
-| 6 | [np. walidacja quality gate] | ⬜ TODO | QA | `npm exec nx affected -t lint test build e2e` |
+| #   | Task                            | Status  | Assignee | Notes                                         |
+| --- | ------------------------------- | ------- | -------- | --------------------------------------------- |
+| 1   | [np. dodać typ w shared/models] | ⬜ TODO | Dev      | —                                             |
+| 2   | [np. dodać metodę w serwisie]   | ⬜ TODO | Dev      | —                                             |
+| 3   | [np. stworzyć komponent]        | ⬜ TODO | Dev      | —                                             |
+| 4   | [np. dodać testy jednostkowe]   | ⬜ TODO | Dev      | —                                             |
+| 5   | [np. dodać testy E2E]           | ⬜ TODO | QA       | —                                             |
+| 6   | [np. walidacja quality gate]    | ⬜ TODO | QA       | `npm exec nx affected -t lint test build e2e` |
 
 ## Implemented in (wypełniane po implementacji)
 
-| Plik | Data | AC pokryte |
-|------|------|------------|
-| `apps/car-manager/src/app/.../file.ts` | 2026-11-01 | AC-1, AC-2 |
+| Plik                                        | Data       | AC pokryte |
+| ------------------------------------------- | ---------- | ---------- |
+| `apps/car-manager/src/app/.../file.ts`      | 2026-11-01 | AC-1, AC-2 |
 | `apps/car-manager/src/app/.../file.spec.ts` | 2026-11-01 | AC-1, AC-2 |
-| `apps/car-manager-e2e/src/.../file.spec.ts` | 2026-11-01 | AC-1 |
+| `apps/car-manager-e2e/src/.../file.spec.ts` | 2026-11-01 | AC-1       |
 
 ## Zależności
 
@@ -163,4 +167,7 @@ type ExampleType = {
 
 - [Pytanie 1 – do decyzji użytkownika]
 - [Pytanie 2 – do decyzji użytkownika]
+
+```
+
 ```

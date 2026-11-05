@@ -49,13 +49,7 @@
 // ── Fade-out effect on segment edges (AC-17) ──
 
 ion-segment.filter-sort-bar__segment {
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 6%,
-    black 94%,
-    transparent 100%
-  );
+  mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,

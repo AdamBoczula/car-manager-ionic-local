@@ -1,4 +1,4 @@
-import { Environment } from './environment.interface';
+import type { Environment } from './environment.interface';
 
 /**
  * 🚀 PRODUCTION – `car-manager-prod` Firebase project

@@ -72,11 +72,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<void> {
-    const result = await signInWithEmailAndPassword(
-      this.firebaseAuth,
-      email,
-      password
-    );
+    const result = await signInWithEmailAndPassword(this.firebaseAuth, email, password);
     if (result.user) {
       // Must set currentUser BEFORE navigating, otherwise authGuard
       // runs before onAuthStateChanged fires and blocks the redirect.
@@ -86,11 +82,7 @@ export class AuthService {
   }
 
   async register(email: string, password: string): Promise<void> {
-    const result = await createUserWithEmailAndPassword(
-      this.firebaseAuth,
-      email,
-      password
-    );
+    const result = await createUserWithEmailAndPassword(this.firebaseAuth, email, password);
     if (result.user) {
       // Must set currentUser BEFORE navigating (same race condition as login).
       this.currentUser.set(result.user);

@@ -37,9 +37,7 @@ describe('Environment configuration', () => {
     });
 
     it('should use the same Firebase project as dev', () => {
-      expect(e2eEnvironment.firebase.projectId).toBe(
-        environment.firebase.projectId
-      );
+      expect(e2eEnvironment.firebase.projectId).toBe(environment.firebase.projectId);
     });
 
     it('should not be production', () => {

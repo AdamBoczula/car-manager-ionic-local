@@ -13,6 +13,7 @@ Aby śledzić tankowania i naprawy osobno dla każdego pojazdu.
 ## Decyzja architektoniczna: jeden garaż na konto
 
 > **ADR-002**: Model współdzielenia danych między użytkownikami został uproszczony:
+>
 > - Jedno konto (email/Google) = jeden **garaż** (zbiór aut rodziny)
 > - Mąż i żona używają **tego samego konta** – logują się tymi samymi danymi
 > - Odpada pole `sharedWith` w modelu `Car`, uproszczenie reguł Firestore
@@ -59,15 +60,15 @@ Aby śledzić tankowania i naprawy osobno dla każdego pojazdu.
 
 ### Edge Cases
 
-| Przypadek | Obsługa |
-|-----------|---------|
-| **0 aut – próba wejścia na /dashboard** | `carGuard` przekierowuje na `/add-car` (wizard) |
-| **Usunięcie ostatniego auta** | Przekierowanie na `/add-car` (wizard), wszystkie listy puste |
-| **Aktywne auto usunięte** | Jeśli usunięto aktywne auto → ustaw pierwsze dostępne jako aktywne. Jeśli brak → wizard |
-| **Offline przy dodawaniu auta** | Auto zapisane lokalnie, zsynchronizowane po powrocie online (standardowy flow Storage → Firestore) |
-| **Bardzo długa nazwa auta** | Ograniczenie do 50 znaków, walidacja w polu input |
-| **Duplikat nazwy auta** | Dozwolone – użytkownik może mieć dwa auta o tej samej nazwie (np. dwa służbowe) |
-| **Wizard przy restarcie apki (0 aut)** | Zawsze gdy `cars.length === 0`, niezależnie czy to pierwsze logowanie czy usunięto wszystkie |
+| Przypadek                               | Obsługa                                                                                            |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **0 aut – próba wejścia na /dashboard** | `carGuard` przekierowuje na `/add-car` (wizard)                                                    |
+| **Usunięcie ostatniego auta**           | Przekierowanie na `/add-car` (wizard), wszystkie listy puste                                       |
+| **Aktywne auto usunięte**               | Jeśli usunięto aktywne auto → ustaw pierwsze dostępne jako aktywne. Jeśli brak → wizard            |
+| **Offline przy dodawaniu auta**         | Auto zapisane lokalnie, zsynchronizowane po powrocie online (standardowy flow Storage → Firestore) |
+| **Bardzo długa nazwa auta**             | Ograniczenie do 50 znaków, walidacja w polu input                                                  |
+| **Duplikat nazwy auta**                 | Dozwolone – użytkownik może mieć dwa auta o tej samej nazwie (np. dwa służbowe)                    |
+| **Wizard przy restarcie apki (0 aut)**  | Zawsze gdy `cars.length === 0`, niezależnie czy to pierwsze logowanie czy usunięto wszystkie       |
 
 ---
 
@@ -80,11 +81,11 @@ Aby śledzić tankowania i naprawy osobno dla każdego pojazdu.
 // Zmiany: usunięto pole `sharedWith`, dodano opcjonalne pola
 interface Car {
   id: string;
-  name: string;            // np. "Toyota Corolla", "Żony Clio"
-  ownerId: string;         // uid użytkownika (garaż)
+  name: string; // np. "Toyota Corolla", "Żony Clio"
+  ownerId: string; // uid użytkownika (garaż)
   currentMileage?: number; // optional – aktualny przebieg
-  year?: number;           // optional – rocznik auta
-  vin?: string;            // optional – numer VIN
+  year?: number; // optional – rocznik auta
+  vin?: string; // optional – numer VIN
   createdAt: Timestamp;
 }
 ```
@@ -94,10 +95,10 @@ interface Car {
 ```typescript
 // spec: docs/specs/05-car-management.md
 interface CarServiceState {
-  cars: Signal<Car[]>;              // wszystkie auta w garażu
-  activeCar: Signal<Car | null>;     // aktywne auto
+  cars: Signal<Car[]>; // wszystkie auta w garażu
+  activeCar: Signal<Car | null>; // aktywne auto
   activeCarId: Signal<string | null>; // computed: activeCar()?.id ?? null
-  hasCars: Signal<boolean>;          // computed: cars().length > 0
+  hasCars: Signal<boolean>; // computed: cars().length > 0
   isLoading: Signal<boolean>;
 }
 ```
@@ -143,6 +144,7 @@ interface CarServiceState {
 ```
 
 **Nowy guard `carGuard`:**
+
 - Jeśli `carService.hasCars() === false` → przekierowanie na `/add-car`
 - W przeciwnym razie → przepuszcza
 
@@ -232,52 +234,52 @@ interface CarServiceState {
 
 ## Komponenty i pliki
 
-| Plik | Opis |
-|------|------|
-| `core/models/car.model.ts` | Aktualizacja modelu `Car` – usunięcie `sharedWith` |
-| `core/services/car.service.ts` | Nowy serwis – CRUD aut, aktywne auto, sygnały |
-| `core/services/car.service.spec.ts` | Testy jednostkowe CarService |
-| `core/guards/car.guard.ts` | Nowy guard – przekierowanie na wizard gdy 0 aut |
-| `core/guards/car.guard.spec.ts` | Testy guarda |
-| `pages/add-car/add-car.page.ts` | Nowa strona wizarda dodawania aut |
-| `pages/add-car/add-car.page.scss` | Style wizarda |
-| `pages/add-car/add-car.page.spec.ts` | Testy komponentu wizarda |
-| `shared/components/car-switcher/car-switcher.component.ts` | Nowy komponent – dropdown wyboru auta w headerze |
-| `shared/components/car-switcher/car-switcher.component.scss` | Style car-switchera |
-| `shared/components/car-switcher/car-switcher.component.spec.ts` | Testy car-switchera |
-| `app.routes.ts` | Nowa ścieżka `/add-car`, dodanie `carGuard` |
-| `pages/dashboard/dashboard.page.ts` | Integracja CarSwitcher w headerze |
-| `pages/refuel-list/refuel-list.page.ts` | Integracja CarSwitcher, zastąpienie `DEFAULT_CAR_ID` |
-| `pages/refuel-form/refuel-form.page.ts` | Zastąpienie `DEFAULT_CAR_ID` |
-| `pages/repair-list/repair-list.page.ts` | Integracja CarSwitcher, zastąpienie `default-car` |
-| `pages/repair-form/repair-form.page.ts` | Zastąpienie `default-car` |
+| Plik                                                            | Opis                                                 |
+| --------------------------------------------------------------- | ---------------------------------------------------- |
+| `core/models/car.model.ts`                                      | Aktualizacja modelu `Car` – usunięcie `sharedWith`   |
+| `core/services/car.service.ts`                                  | Nowy serwis – CRUD aut, aktywne auto, sygnały        |
+| `core/services/car.service.spec.ts`                             | Testy jednostkowe CarService                         |
+| `core/guards/car.guard.ts`                                      | Nowy guard – przekierowanie na wizard gdy 0 aut      |
+| `core/guards/car.guard.spec.ts`                                 | Testy guarda                                         |
+| `pages/add-car/add-car.page.ts`                                 | Nowa strona wizarda dodawania aut                    |
+| `pages/add-car/add-car.page.scss`                               | Style wizarda                                        |
+| `pages/add-car/add-car.page.spec.ts`                            | Testy komponentu wizarda                             |
+| `shared/components/car-switcher/car-switcher.component.ts`      | Nowy komponent – dropdown wyboru auta w headerze     |
+| `shared/components/car-switcher/car-switcher.component.scss`    | Style car-switchera                                  |
+| `shared/components/car-switcher/car-switcher.component.spec.ts` | Testy car-switchera                                  |
+| `app.routes.ts`                                                 | Nowa ścieżka `/add-car`, dodanie `carGuard`          |
+| `pages/dashboard/dashboard.page.ts`                             | Integracja CarSwitcher w headerze                    |
+| `pages/refuel-list/refuel-list.page.ts`                         | Integracja CarSwitcher, zastąpienie `DEFAULT_CAR_ID` |
+| `pages/refuel-form/refuel-form.page.ts`                         | Zastąpienie `DEFAULT_CAR_ID`                         |
+| `pages/repair-list/repair-list.page.ts`                         | Integracja CarSwitcher, zastąpienie `default-car`    |
+| `pages/repair-form/repair-form.page.ts`                         | Zastąpienie `default-car`                            |
 
 ---
 
 ## Implemented in
 
-| Plik | Cel |
-|------|------|
-| `core/models/car.model.ts` | Usunięcie `sharedWith` z modelu Car (ADR-002) |
-| `core/services/car.service.ts` | Nowy serwis: CRUD aut, aktywne auto, offline-first |
-| `core/services/car.service.spec.ts` | Testy jednostkowe CarService |
-| `core/guards/car.guard.ts` | Nowy guard: przekierowanie na `/add-car` gdy 0 aut |
-| `core/guards/car.guard.spec.ts` | Testy carGuard |
-| `pages/add-car/add-car.page.ts` | Wizard + tryb dodawania auta |
-| `pages/add-car/add-car.page.scss` | Style wizarda |
-| `pages/add-car/add-car.page.spec.ts` | Testy komponentu AddCarPage |
-| `shared/components/car-switcher/car-switcher.component.ts` | Komponent wyboru auta w headerze |
-| `shared/components/car-switcher/car-switcher.component.scss` | Style car-switchera |
-| `shared/components/car-switcher/car-switcher.component.spec.ts` | Testy car-switchera |
-| `app.routes.ts` | Trasa `/add-car` + `carGuard` na chronionych trasach |
-| `pages/dashboard/dashboard.page.ts` | CarSwitcher w headerze, integracja z CarService |
-| `pages/dashboard/dashboard.page.spec.ts` | Testy dashboard z CarService mockiem |
-| `pages/refuel-list/refuel-list.page.ts` | CarSwitcher, efekt reactywny, zastąpienie DEFAULT_CAR_ID |
-| `pages/refuel-list/refuel-list.page.spec.ts` | Testy refuel-list z CarService mockiem |
-| `pages/repair-list/repair-list.page.ts` | CarSwitcher, efekt reactywny, zastąpienie 'default-car' |
-| `pages/repair-list/repair-list.page.spec.ts` | Testy repair-list z CarService mockiem |
-| `pages/refuel-form/refuel-form.page.ts` | CarSwitcher, zastąpienie DEFAULT_CAR_ID |
-| `pages/refuel-form/refuel-form.page.spec.ts` | Testy refuel-form z CarService mockiem |
-| `pages/repair-form/repair-form.page.ts` | CarSwitcher, zastąpienie 'default-car' |
-| `pages/repair-form/repair-form.page.spec.ts` | Testy repair-form z CarService mockiem |
-| `app.component.ts` | CarService.startListening() po zalogowaniu |
+| Plik                                                            | Cel                                                      |
+| --------------------------------------------------------------- | -------------------------------------------------------- |
+| `core/models/car.model.ts`                                      | Usunięcie `sharedWith` z modelu Car (ADR-002)            |
+| `core/services/car.service.ts`                                  | Nowy serwis: CRUD aut, aktywne auto, offline-first       |
+| `core/services/car.service.spec.ts`                             | Testy jednostkowe CarService                             |
+| `core/guards/car.guard.ts`                                      | Nowy guard: przekierowanie na `/add-car` gdy 0 aut       |
+| `core/guards/car.guard.spec.ts`                                 | Testy carGuard                                           |
+| `pages/add-car/add-car.page.ts`                                 | Wizard + tryb dodawania auta                             |
+| `pages/add-car/add-car.page.scss`                               | Style wizarda                                            |
+| `pages/add-car/add-car.page.spec.ts`                            | Testy komponentu AddCarPage                              |
+| `shared/components/car-switcher/car-switcher.component.ts`      | Komponent wyboru auta w headerze                         |
+| `shared/components/car-switcher/car-switcher.component.scss`    | Style car-switchera                                      |
+| `shared/components/car-switcher/car-switcher.component.spec.ts` | Testy car-switchera                                      |
+| `app.routes.ts`                                                 | Trasa `/add-car` + `carGuard` na chronionych trasach     |
+| `pages/dashboard/dashboard.page.ts`                             | CarSwitcher w headerze, integracja z CarService          |
+| `pages/dashboard/dashboard.page.spec.ts`                        | Testy dashboard z CarService mockiem                     |
+| `pages/refuel-list/refuel-list.page.ts`                         | CarSwitcher, efekt reactywny, zastąpienie DEFAULT_CAR_ID |
+| `pages/refuel-list/refuel-list.page.spec.ts`                    | Testy refuel-list z CarService mockiem                   |
+| `pages/repair-list/repair-list.page.ts`                         | CarSwitcher, efekt reactywny, zastąpienie 'default-car'  |
+| `pages/repair-list/repair-list.page.spec.ts`                    | Testy repair-list z CarService mockiem                   |
+| `pages/refuel-form/refuel-form.page.ts`                         | CarSwitcher, zastąpienie DEFAULT_CAR_ID                  |
+| `pages/refuel-form/refuel-form.page.spec.ts`                    | Testy refuel-form z CarService mockiem                   |
+| `pages/repair-form/repair-form.page.ts`                         | CarSwitcher, zastąpienie 'default-car'                   |
+| `pages/repair-form/repair-form.page.spec.ts`                    | Testy repair-form z CarService mockiem                   |
+| `app.component.ts`                                              | CarService.startListening() po zalogowaniu               |

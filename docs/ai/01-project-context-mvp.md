@@ -9,6 +9,7 @@ Car Manager is a mobile app for tracking car expenses (fuel + repairs), designed
 ## MVP Scope
 
 In scope:
+
 - Login via Firebase Auth (email/password or Google Sign-In)
 - Dashboard with summary: last refuel + consumption, monthly spending totals, quick-add buttons
 - Refuel CRUD: add, edit, delete refuel records with automatic consumption calculation (l/100km)
@@ -18,6 +19,7 @@ In scope:
 - One shared car with two users
 
 Planned after MVP:
+
 - Multiple cars support
 - Push notifications (service reminders)
 - Charts for consumption trends
@@ -27,6 +29,7 @@ Planned after MVP:
 ## Critical Business Flows
 
 These flows are mandatory to protect with tests:
+
 1. Add refuel with mileage and liters → automatic consumption calculation
 2. Add repair with description (including speech-to-text input)
 3. Edit existing refuel → consumption recalculation
@@ -37,6 +40,7 @@ These flows are mandatory to protect with tests:
 ## High-Risk Areas
 
 Treat these as high-risk during implementation and review:
+
 - Consumption calculation (l/100km formula: `(liters / (mileage - prevMileage)) * 100`)
 - Offline/sync behavior (Ionic Storage → Firestore)
 - Firebase Auth (login, token refresh, offline auth state)
@@ -44,6 +48,7 @@ Treat these as high-risk during implementation and review:
 ## Money and Time Assumptions (Current)
 
 Known assumptions from stakeholder input:
+
 - Decimal money values are required (example: 100.23)
 - Currency is Polish złoty (PLN)
 - Date/time examples indicate Poland timezone usage
@@ -51,6 +56,7 @@ Known assumptions from stakeholder input:
 - Canonical reporting timezone is Europe/Warsaw
 
 Important:
+
 - No external money library is used for MVP; arithmetic must be centralized in utility functions.
 - Internal representation uses JavaScript number values.
 - Round half-up to 2 decimal places for display values.
@@ -59,6 +65,7 @@ Important:
 ## Consumption Calculation Rules
 
 The l/100km formula:
+
 1. Find the previous refuel for the same car (ordered by date).
 2. If previous exists and has mileage and liters: `(liters / (currentMileage - prevMileage)) * 100`
 3. Skip calculation if `isSkipped = true` or no previous entry exists.
@@ -73,6 +80,7 @@ The l/100km formula:
 ## Near-Term Product Success Signals
 
 Quality goals currently emphasized:
+
 - Strong component test coverage using Vitest + Angular Testing Library
 - Unit test coverage for consumption calculation utilities, services, and TypeScript logic
 - E2E test coverage for critical flows (add refuel, offline add, login) via Playwright

@@ -1,5 +1,6 @@
 // spec: docs/specs/05-car-management.md
 import { Injectable, inject, signal, computed } from '@angular/core';
+import type { Unsubscribe } from 'firebase/firestore';
 import {
   collection,
   addDoc,
@@ -11,12 +12,11 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
-  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { StorageService } from './storage.service';
 import { AuthService } from './auth.service';
-import { Car } from '../models/car.model';
+import type { Car } from '../models/car.model';
 
 const CARS_COLLECTION = 'cars';
 const STORAGE_PREFIX = 'cars';
@@ -77,9 +77,7 @@ export class CarService {
     }
 
     // Restore active car from storage
-    const savedActiveId = await this.storage.get<string>(
-      this.activeCarKey(user.uid)
-    );
+    const savedActiveId = await this.storage.get<string>(this.activeCarKey(user.uid));
     if (savedActiveId && cached?.some((c) => c.id === savedActiveId)) {
       this.activeCarId.set(savedActiveId);
     } else if (cached?.length) {
@@ -92,7 +90,7 @@ export class CarService {
     const q = query(
       collection(this.firestore, CARS_COLLECTION),
       where('ownerId', '==', user.uid),
-      orderBy('createdAt', 'asc')
+      orderBy('createdAt', 'asc'),
     );
 
     this.firestoreUnsubscribe = onSnapshot(
@@ -103,7 +101,7 @@ export class CarService {
             ({
               id: docSnap.id,
               ...docSnap.data(),
-            }) as Car
+            }) as Car,
         );
 
         this.cars.set(remote);
@@ -135,7 +133,7 @@ export class CarService {
         console.warn('Car Firestore listener error (offline?):', error);
         this.isLoading.set(false);
         this.isInitialized.set(true);
-      }
+      },
     );
   }
 
@@ -162,7 +160,7 @@ export class CarService {
       currentMileage?: number;
       year?: number;
       vin?: string;
-    }
+    },
   ): Promise<Car> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to add a car.');
@@ -192,16 +190,14 @@ export class CarService {
     try {
       const docRef = await addDoc(
         collection(this.firestore, CARS_COLLECTION),
-        this.toFirestoreData(car)
+        this.toFirestoreData(car),
       );
       // Update local with real Firestore ID
       car.id = docRef.id;
       await this.updateLocalId(user.uid, temporaryId, car);
 
       // Update the cars signal with the real Firestore ID
-      const updated = list.map((c) =>
-        c.id === temporaryId ? car : c
-      );
+      const updated = list.map((c) => (c.id === temporaryId ? car : c));
       this.cars.set(updated);
       await this.storage.set(this.storageKey(user.uid), updated);
     } catch (err) {
@@ -259,7 +255,7 @@ export class CarService {
    */
   async updateCar(
     id: string,
-    updates: { name?: string; currentMileage?: number; year?: number; vin?: string }
+    updates: { name?: string; currentMileage?: number; year?: number; vin?: string },
   ): Promise<void> {
     const user = this.auth.currentUser();
     if (!user) throw new Error('User must be logged in to update a car.');
@@ -286,7 +282,8 @@ export class CarService {
     try {
       const firestoreUpdates: Record<string, unknown> = {};
       if (updates.name !== undefined) firestoreUpdates['name'] = updates.name.trim();
-      if (updates.currentMileage !== undefined) firestoreUpdates['currentMileage'] = updates.currentMileage;
+      if (updates.currentMileage !== undefined)
+        firestoreUpdates['currentMileage'] = updates.currentMileage;
       if (updates.year !== undefined) firestoreUpdates['year'] = updates.year;
       if (updates.vin !== undefined) firestoreUpdates['vin'] = updates.vin.trim() || null;
 
@@ -317,16 +314,10 @@ export class CarService {
     return `active_car:${uid}`;
   }
 
-  private async updateLocalId(
-    uid: string,
-    temporaryId: string,
-    car: Car
-  ): Promise<void> {
+  private async updateLocalId(uid: string, temporaryId: string, car: Car): Promise<void> {
     const cached = await this.storage.get<Car[]>(this.storageKey(uid));
     if (cached) {
-      const updated = cached.map((c) =>
-        c.id === temporaryId ? car : c
-      );
+      const updated = cached.map((c) => (c.id === temporaryId ? car : c));
       await this.storage.set(this.storageKey(uid), updated);
     }
   }
@@ -339,8 +330,6 @@ export class CarService {
     const { id: _id, ...data } = car;
     void _id; // explicitly unused — stripped before Firestore write
     // Remove undefined fields — Firestore does not accept them
-    return Object.fromEntries(
-      Object.entries(data).filter(([, v]) => v !== undefined)
-    );
+    return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
   }
 }

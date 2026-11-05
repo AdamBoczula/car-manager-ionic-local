@@ -25,9 +25,7 @@ describe('CarSwitcherComponent', () => {
         componentInputs: { cars, activeCar: cars[0] },
       });
 
-      expect(screen.getByTestId('car-switcher-button')).toHaveTextContent(
-        'Toyota Corolla'
-      );
+      expect(screen.getByTestId('car-switcher-button')).toHaveTextContent('Toyota Corolla');
     });
 
     it('should display "Brak aut" when no active car', async () => {
@@ -35,9 +33,7 @@ describe('CarSwitcherComponent', () => {
         componentInputs: { cars: [], activeCar: null },
       });
 
-      expect(screen.getByTestId('car-switcher-button')).toHaveTextContent(
-        'Brak aut'
-      );
+      expect(screen.getByTestId('car-switcher-button')).toHaveTextContent('Brak aut');
     });
 
     it('should contain popover and modal for overlays', async () => {
@@ -59,9 +55,7 @@ describe('CarSwitcherComponent', () => {
         componentInputs: { cars, activeCar: cars[0] },
       });
 
-      const popover = fixture.nativeElement.querySelector(
-        'ion-popover'
-      ) as HTMLElement;
+      const popover = fixture.nativeElement.querySelector('ion-popover') as HTMLElement;
       const event = new MouseEvent('click');
 
       fixture.componentInstance.openPopover(event);

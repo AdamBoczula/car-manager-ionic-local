@@ -208,16 +208,14 @@ export class RefuelFormPage {
 
   // Validation errors (computed)
   readonly amountError = computed(() =>
-    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null
+    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null,
   );
 
   readonly mileageError = computed(() =>
-    this.mileage() <= 0 ? 'Przebieg musi być większy od 0' : null
+    this.mileage() <= 0 ? 'Przebieg musi być większy od 0' : null,
   );
 
-  readonly isFormValid = computed(
-    () => !this.amountError() && !this.mileageError()
-  );
+  readonly isFormValid = computed(() => !this.amountError() && !this.mileageError());
 
   async handleSubmit(event?: Event): Promise<void> {
     event?.preventDefault();
@@ -239,9 +237,7 @@ export class RefuelFormPage {
         liters: this.liters() > 0 ? this.liters() : undefined,
         isVerva: this.isVerva(),
         isSkipped: this.isSkipped(),
-        skippedReason: this.isSkipped()
-          ? this.skippedReason().trim() || undefined
-          : undefined,
+        skippedReason: this.isSkipped() ? this.skippedReason().trim() || undefined : undefined,
       });
 
       this.showToast('Tankowanie zapisane!', 'success');

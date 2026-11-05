@@ -1,14 +1,10 @@
 // covers: docs/bugs/dashboard-refuel-visibility.md
 import { test, expect } from '@playwright/test';
-import {
-  navigateToDashboard,
-  waitForIonicPage,
-} from './utils/navigation-helpers';
+import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helpers';
 import { seedAuthUser, clearAuthState } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
 test.describe('Dashboard – Integration: add refuel and verify visibility', () => {
-
   test.beforeEach(async ({ page }) => {
     await clearAuthState(page).catch(() => {});
     await clearStorage(page).catch(() => {});

@@ -34,22 +34,24 @@ export interface FilterSortChange {
 
 /** Polish month abbreviations for the scrollable segment. */
 const MONTH_LABELS: string[] = [
-  'Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze',
-  'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru',
+  'Sty',
+  'Lut',
+  'Mar',
+  'Kwi',
+  'Maj',
+  'Cze',
+  'Lip',
+  'Sie',
+  'Wrz',
+  'Paź',
+  'Lis',
+  'Gru',
 ];
 
 @Component({
   selector: 'app-filter-sort-bar',
   standalone: true,
-  imports: [
-    IonSegment,
-    IonSegmentButton,
-    IonSelect,
-    IonSelectOption,
-    IonButton,
-    IonIcon,
-    IonLabel,
-  ],
+  imports: [IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonButton, IonIcon, IonLabel],
   template: `
     <div class="filter-sort-bar">
       <!-- Month filter: scrollable segment -->
@@ -64,10 +66,7 @@ const MONTH_LABELS: string[] = [
           <ion-label>Wszystkie</ion-label>
         </ion-segment-button>
         @for (label of monthLabels; track $index) {
-          <ion-segment-button
-            [value]="$index.toString()"
-            [attr.data-testid]="'month-' + $index"
-          >
+          <ion-segment-button [value]="$index.toString()" [attr.data-testid]="'month-' + $index">
             <ion-label>{{ label }}</ion-label>
           </ion-segment-button>
         }
@@ -105,17 +104,11 @@ const MONTH_LABELS: string[] = [
           size="small"
           (click)="toggleSortDirection()"
           class="filter-sort-bar__dir-btn"
-          [attr.aria-label]="
-            prefs().sortDirection === 'asc'
-              ? 'Sortuj malejąco'
-              : 'Sortuj rosnąco'
-          "
+          [attr.aria-label]="prefs().sortDirection === 'asc' ? 'Sortuj malejąco' : 'Sortuj rosnąco'"
           data-testid="sort-direction-button"
         >
           <ion-icon
-            [name]="
-              prefs().sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'
-            "
+            [name]="prefs().sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'"
             slot="icon-only"
           />
         </ion-button>
@@ -161,9 +154,7 @@ export class FilterSortBarComponent {
   onMonthChange(event: { detail: { value?: string | number } }): void {
     const value = event.detail.value;
     const month: number | 'all' =
-      value === 'all' || value === undefined || value === null
-        ? 'all'
-        : Number(value);
+      value === 'all' || value === undefined || value === null ? 'all' : Number(value);
     this.emitChange({ month });
   }
 

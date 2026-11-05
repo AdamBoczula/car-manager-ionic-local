@@ -5,6 +5,7 @@ Last updated: 2026-11-01
 ## Preferred Agent Roles
 
 The team wants these AI roles available:
+
 - **Business Analyst (BA)** — gathers requirements via drill-down, produces specs
 - **Architect** — designs module structure, creates ADRs
 - **Feature builder (Dev)** — implements code (TDD), updates "Implemented in" continuously
@@ -31,10 +32,11 @@ defined in `docs/specs/01-spec-workflow.md`. The flow is:
    - **3B: Tester (E2E)** — reads spec, creates/updates E2E tests
    - Both start simultaneously after Bramka 2
 4. **Quality Gate** (QA/Tester) → `npm exec nx affected -t lint test build e2e` (Bramka 3)
-4b. **UI/UX Review** (QA Coordinator, optional) → user runs `/qa-review` → spawns 4 subagents → generates `docs/qa/YYYY-MM-DD-qa-report.md`
+   4b. **UI/UX Review** (QA Coordinator, optional) → user runs `/qa-review` → spawns 4 subagents → generates `docs/qa/YYYY-MM-DD-qa-report.md`
 5. **Done** → code is ready, deployed locally
 
 Key optimizations:
+
 - Dev and Tester work **in parallel** after architecture approval (saves time)
 - User reviews code **locally and continuously** during implementation — no formal Code Review phase needed (solo project)
 - Dev updates the spec's "Implemented in" table **continuously**, not at the end
@@ -48,6 +50,7 @@ To activate the Business Analyst skill, invoke `.opencode/skills/business-analys
 ### SDD Traceability Rules
 
 When implementing code from a spec:
+
 - Every new source file must have: `// spec: docs/specs/<domain>/<name>.md`
 - Every test must have: `// covers: docs/specs/<domain>/<name>.md#AC-N`
 - Dev updates the spec's "Implemented in" section **continuously** during implementation
@@ -55,6 +58,7 @@ When implementing code from a spec:
 ### ADR (Architecture Decision Records)
 
 The Architect creates ADRs in phase 2 for architectural decisions that:
+
 - Involve choosing between multiple solutions
 - Have long-term project impact
 - Require justification or may be controversial
@@ -64,11 +68,13 @@ ADRs are stored in `docs/adr/<NNN>-<title>.md`. See `docs/adr/adr-template.md` f
 ## Permission Model
 
 Allowed without approval:
+
 - Documentation updates
 - Spec creation and updates (in `docs/specs/`)
 - ADR creation and updates (in `docs/adr/`)
 
 Requires explicit approval:
+
 - Source code changes
 - Unit test changes
 - Component/integration test changes
@@ -77,6 +83,7 @@ Requires explicit approval:
 ## Mandatory Agent Workflow
 
 For each task, the agent should:
+
 1. Read required context files listed in docs/ai/00-ai-readiness-overview.md.
 2. Check if SDD applies (new feature / significant change → use SDD pipeline).
 3. Restate scope and identify if task affects high-risk areas.
@@ -97,6 +104,7 @@ For each task, the agent should:
 ## Coding Standards Baseline
 
 Agents should enforce these defaults unless a task explicitly requires deviation:
+
 - Use domain-first folder placement for business logic.
 - Keep consumption and money calculations in pure utility functions.
 - Use explicit return types on exported functions.
@@ -129,10 +137,10 @@ export class RefuelPageScreen {}
 
 For data-heavy screens, use the **Container / Presenter** (smart / dumb) split:
 
-- **Container (smart)**: owns data fetching (resources, service injection), form ownership, and state. Passes data to children via **input bindings**. Template is **inline** (`template: \`...\``). Styles go to a separate `.scss` file via `styleUrl`.
+- **Container (smart)**: owns data fetching (resources, service injection), form ownership, and state. Passes data to children via **input bindings**. Template is **inline** (`template: \`...\``). Styles go to a separate `.scss`file via`styleUrl`.
 - **Presenter (dumb)**: receives data via `input()`, renders UI. Template is **inline** (simple components) or `templateUrl` (complex, >30 lines). Styles go to a separate `.scss` file via `styleUrl`. Knows nothing about services.
 
-**Style rule**: ALL components use `styleUrl: './*.component.scss'` — never `styles: \`...\`` inline. SCSS files allow proper BEM nesting with `&`. Only the template stays inline.
+**Style rule**: ALL components use `styleUrl: './*.component.scss'` — never `styles: \`...\``inline. SCSS files allow proper BEM nesting with`&`. Only the template stays inline.
 
 ```typescript
 // ✅ Container: thin orchestrator, inline template, SCSS file, passes data via bindings
@@ -176,6 +184,7 @@ export class RefuelListItemComponent {
 ```
 
 **When to use Container/Presenter:**
+
 - A screen component exceeds ~150 lines of TS or ~60 lines of inline template
 - The template has 3+ distinct visual sections (cards, forms, summaries)
 - Aggregation/computation logic can be extracted to a dedicated service
@@ -207,6 +216,7 @@ effect(() => agg.refuels.set(refuelsResource.value() ?? []));
 ### Self-Contained Section Components
 
 Each section component (child of a container) manages:
+
 - Its own **inline template** (simple) or `templateUrl` (complex >30 lines)
 - Its own **SCSS file** (`styleUrl: './*.component.scss'`)
 - Inputs only — no service injections, no data fetching
@@ -216,7 +226,7 @@ Do **not** lift all state to the parent page and pass it down via inputs/outputs
 
 ### Inline Template Rule
 
-**All components** use `template: \`...\`` (inline template) — never `templateUrl`.
+**All components** use `template: \`...\``(inline template) — never`templateUrl`.
 
 **All components** use `styleUrl: './*.component.scss'` for styles — never `styles: \`...\`` inline.
 
@@ -252,12 +262,16 @@ services/
 ```scss
 // ✅ DO — styleUrl: './my.component.scss'
 .card {
-  &__header { display: flex; }
-  &--active { color: red; }
+  &__header {
+    display: flex;
+  }
+  &--active {
+    color: red;
+  }
 }
 
 // ❌ DON'T — styles: `...` inline (BEM nesting broken, harder to maintain)
-@Component({ styles: `.card__header { ... }` })
+@component ({ styles: `.card__header { ... }` });
 ```
 
 ### Ionic CSS Variables
@@ -279,7 +293,7 @@ Use Ionic CSS variables for theming and consistent design:
 
 // Custom properties for app-level theming
 :root {
-  --cm-petrol-blue: #1B6B4A;
+  --cm-petrol-blue: #1b6b4a;
   --cm-card-radius: 12px;
 }
 ```
@@ -290,7 +304,14 @@ Import only the Ionic components each component actually uses. Import them direc
 
 ```typescript
 // ✅ DO — import only what you use
-import { IonHeader, IonContent, IonItem, IonLabel, IonFab, IonFabButton } from '@ionic/angular/standalone';
+import {
+  IonHeader,
+  IonContent,
+  IonItem,
+  IonLabel,
+  IonFab,
+  IonFabButton,
+} from '@ionic/angular/standalone';
 
 @Component({
   imports: [IonHeader, IonContent, IonItem, IonLabel, IonFab, IonFabButton],
@@ -307,6 +328,7 @@ export class RefuelListScreen {}
 ### The "Mega-Component" Threshold
 
 Decompose a component when it exceeds **any** of:
+
 - **~3 distinct responsibilities** (e.g., data aggregation + form + UI = 3 → split to container + aggregation service + presenters)
 - **~150 lines** of TypeScript logic
 - **~60 lines** of inline template HTML (containers) or **~80 lines** of template (presenters)
@@ -319,6 +341,7 @@ cm-<feature>-<component-purpose>
 ```
 
 Where `cm` is the Car Manager prefix. Examples:
+
 - `cm-refuel-list-screen`
 - `cm-refuel-form`
 - `cm-repair-list-screen`
@@ -330,6 +353,7 @@ Where `cm` is the Car Manager prefix. Examples:
 ## Review Focus
 
 User should prioritize when reviewing locally:
+
 - Correctness and precision in consumption calculations (l/100km)
 - Offline/sync edge cases (Ionic Storage → Firestore sync, refresh, reconnect, conflict)
 - Regression risk in refuel and repair create/edit flows
@@ -340,6 +364,7 @@ User should prioritize when reviewing locally:
 ## Suggested Task Labels
 
 Use these labels in task descriptions to guide agents:
+
 - area:refuel
 - area:repair
 - area:dashboard
@@ -366,12 +391,12 @@ It does **not** block the pipeline. The manual QA checklist is in `docs/ai/03-te
 In addition to manual QA, an automated UI/UX/A11y/Responsive review can be triggered by running
 `/qa-review` in OpenCode. The **QA Coordinator** subagent orchestrates four specialized subagents:
 
-| Subagent | Focus | Tools | Model |
-|----------|-------|-------|-------|
-| `ui-reviewer` | Visual consistency, layout, typography, component states | Playwright MCP | DeepSeek-V4-Flash |
-| `ux-analyzer` | User experience, Nielsen's heuristics, click efficiency | Playwright MCP | DeepSeek-V4-Flash |
-| `a11y-auditor` | WCAG 2.1 AA, Axe-core, ARIA, keyboard navigation | Chrome DevTools MCP + Playwright MCP | DeepSeek-V4-Flash |
-| `responsive-checker` | Viewport testing, touch targets, layout integrity | Playwright MCP | DeepSeek-V4-Flash |
+| Subagent             | Focus                                                    | Tools                                | Model             |
+| -------------------- | -------------------------------------------------------- | ------------------------------------ | ----------------- |
+| `ui-reviewer`        | Visual consistency, layout, typography, component states | Playwright MCP                       | DeepSeek-V4-Flash |
+| `ux-analyzer`        | User experience, Nielsen's heuristics, click efficiency  | Playwright MCP                       | DeepSeek-V4-Flash |
+| `a11y-auditor`       | WCAG 2.1 AA, Axe-core, ARIA, keyboard navigation         | Chrome DevTools MCP + Playwright MCP | DeepSeek-V4-Flash |
+| `responsive-checker` | Viewport testing, touch targets, layout integrity        | Playwright MCP                       | DeepSeek-V4-Flash |
 
 Full agent model assignments are maintained in `AGENTS.md`. The table above covers only QA subagents.
 

@@ -33,9 +33,7 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
     await navigateToDashboard(page);
 
     // Verify key elements are visible
-    await expect(
-      page.getByRole('heading', { name: /Tankowania/i })
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Naprawy/i })).toBeVisible();
 
@@ -83,10 +81,12 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
     });
 
     // Navigate programmatically via Angular Router (avoids full reload)
-    await page.locator('[data-testid="btn-add-refuel"]').waitFor({ state: 'visible', timeout: 15000 });
+    await page
+      .locator('[data-testid="btn-add-refuel"]')
+      .waitFor({ state: 'visible', timeout: 15000 });
     await page.evaluate(() => {
       const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
-      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/refuel-form');
+      return (e2e.navigateTo as (path: string) => Promise<unknown>)('/refuel-form');
     });
     await page.waitForURL(/refuel-form/, { timeout: 10000 });
     await waitForIonicPage(page);
@@ -134,10 +134,12 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
     });
 
     // Navigate programmatically via Angular Router
-    await page.locator('[data-testid="btn-add-repair"]').waitFor({ state: 'visible', timeout: 15000 });
+    await page
+      .locator('[data-testid="btn-add-repair"]')
+      .waitFor({ state: 'visible', timeout: 15000 });
     await page.evaluate(() => {
       const e2e = (window as unknown as Record<string, unknown>).__e2e__ as Record<string, unknown>;
-      return (e2e['navigateTo'] as (path: string) => Promise<unknown>)('/repair-form');
+      return (e2e.navigateTo as (path: string) => Promise<unknown>)('/repair-form');
     });
     await page.waitForURL(/repair-form/, { timeout: 10000 });
     await waitForIonicPage(page);

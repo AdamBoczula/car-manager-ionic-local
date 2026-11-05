@@ -1,7 +1,9 @@
 ﻿// spec: docs/specs/05-car-management.md
 // covers: dashboard → refuel-list and dashboard → repair-list navigation
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideRouter, Routes, Router } from '@angular/router';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+import type { Routes } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { NavController, provideIonicAngular } from '@ionic/angular';
 import { signal, Component } from '@angular/core';
 import { DashboardPage } from './dashboard.page';
@@ -123,13 +125,7 @@ describe('DashboardPage routing integration', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [
-        DashboardPage,
-        RefuelListStub,
-        RepairListStub,
-        RefuelFormStub,
-        RepairFormStub,
-      ],
+      imports: [DashboardPage, RefuelListStub, RepairListStub, RefuelFormStub, RepairFormStub],
       providers: [
         provideRouter(routes),
         provideIonicAngular({ mode: 'md' }),
@@ -161,22 +157,29 @@ describe('DashboardPage routing integration', () => {
     mocks.carService.activeCarId.set('c1');
     mocks.carService.hasCars.set(true);
     refuelServiceRefuels.set([
-      { id: 'r1', carId: 'c1', date: '2026-01-15', amount: 250, mileage: 125000, liters: 40, isVerva: false, isSkipped: false, createdBy: 'u1', createdAt: Timestamp.now() },
+      {
+        id: 'r1',
+        carId: 'c1',
+        date: '2026-01-15',
+        amount: 250,
+        mileage: 125000,
+        liters: 40,
+        isVerva: false,
+        isSkipped: false,
+        createdBy: 'u1',
+        createdAt: Timestamp.now(),
+      },
     ]);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
     await TestBed.flushEffects();
 
-    const link = document.querySelector(
-      '[data-testid="link-all-refuels"]'
-    ) as HTMLElement;
+    const link = document.querySelector('[data-testid="link-all-refuels"]')!;
     expect(link).toBeTruthy();
     link.click();
 
-    expect(navControllerMock.navigateForward).toHaveBeenCalledWith(
-      '/refuel-list'
-    );
+    expect(navControllerMock.navigateForward).toHaveBeenCalledWith('/refuel-list');
   });
 
   it('should navigate from dashboard to repair-list via "Zobacz wszystkie" link click', async () => {
@@ -187,50 +190,49 @@ describe('DashboardPage routing integration', () => {
     mocks.carService.activeCarId.set('c1');
     mocks.carService.hasCars.set(true);
     repairServiceRepairs.set([
-      { id: 'p1', carId: 'c1', date: '2026-01-15', amount: 500, mileage: 125000, location: 'Serwis', description: 'Naprawa', mechanicNote: '', createdBy: 'u1', createdAt: Timestamp.now() },
+      {
+        id: 'p1',
+        carId: 'c1',
+        date: '2026-01-15',
+        amount: 500,
+        mileage: 125000,
+        location: 'Serwis',
+        description: 'Naprawa',
+        mechanicNote: '',
+        createdBy: 'u1',
+        createdAt: Timestamp.now(),
+      },
     ]);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
     await TestBed.flushEffects();
 
-    const link = document.querySelector(
-      '[data-testid="link-all-repairs"]'
-    ) as HTMLElement;
+    const link = document.querySelector('[data-testid="link-all-repairs"]')!;
     expect(link).toBeTruthy();
     link.click();
 
-    expect(navControllerMock.navigateForward).toHaveBeenCalledWith(
-      '/repair-list'
-    );
+    expect(navControllerMock.navigateForward).toHaveBeenCalledWith('/repair-list');
   });
 
   it('should navigate from dashboard to refuel-form via FAB click', async () => {
     const { navControllerMock } = await setup();
 
-    const fab = document.querySelector(
-      '[data-testid="fab-refuel"]'
-    ) as HTMLElement;
+    const fab = document.querySelector('[data-testid="fab-refuel"]')!;
     expect(fab).toBeTruthy();
     fab.click();
 
-    expect(navControllerMock.navigateForward).toHaveBeenCalledWith(
-      '/refuel-form'
-    );
+    expect(navControllerMock.navigateForward).toHaveBeenCalledWith('/refuel-form');
   });
 
   it('should navigate from dashboard to repair-form via FAB click', async () => {
     const { navControllerMock } = await setup();
 
-    const fab = document.querySelector(
-      '[data-testid="fab-repair"]'
-    ) as HTMLElement;
+    const fab = document.querySelector('[data-testid="fab-repair"]')!;
     expect(fab).toBeTruthy();
     fab.click();
 
-    expect(navControllerMock.navigateForward).toHaveBeenCalledWith(
-      '/repair-form'
-    );
+    expect(navControllerMock.navigateForward).toHaveBeenCalledWith('/repair-form');
   });
 
   // bugfix: docs/bugs/01-car-switcher-confirmation-redirect.md
@@ -304,13 +306,7 @@ describe('DashboardPage routing integration — real NavController', () => {
     const mocks = createMocks();
 
     await TestBed.configureTestingModule({
-      imports: [
-        DashboardPage,
-        RefuelListStub,
-        RepairListStub,
-        RefuelFormStub,
-        RepairFormStub,
-      ],
+      imports: [DashboardPage, RefuelListStub, RepairListStub, RefuelFormStub, RepairFormStub],
       providers: [
         provideRouter(routes),
         provideIonicAngular({ mode: 'md' }),
@@ -343,7 +339,18 @@ describe('DashboardPage routing integration — real NavController', () => {
     mocks.carService.cars.set([car]);
     mocks.carService.hasCars.set(true);
     refuelServiceRefuels.set([
-      { id: 'r1', carId: 'c1', date: '2026-01-15', amount: 250, mileage: 125000, liters: 40, isVerva: false, isSkipped: false, createdBy: 'u1', createdAt: Timestamp.now() },
+      {
+        id: 'r1',
+        carId: 'c1',
+        date: '2026-01-15',
+        amount: 250,
+        mileage: 125000,
+        liters: 40,
+        isVerva: false,
+        isSkipped: false,
+        createdBy: 'u1',
+        createdAt: Timestamp.now(),
+      },
     ]);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -355,9 +362,7 @@ describe('DashboardPage routing integration — real NavController', () => {
     expect(document.querySelector('[data-testid="link-all-refuels"]')).toBeTruthy();
 
     // Click the "Zobacz wszystkie" link
-    const link = document.querySelector(
-      '[data-testid="link-all-refuels"]'
-    ) as HTMLElement;
+    const link = document.querySelector('[data-testid="link-all-refuels"]')!;
     link.click();
     await fixture.whenStable();
 
@@ -376,7 +381,18 @@ describe('DashboardPage routing integration — real NavController', () => {
     mocks.carService.cars.set([car]);
     mocks.carService.hasCars.set(true);
     repairServiceRepairs.set([
-      { id: 'p1', carId: 'c1', date: '2026-01-15', amount: 500, mileage: 125000, location: 'Serwis', description: 'Naprawa', mechanicNote: '', createdBy: 'u1', createdAt: Timestamp.now() },
+      {
+        id: 'p1',
+        carId: 'c1',
+        date: '2026-01-15',
+        amount: 500,
+        mileage: 125000,
+        location: 'Serwis',
+        description: 'Naprawa',
+        mechanicNote: '',
+        createdBy: 'u1',
+        createdAt: Timestamp.now(),
+      },
     ]);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -386,9 +402,7 @@ describe('DashboardPage routing integration — real NavController', () => {
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
     expect(document.querySelector('[data-testid="link-all-repairs"]')).toBeTruthy();
 
-    const link = document.querySelector(
-      '[data-testid="link-all-repairs"]'
-    ) as HTMLElement;
+    const link = document.querySelector('[data-testid="link-all-repairs"]')!;
     link.click();
     await fixture.whenStable();
 
@@ -406,7 +420,18 @@ describe('DashboardPage routing integration — real NavController', () => {
     mocks.carService.cars.set([car]);
     mocks.carService.hasCars.set(true);
     refuelServiceRefuels.set([
-      { id: 'r1', carId: 'c1', date: '2026-01-15', amount: 250, mileage: 125000, liters: 40, isVerva: false, isSkipped: false, createdBy: 'u1', createdAt: Timestamp.now() },
+      {
+        id: 'r1',
+        carId: 'c1',
+        date: '2026-01-15',
+        amount: 250,
+        mileage: 125000,
+        liters: 40,
+        isVerva: false,
+        isSkipped: false,
+        createdBy: 'u1',
+        createdAt: Timestamp.now(),
+      },
     ]);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -418,9 +443,7 @@ describe('DashboardPage routing integration — real NavController', () => {
     expect(document.querySelector('[data-testid="link-all-refuels"]')).toBeTruthy();
 
     // Click "Zobacz wszystkie" link
-    const link = document.querySelector(
-      '[data-testid="link-all-refuels"]'
-    ) as HTMLElement;
+    const link = document.querySelector('[data-testid="link-all-refuels"]')!;
     link.click();
     await fixture.whenStable();
 
@@ -447,7 +470,18 @@ describe('DashboardPage routing integration — real NavController', () => {
     mocks.carService.cars.set([car]);
     mocks.carService.hasCars.set(true);
     repairServiceRepairs.set([
-      { id: 'p1', carId: 'c1', date: '2026-01-15', amount: 500, mileage: 125000, location: 'Serwis', description: 'Naprawa', mechanicNote: '', createdBy: 'u1', createdAt: Timestamp.now() },
+      {
+        id: 'p1',
+        carId: 'c1',
+        date: '2026-01-15',
+        amount: 500,
+        mileage: 125000,
+        location: 'Serwis',
+        description: 'Naprawa',
+        mechanicNote: '',
+        createdBy: 'u1',
+        createdAt: Timestamp.now(),
+      },
     ]);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -457,9 +491,7 @@ describe('DashboardPage routing integration — real NavController', () => {
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
     expect(document.querySelector('[data-testid="link-all-repairs"]')).toBeTruthy();
 
-    const link = document.querySelector(
-      '[data-testid="link-all-repairs"]'
-    ) as HTMLElement;
+    const link = document.querySelector('[data-testid="link-all-repairs"]')!;
     link.click();
     await fixture.whenStable();
 

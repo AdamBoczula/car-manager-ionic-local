@@ -7,16 +7,16 @@
     </div>
 
     @if (authService.authReady()) {
-      <form (ngSubmit)="handleLogin()" #loginForm="ngForm">
+      <form #loginForm="ngForm" (ngSubmit)="handleLogin()">
         <ion-item>
           <ion-label position="stacked">Email</ion-label>
           <ion-input
             type="email"
-            [(ngModel)]="email"
             name="email"
             required
             autocomplete="email"
             placeholder="twoj@email.com"
+            [(ngModel)]="email"
           />
         </ion-item>
         @if (fieldErrors().email) {
@@ -29,11 +29,11 @@
           <ion-label position="stacked">Hasło</ion-label>
           <ion-input
             type="password"
-            [(ngModel)]="password"
             name="password"
             required
             autocomplete="current-password"
             placeholder="Twoje hasło"
+            [(ngModel)]="password"
           />
         </ion-item>
         @if (fieldErrors().password) {
@@ -45,8 +45,8 @@
         <ion-button
           expand="block"
           type="submit"
-          [disabled]="isLoading() || !email() || !password()"
           class="login-button"
+          [disabled]="isLoading() || !email() || !password()"
         >
           @if (isLoading()) {
             <ion-spinner name="dots" />
@@ -63,8 +63,8 @@
       <ion-button
         expand="block"
         fill="outline"
-        (click)="handleGoogleLogin()"
         [disabled]="isLoading()"
+        (click)="handleGoogleLogin()"
       >
         <ion-icon name="logo-google" slot="start" />
         Kontynuuj z Google
@@ -83,10 +83,10 @@
   </div>
 
   <ion-toast
+    color="danger"
     [isOpen]="errorMessage() !== null"
     [message]="errorMessage() ?? ''"
     [duration]="4000"
-    color="danger"
     (didDismiss)="errorMessage.set(null)"
   />
 </ion-content>

@@ -30,6 +30,7 @@ the SCSS + Ionic CSS vars conventions used in the project.
 ### Work from the product, not from trends
 
 Before designing a new component, read:
+
 1. Existing components in the same feature module
 2. Reusable UI in `apps/car-manager/src/app/shared/`
 3. How other components use Ionic
@@ -61,19 +62,20 @@ Before designing a new component, read:
 
 ## Anti-patterns — NEVER do this
 
-| Bad | Good |
-|-----|------|
-| Inventing custom controls | Use ion-modal, ion-input, ion-list |
-| Inline styles | `styleUrl: './*.component.scss'` |
-| Different CSS naming | Only BEM (`&__element`, `&--modifier`) |
-| Generic "pretty" design | Consistent with the rest of the app |
-| New color scheme | Use Ionic CSS variables |
+| Bad                          | Good                                                 |
+| ---------------------------- | ---------------------------------------------------- |
+| Inventing custom controls    | Use ion-modal, ion-input, ion-list                   |
+| Inline styles                | `styleUrl: './*.component.scss'`                     |
+| Different CSS naming         | Only BEM (`&__element`, `&--modifier`)               |
+| Generic "pretty" design      | Consistent with the rest of the app                  |
+| New color scheme             | Use Ionic CSS variables                              |
 | Missing empty/loading states | Every data-bound component has loading + empty state |
-| Skipping Polish UI text | All user-facing strings in Polish |
+| Skipping Polish UI text      | All user-facing strings in Polish                    |
 
 ## Finish Gate
 
 After creating a component, verify:
+
 1. Are existing Ionic components used?
 2. Are styles in SCSS, not inline?
 3. Is BEM correct?

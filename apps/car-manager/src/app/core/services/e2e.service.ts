@@ -26,9 +26,8 @@ export class E2eService {
       };
 
       // Preserve any existing __e2e__ properties (e.g., set by tests before app load)
-      const existing = (window as unknown as Record<string, unknown>)[
-        '__e2e__'
-      ] as Record<string, unknown> | undefined;
+      const existing = (window as unknown as Record<string, unknown>)['__e2e__'] as
+        Record<string, unknown> | undefined;
       (window as unknown as Record<string, unknown>)['__e2e__'] = {
         ...existing,
         ...helpers,

@@ -7,6 +7,7 @@ Last updated: 2026-11-01
 This folder defines the minimum context AI agents need to work safely and effectively in this repository.
 
 The goal is to reduce:
+
 - Wrong assumptions about product scope
 - Architecture boundary violations
 - Low-value or risky code changes
@@ -15,6 +16,7 @@ The goal is to reduce:
 ## Quick Start For Any AI Agent
 
 Before making changes, read in this order:
+
 1. AGENTS.md
 2. PLAN.md
 3. nx.json
@@ -44,6 +46,7 @@ AI-generated changes should prioritize correctness of car expense calculations a
 ## Definition of Done (AI Changes)
 
 A change is not done until all are true:
+
 - Unit tests pass
 - Component/integration tests for business flow pass
 - E2E critical path passes

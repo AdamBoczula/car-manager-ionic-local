@@ -3,12 +3,7 @@
 // Testy dla konfiguracji migracji (stałe, interfejsy)
 
 import { describe, it, expect } from 'vitest';
-import {
-  EXPECTED_SCHEMA_VERSION,
-  SCHEMA_VERSION_KEY,
-  MIGRATIONS,
-  Migration,
-} from './migration';
+import { EXPECTED_SCHEMA_VERSION, SCHEMA_VERSION_KEY, MIGRATIONS, Migration } from './migration';
 
 describe('migration configuration', () => {
   it('powinien mieć SCHEMA_VERSION_KEY = _app:schema_version', () => {
