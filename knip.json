@@ -1,0 +1,58 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "apps/car-manager/src/main.ts",
+        "apps/car-manager/src/test-setup.ts",
+        "apps/car-manager/vite.config.mts",
+        "apps/car-manager-e2e/playwright.config.ts",
+        "apps/car-manager-e2e/src/**/*.spec.ts",
+        "apps/car-manager/scripts/seed-dev.ts",
+        "eslint.config.mjs",
+        "vitest.config.ts",
+        "vitest.workspace.ts",
+        "nx.json"
+      ],
+      "project": [
+        "apps/car-manager/src/**/*.ts",
+        "apps/car-manager/src/**/*.html",
+        "apps/car-manager-e2e/src/**/*.ts",
+        "libs/**/*.ts"
+      ],
+      "ignore": [
+        "apps/car-manager/capacitor.config.ts",
+        "**/*.spec.backup.ts",
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.angular/**",
+        "**/coverage/**"
+      ],
+      "ignoreDependencies": [
+        "@capacitor/core",
+        "@capacitor/android",
+        "@capacitor/ios",
+        "@capacitor-community/speech-recognition",
+        "@ionic/core",
+        "@nx/workspace",
+        "@nx/angular",
+        "@nx/devkit",
+        "@nx/eslint",
+        "@nx/eslint-plugin",
+        "@nx/js",
+        "@nx/vite",
+        "@nx/web",
+        "@nx/playwright",
+        "@angular-devkit/build-angular",
+        "@angular/build",
+        "@angular/cli",
+        "@angular/compiler-cli",
+        "@angular/language-service",
+        "firebase-tools",
+        "@capacitor/cli",
+        "jsdom",
+        "@eslint/eslintrc"
+      ]
+    }
+  }
+}
