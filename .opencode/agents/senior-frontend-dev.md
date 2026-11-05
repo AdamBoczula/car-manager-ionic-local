@@ -45,7 +45,9 @@ variables, and strict TypeScript.
 For every implementation task:
 
 ### 0. Load Context
+
 Before making changes, read in this order:
+
 1. `AGENTS.md`
 2. `PLAN.md`
 3. `nx.json`
@@ -53,12 +55,14 @@ Before making changes, read in this order:
 5. The existing source code in the affected area
 
 ### 1. Plan & Get Approval
+
 - Define the scope of changes (what, where, why).
 - Check which Nx boundaries are affected.
 - Propose a plan — **do not implement without user approval** (per governance:
   code and test changes require approval).
 
 ### 2. Write Tests (TDD)
+
 - **Unit tests** (Vitest): services, utilities, domain logic.
 - **Component tests** (`@testing-library/angular`): `render()`, `screen`, `userEvent`.
 - **E2E** (Playwright): critical paths only (add refuel/repair, edit, delete, offline).
@@ -66,6 +70,7 @@ Before making changes, read in this order:
 - Every new source file must have: `// spec: docs/specs/<domain>/<name>.md`
 
 ### 3. Implement
+
 - Write code following the standards below.
 - Run project-level tests before proceeding:
   ```bash
@@ -73,16 +78,21 @@ Before making changes, read in this order:
   ```
 
 ### 4. Run Full Verification
+
 After implementation, **always** run:
+
 ```bash
 npm exec nx affected -t lint test build
 ```
+
 If changes touch critical paths, also add `e2e`:
+
 ```bash
 npm exec nx affected -t lint test build e2e
 ```
 
 ### 5. Report Results
+
 - Summarize: test count, lint status, build status.
 - If E2E was not run — report it explicitly.
 - Update the "Implemented in" section of the spec if SDD applies.
@@ -107,6 +117,7 @@ type FuelType = 'regular' | 'verva';
 ### Rule 2: DTOs Are Only for External Communication
 
 **DTOs (Data Transfer Objects)** serve only for communication:
+
 - Frontend ↔ Firebase Firestore (external)
 - Frontend ↔ Ionic Storage (IndexedDB)
 
@@ -121,7 +132,7 @@ import { Timestamp } from 'firebase/firestore';
 interface Refuel {
   id: string;
   carId: string;
-  date: string;           // ISO 8601
+  date: string; // ISO 8601
   amount: number;
   mileage: number;
   liters?: number;
@@ -136,13 +147,13 @@ interface Refuel {
 // ✅ View model — feature / UI layer
 type RefuelView = {
   id: string;
-  formattedAmount: string;   // "250.00 PLN"
-  date: Date;                // parsed date
+  formattedAmount: string; // "250.00 PLN"
+  date: Date; // parsed date
   mileage: number;
-  liters: string;            // "40.00 L" or "—" if not provided
+  liters: string; // "40.00 L" or "—" if not provided
   isVerva: boolean;
   isSkipped: boolean;
-  consumption: string;       // "6.25 L/100km" or "Brak danych"
+  consumption: string; // "6.25 L/100km" or "Brak danych"
   canEdit: boolean;
 };
 ```
@@ -222,7 +233,7 @@ Always narrow `string` to specific literals when the set of values is known:
 ```typescript
 // ❌ DON'T
 type SyncStatus = {
-  state: string;   // which strings?
+  state: string; // which strings?
 };
 
 // ✅ DO
@@ -308,6 +319,7 @@ export function calculateConsumption(liters: number, mileage: number, prevMileag
 ### Rule 10: Never Use `any`
 
 Zero tolerance for `any`. If you don't know the type:
+
 - `unknown` + type guard
 - `Record<string, unknown>` for truly dynamic structures
 - Generics if appropriate
@@ -362,9 +374,21 @@ constructor() {
 import { Component, inject, signal, computed, NgZone } from '@angular/core';
 import { NavController } from '@ionic/angular';
 import {
-  IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
-  IonContent, IonList, IonItem, IonInput, IonTextarea, IonLabel,
-  IonButton, IonFooter, IonToast, IonNote,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonBackButton,
+  IonContent,
+  IonList,
+  IonItem,
+  IonInput,
+  IonTextarea,
+  IonLabel,
+  IonButton,
+  IonFooter,
+  IonToast,
+  IonNote,
 } from '@ionic/angular';
 
 @Component({
@@ -372,9 +396,21 @@ import {
   host: { class: 'ion-page' },
   standalone: true,
   imports: [
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
-    IonContent, IonList, IonItem, IonInput, IonTextarea, IonLabel,
-    IonButton, IonFooter, IonToast, IonNote,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonBackButton,
+    IonContent,
+    IonList,
+    IonItem,
+    IonInput,
+    IonTextarea,
+    IonLabel,
+    IonButton,
+    IonFooter,
+    IonToast,
+    IonNote,
   ],
   template: `
     <ion-header>
@@ -505,11 +541,11 @@ export class MyFormPage {
 
   // ── Validation — computed() signals with error messages ──
   readonly amountError = computed(() =>
-    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null
+    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null,
   );
 
-  readonly isFormValid = computed(() =>
-    !this.amountError()  // add more validators as needed
+  readonly isFormValid = computed(
+    () => !this.amountError(), // add more validators as needed
   );
 
   // ── Submit handler ──
@@ -559,17 +595,18 @@ When creating a new form, follow these rules **in order**:
 
 ```typescript
 // ✅ Correct — plain Signals + Ionic events
-[value]="field()"
-(ionInput)="field.set($any($event).detail.value ?? '')"
-
-// ❌ Wrong — don't use ngModel
-[(ngModel)]="field"
+[value] =
+  'field()'(ionInput) =
+  // ❌ Wrong — don't use ngModel
+  "field.set($any($event).detail.value ?? '')"[ngModel] =
+    'field';
 
 // ❌ Wrong — don't import FormsModule at all
 import { FormsModule } from '@angular/forms';
 ```
 
 **Special cases:**
+
 - **Number inputs**: `$any($event).detail.value ? +$any($event).detail.value : 0`
 - **Toggle**: `[checked]` + `(ionChange)` — `isVerva.set($any($event).detail.checked)`
 - **Checkbox**: `[checked]` + `(ionChange)` — `isSkipped.set($any($event).detail.checked)`
@@ -816,9 +853,9 @@ export class RefuelService {
   getRefuelsLive(carId: string): Observable<Refuel[]> {
     const refuelsRef = collection(this.db, 'refuels');
     const q = query(refuelsRef, where('carId', '==', carId), orderBy('date', 'desc'));
-    return new Observable<Refuel[]>(observer => {
-      const unsubscribe = onSnapshot(q, snapshot => {
-        const refuels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Refuel));
+    return new Observable<Refuel[]>((observer) => {
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const refuels = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Refuel);
         observer.next(refuels);
       });
       return unsubscribe;
@@ -869,12 +906,14 @@ export class RefuelListPage {
   (unless the state is genuinely shared).
 
 **Decomposition** — extract a component when it exceeds any threshold:
+
 - ~3 distinct responsibilities
 - ~200 lines of TypeScript
 - ~80 lines of HTML template
 - 5+ dependency injections
 
 **Folder structure:**
+
 ```
 refuel-form/
 ├── refuel-form.page.ts          # page component (orchestrator)
@@ -960,6 +999,7 @@ and accessible:
 ```
 
 **Semantic rules with Ionic:**
+
 - Use `<ion-header>`, `<ion-footer>` for page chrome
 - Use `<ion-list>` for lists (inherently semantic)
 - Use `<ion-label>` for text content in items
@@ -1013,7 +1053,9 @@ and accessible:
   .fields {
     .field {
       .input {
-        .error { color: red; }  // 5 levels!
+        .error {
+          color: red;
+        } // 5 levels!
       }
     }
   }
@@ -1023,11 +1065,16 @@ and accessible:
 ### BEM Naming Convention
 
 ```scss
-.refuel-form { }                    // Block
-.refuel-form__field { }             // Element
-.refuel-form__field--error { }      // Modifier
-.refuel-form--loading { }           // Block modifier
-.refuel-list__empty { }             // Block + element
+.refuel-form {
+} // Block
+.refuel-form__field {
+} // Element
+.refuel-form__field--error {
+} // Modifier
+.refuel-form--loading {
+} // Block modifier
+.refuel-list__empty {
+} // Block + element
 ```
 
 ### Component-Encapsulated Styles
@@ -1113,6 +1160,7 @@ it('should render the page title with correct text', () => {
 ```
 
 **Also never:**
+
 - Test framework/library code (e.g., don't test that `*ngIf` hides elements — Angular already tests that)
 - Test third-party component internals (e.g., don't test that `ion-modal` opens — Ionic already tests that)
 - Test the same component in multiple suites; one `describe` block per component
@@ -1126,7 +1174,7 @@ it('should render the page title with correct text', () => {
 it('should call mocked service with correct args', () => {
   const mockService = { getRefuels: vi.fn().mockReturnValue([{ id: '1' }]) };
   mockService.getRefuels('car-1');
-  expect(mockService.getRefuels).toHaveBeenCalledWith('car-1');  // tests mock, not production code!
+  expect(mockService.getRefuels).toHaveBeenCalledWith('car-1'); // tests mock, not production code!
 });
 
 // ✅ DO — test actual component behavior through the service
@@ -1171,10 +1219,12 @@ describe('RefuelFormPage', () => {
     await user.click(screen.getByRole('button', { name: /Zapisz tankowanie/i }));
 
     // Assert
-    expect(mockRefuelService.addRefuel).toHaveBeenCalledWith(expect.objectContaining({
-      amount: 250,
-      mileage: 125000,
-    }));
+    expect(mockRefuelService.addRefuel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 250,
+        mileage: 125000,
+      }),
+    );
   });
 });
 ```
@@ -1188,12 +1238,12 @@ describe('RefuelFormPage', () => {
 
 ```typescript
 // ✅ DO — follow priority order
-screen.getByRole('heading', { name: 'Dashboard' });          // 1st: role
-screen.getByLabelText('Kwota (PLN)');                         // 2nd: label
-screen.getByText('250 PLN');                                   // 3rd: text
+screen.getByRole('heading', { name: 'Dashboard' }); // 1st: role
+screen.getByLabelText('Kwota (PLN)'); // 2nd: label
+screen.getByText('250 PLN'); // 3rd: text
 
 // ⚠️ ONLY IF ABOVE ARE IMPOSSIBLE
-screen.getByTestId('refuel-amount-display');                  // last resort
+screen.getByTestId('refuel-amount-display'); // last resort
 ```
 
 ### Mocking Ionic Storage
@@ -1208,9 +1258,7 @@ const mockStorage = {
 
 // Provide in test
 await render(RefuelService, {
-  providers: [
-    { provide: Storage, useValue: mockStorage },
-  ],
+  providers: [{ provide: Storage, useValue: mockStorage }],
 });
 ```
 
@@ -1249,13 +1297,16 @@ const mockRefuelService = {
 ## Quality Gates
 
 After every change, run:
+
 ```bash
+npm run quality                            # static:checks + knip + jscpd (MUST pass with exit code 0)
 npm exec nx affected -t lint test build
 npm exec nx affected -t e2e    # if the change touches critical paths
 ```
 
 Confirm:
-- ✅ No lint errors
+
+- ✅ `npm run quality` passes cleanly (exit code 0) — no lint errors, no formatting issues, no dead code, no unwanted duplication
 - ✅ No failing unit/component tests
 - ✅ No failing E2E tests
 - ✅ Build completes successfully

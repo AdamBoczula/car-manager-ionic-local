@@ -14,13 +14,8 @@
     "**/environments/*.ts"
   ],
   "absolute": true,
-  "gitignore": true,
-  "minLines": 10,
-  "minTokens": 70,
-  "maxLines": 500,
-  "pattern": [
-    "apps/car-manager/src/**/*.ts",
-    "apps/car-manager/src/**/*.html",
-    "libs/**/*.ts"
-  ]
+  "min-lines": 10,
+  "min-tokens": 70,
+  "max-lines": 500,
+  "pattern": "apps/car-manager/src/**/*.ts"
 }

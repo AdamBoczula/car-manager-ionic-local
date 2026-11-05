@@ -33,6 +33,7 @@ the technical architecture for features before implementation begins. You work i
 ### 1. Load Context
 
 Read in order:
+
 1. `AGENTS.md` — authoritative project guidance
 2. `PLAN.md` — current project plan and architecture
 3. `docs/specs/<domain>/<name>.md` — the feature spec from Phase 1
@@ -44,31 +45,37 @@ Read in order:
 Produce a design covering:
 
 #### Module Structure
+
 - Which Nx libraries/projects are affected?
 - Does the feature need a new lib or fit into existing structure?
 - Respect Nx tags: `type:app`, `type:feature`, `type:data`, `type:ui`
 
 #### Component Tree
+
 - Page (container) → child components (presenters)
 - Follow Container/Presenter pattern with Signals
 - Decomposition thresholds: ~3 responsibilities, ~150 LOC TS, ~60 LOC inline template
 
 #### Data Flow
+
 ```
 UI Component (Signals) → Service (Facade) → Ionic Storage (IndexedDB)
                                           → Firestore (background sync)
 ```
+
 - Where does data originate? (user input, Firestore, device)
 - How does it flow through services?
 - Offline-first: write to Ionic Storage first, sync to Firestore in background
 - Conflict strategy: Last-Write-Wins (LWW)
 
 #### Route Design
+
 - New routes needed?
 - Navigation flow between pages
 - Guard requirements (auth/no-auth)
 
 #### Model Design
+
 - DTOs (data layer: Firestore/Ionic Storage communication)
 - View models (UI layer: formatted for display)
 - Payloads (create/edit operations)
@@ -76,24 +83,30 @@ UI Component (Signals) → Service (Facade) → Ionic Storage (IndexedDB)
 ### 3. Create ADRs (if needed)
 
 Create an ADR in `docs/adr/<NNN>-<title>.md` when the decision:
+
 - Involves choosing between multiple viable solutions
 - Has long-term project impact
 - May be controversial or needs justification
 
 Use the template from `docs/adr/adr-template.md`:
+
 ```markdown
 # ADR-NNN: Title
 
 ## Status
+
 Proposed | Accepted | Deprecated | Superseded
 
 ## Context
+
 [What is the problem? What forces are at play?]
 
 ## Decision
+
 [What is the decision?]
 
 ## Consequences
+
 [What becomes easier? What becomes harder?]
 ```
 
@@ -103,17 +116,20 @@ Proposed | Accepted | Deprecated | Superseded
 ## Architecture Design — [Feature Name]
 
 ### Module Structure
+
 | Module | Type | Purpose |
-|--------|------|---------|
-| ... | ... | ... |
+| ------ | ---- | ------- |
+| ...    | ...  | ...     |
 
 ### Component Tree
 ```
+
 PageComponent (container)
 ├── HeaderComponent (presenter)
 ├── ListComponent (presenter)
-│   └── ListItemComponent (presenter)
+│ └── ListItemComponent (presenter)
 └── FabButton (presenter)
+
 ```
 
 ### Data Flow
@@ -143,6 +159,18 @@ PageComponent (container)
 - All components: inline template + separate SCSS file (`styleUrl`)
 - Services use `@Service()` decorator, injected via `inject()`
 
+## Quality Gates
+
+All architecture proposals must respect the project's quality tooling:
+
+```bash
+npm run quality   # static:checks + knip + jscpd — slip into this
+```
+
+- Architecture should not introduce dead code patterns (unused exports, orphaned files)
+- Architecture should not duplicate logic that could be shared across domains
+- All new code must pass `npm run quality` with exit code 0
+
 ## Guardrails
 
 - ❌ Don't propose new NgModules — standalone components only
@@ -152,3 +180,4 @@ PageComponent (container)
 - ❌ Don't create architecture without reviewing existing code first
 - ❌ Don't create ADRs for trivial decisions
 - ❌ Don't implement code — architecture design only
+- ❌ Don't design patterns that would cause dead code or excessive duplication

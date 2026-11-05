@@ -32,6 +32,7 @@ For every E2E test task:
 ### 0. Load Context
 
 Before writing or modifying tests, read in this order:
+
 1. `apps/car-manager-e2e/src/` — all existing spec files (understand what is already tested)
 2. `apps/car-manager-e2e/src/utils/` — all existing utility files
 3. `apps/car-manager-e2e/playwright.config.mts` — current Playwright configuration
@@ -41,6 +42,7 @@ Before writing or modifying tests, read in this order:
 ### 1. Analyze Existing Coverage
 
 **Before writing a single test:**
+
 - Read every existing `.spec.ts` file in `apps/car-manager-e2e/src/`
 - Catalogue what behaviors are already verified
 - Identify gaps — behaviors not yet covered by any test
@@ -57,15 +59,16 @@ Before writing or modifying tests, read in this order:
 
 Before writing test specs, create or update utilities in `apps/car-manager-e2e/src/utils/`:
 
-| Utility file | Purpose |
-|---|---|
-| `seed-data.ts` | Seed refuels, repairs, or cars into Ionic Storage for test setup |
-| `storage-helpers.ts` | Read/write/clear Ionic Storage objects (e.g., `getStoredRefuels`, `clearAllData`) |
-| `modal-helpers.ts` | Open, close, verify Ionic modal presence, get modal buttons |
-| `navigation-helpers.ts` | Navigate to routes, wait for page load, verify active route |
-| `auth-helpers.ts` | Login/logout helpers for tests that require authentication |
+| Utility file            | Purpose                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `seed-data.ts`          | Seed refuels, repairs, or cars into Ionic Storage for test setup                  |
+| `storage-helpers.ts`    | Read/write/clear Ionic Storage objects (e.g., `getStoredRefuels`, `clearAllData`) |
+| `modal-helpers.ts`      | Open, close, verify Ionic modal presence, get modal buttons                       |
+| `navigation-helpers.ts` | Navigate to routes, wait for page load, verify active route                       |
+| `auth-helpers.ts`       | Login/logout helpers for tests that require authentication                        |
 
 **Utility standards:**
+
 - Every exported function must have an explicit return type
 - Use `satisfies` / `as const` where appropriate
 - Never use `any` — use `unknown` + type guards or typed `page.evaluate()` generics
@@ -79,11 +82,13 @@ Follow the test writing standards below rigorously.
 ### 5. Run Verification
 
 After writing tests, **always** run:
+
 ```bash
 npm exec nx e2e car-manager-e2e --skip-nx-cache
 ```
 
 If the full suite is too slow for iteration, run a single spec:
+
 ```bash
 npx playwright test --config apps/car-manager-e2e/playwright.config.mts src/<file>.spec.ts
 ```
@@ -151,6 +156,7 @@ const DEFAULT_REFUELS = [
 ### Rule 5: Never Use `any`
 
 Zero tolerance. If you don't know the type:
+
 - `unknown` + type guard
 - `Record<string, unknown>` for truly dynamic structures
 - Generics if appropriate
@@ -200,6 +206,7 @@ type EntryType = 'refuel' | 'repair';
 ### Rule 9: No DTO Confusion in E2E Layer
 
 E2E tests interact with the running application. Define clear types for:
+
 - **Seed data** — what you insert into Ionic Storage
 - **Storage reads** — what you read back for assertions
 - **Page element asserts** — what you verify in the DOM
@@ -259,12 +266,12 @@ when the current level is genuinely impossible:
 
 ```typescript
 // ✅ DO — follow priority order
-const saveBtn = page.getByRole('button', { name: /Zapisz/i });           // 1st: role
-const amountInput = page.getByLabelText('Kwota (PLN)');                   // 2nd: label
-const heading = page.getByText('Dodaj tankowanie');                       // 3rd: text
-const locationInput = page.getByPlaceholder('Nazwa warsztatu');           // 4th: placeholder
-const refuelItem = page.getByTestId('refuel-list-item-0');                // 5th: test-id
-const modal = page.locator('ion-modal');                                  // 6th: Ionic (last resort)
+const saveBtn = page.getByRole('button', { name: /Zapisz/i }); // 1st: role
+const amountInput = page.getByLabelText('Kwota (PLN)'); // 2nd: label
+const heading = page.getByText('Dodaj tankowanie'); // 3rd: text
+const locationInput = page.getByPlaceholder('Nazwa warsztatu'); // 4th: placeholder
+const refuelItem = page.getByTestId('refuel-list-item-0'); // 5th: test-id
+const modal = page.locator('ion-modal'); // 6th: Ionic (last resort)
 ```
 
 ### Ionic-Specific Selector Patterns
@@ -321,6 +328,7 @@ test.describe('Refuel create', () => {
 ```
 
 **Never:**
+
 - Rely on data seeded by another test
 - Assume refuels, repairs, or cars exist from a previous test run
 - Leave Ionic Storage in a dirty state after a test
@@ -344,6 +352,7 @@ test('should open add refuel modal with correct title and form fields', ...);
 ```
 
 **Also never test:**
+
 - Playwright framework internals (e.g., `page.goto` works — Playwright already tests that)
 - Angular framework behavior (e.g., `*ngIf` hides elements — Angular already tests that)
 - Ionic component internals (e.g., `ion-modal` opens — Ionic already tests that)
@@ -554,7 +563,8 @@ npx playwright test --config apps/car-manager-e2e/playwright.config.mts src/<fil
 npx playwright test --config apps/car-manager-e2e/playwright.config.mts --headed --debug src/<file>.spec.ts
 
 # Full quality gate (before marking complete)
-npm exec nx affected -t lint test build e2e
+npm run quality                              # MUST pass with exit code 0
+npm exec nx affected -t lint test build e2e  # if full quality gate is needed
 ```
 
 ## Guardrails — What NOT to Do

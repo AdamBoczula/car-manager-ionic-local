@@ -45,12 +45,12 @@ backed by IndexedDB, with Firebase Firestore as the remote source-of-truth.
 
 ### Active Projects
 
-| Project | Type | Purpose |
-|---------|------|---------|
-| `apps/car-manager` | app | Main Ionic/Angular application |
-| `apps/car-manager-e2e` | e2e | Playwright end-to-end tests |
-| `libs/shared/models` | lib | Shared TypeScript interfaces (car, refuel, repair) |
-| `libs/shared/services` | lib | Shared business logic services |
+| Project                | Type | Purpose                                            |
+| ---------------------- | ---- | -------------------------------------------------- |
+| `apps/car-manager`     | app  | Main Ionic/Angular application                     |
+| `apps/car-manager-e2e` | e2e  | Playwright end-to-end tests                        |
+| `libs/shared/models`   | lib  | Shared TypeScript interfaces (car, refuel, repair) |
+| `libs/shared/services` | lib  | Shared business logic services                     |
 
 ---
 
@@ -68,14 +68,17 @@ The full workflow is defined below.
 5. **Done** — code ready, reviewed locally by user
 
 ### Phase 1: Analysis
+
 - Use `business-analyst` skill to drill down requirements
 - Output: `docs/specs/XX-feature-name.md`
 
 ### Phase 2: Architecture
+
 - Design module structure, component tree, data flow
 - Output: Architecture decisions in spec or `docs/adr/`
 
 ### Phase 3: Implementation (parallel)
+
 - **Dev track:** TDD → implement → update "Implemented in" table in the spec
 - **Tester track:** E2E tests with Playwright
 - Use `senior-frontend-dev` agent for code
@@ -88,6 +91,7 @@ npm exec nx affected -t lint test build e2e
 ```
 
 ### Phase 5: Done
+
 - Commit with Conventional Commits format
 - Open PR (if applicable)
 
@@ -116,6 +120,7 @@ then fix via TDD, then review**.
 7. **Done** — commit with Conventional Commits, bug doc updated
 
 ### Phase 1: Diagnoza
+
 - Analyze the bug: what is the actual behavior vs. expected behavior?
 - Identify root cause: which component/service/utility is at fault?
 - Determine impact: is this a regression? Which user flows are affected?
@@ -128,6 +133,7 @@ then fix via TDD, then review**.
 - Use `senior-frontend-dev` agent for the analysis phase
 
 ### Phase 2: Test regresyjny (RED)
+
 - Write an E2E/integration test that **demonstrates the bug** (must FAIL before the fix)
 - Use `automation-playwright-tester` agent for E2E tests
 - For unit-level regressions, write a Vitest unit test instead
@@ -136,6 +142,7 @@ then fix via TDD, then review**.
 - Commit the failing test separately (or keep it staged) to prove it catches the bug
 
 ### Phase 3: TDD Fix (GREEN)
+
 - Use `senior-frontend-dev` agent to implement the fix
 - Follow TDD: run the failing test → write minimal code to make it pass → refactor
 - Add/update unit tests for the fixed code
@@ -149,6 +156,7 @@ npm exec nx build car-manager
 ```
 
 ### Phase 4: Code Review
+
 - Use `pr-reviewer` agent to review the entire change
 - Review criteria:
   - **Poprawność** — does the fix actually resolve the root cause?
@@ -160,6 +168,7 @@ npm exec nx build car-manager
 - If changes requested → go to Phase 5
 
 ### Phase 5: Post-Review Fix
+
 - Use `senior-frontend-dev` agent to address review findings
 - Iterate on Phase 4–5 until the reviewer approves
 - Update the bug doc with final resolution details
@@ -178,6 +187,7 @@ npm exec nx build car-manager
 ```
 
 ### Phase 7: Done
+
 - Commit with Conventional Commits format (`fix: <description>`)
 - Update bug doc: add "Data naprawy" and "Zweryfikowano przez" fields
 - Close the bug
@@ -212,6 +222,51 @@ Before marking a task as complete, run:
 npm exec nx affected -t lint test build e2e
 ```
 
+### Static checks (guardrail)
+
+Before every commit, PR, or marking a task as done, run the **static checks**:
+
+```bash
+npm run static:checks
+```
+
+This runs:
+- `lint` — ESLint (TypeScript + Angular template accessibility rules)
+- `format:check` — Prettier formatting validation
+
+These checks are **non-negotiable** — treat failures as blocking.
+
+> Agents: Run `npm run static:checks` before every commit.
+
+### Dead code & duplication checks (guardrail)
+
+In addition to static checks, run **before every PR and before marking a task as done**:
+
+```bash
+npm run knip          # dead code detection (unused files, exports, dependencies)
+npm run duplication   # code duplication analysis (jscpd)
+```
+
+Or run everything (static + dead code + duplication) in one command:
+
+```bash
+npm run quality
+```
+
+These checks are **strict — must pass with zero errors and zero warnings**.
+Treat failures as blocking, just like `static:checks`.
+
+> Agents: Run `npm run quality` before every PR and before marking a task as done.
+> `npm run quality` fails (exit code ≠ 0) if any issues are found.
+> Do not mark a task as done unless `npm run quality` passes cleanly.
+
+The full guardrail workflow before marking complete:
+
+```bash
+npm run quality                              # MUST pass with exit code 0
+npm exec nx affected -t lint test build e2e  # if full quality gate is needed
+```
+
 ---
 
 ## Governance
@@ -242,14 +297,14 @@ For **any** code change (new feature, refactor, bug fix), the agent MUST create 
 
 ### When to write each layer
 
-| Change type | Unit tests | Component tests | E2E tests |
-|-------------|-----------|-----------------|-----------|
-| New service / utility | ✅ Required | — | — |
-| New component | ✅ (class logic) | ✅ Required | — |
-| New feature / screen | ✅ | ✅ Required | ✅ (critical path) |
-| Bug fix | ✅ (regression) | ✅ (if component) | ✅ (if critical path) |
-| Refactor (no behavior change) | ✅ (existing must pass) | ✅ (existing must pass) | — |
-| Refactor (behavior changes) | ✅ Updated | ✅ Updated | ✅ Updated |
+| Change type                   | Unit tests              | Component tests         | E2E tests             |
+| ----------------------------- | ----------------------- | ----------------------- | --------------------- |
+| New service / utility         | ✅ Required             | —                       | —                     |
+| New component                 | ✅ (class logic)        | ✅ Required             | —                     |
+| New feature / screen          | ✅                      | ✅ Required             | ✅ (critical path)    |
+| Bug fix                       | ✅ (regression)         | ✅ (if component)       | ✅ (if critical path) |
+| Refactor (no behavior change) | ✅ (existing must pass) | ✅ (existing must pass) | —                     |
+| Refactor (behavior changes)   | ✅ Updated              | ✅ Updated              | ✅ Updated            |
 
 ### Testing patterns used in this project
 
@@ -278,6 +333,26 @@ npm exec nx build car-manager
 ```
 
 And run the full `nx affected` command before marking the task complete.
+
+### Accessibility (static audit)
+
+This project uses **static accessibility analysis** at two levels:
+
+1. **ESLint (compile-time)** — `@angular-eslint/template/*` rules enforce:
+   - `alt-text`, `elements-content`, `label-has-associated-control`, `table-scope`
+   - `valid-aria`, `button-has-type`, `click-events-have-key-events`, `mouse-events-have-key-events`
+   - `no-autofocus`, `no-positive-tabindex`, `role-has-required-aria`
+   - Run: `npm exec nx lint car-manager`
+
+2. **axe-core via Playwright (runtime)** — automated a11y audits on key pages:
+   - Test file: `apps/car-manager-e2e/src/accessibility.spec.ts`
+   - Helper: `apps/car-manager-e2e/src/utils/accessibility-helpers.ts`
+   - Run: `npm exec nx run car-manager-e2e:a11y`
+   - Or: `npm run a11y`
+   - Tests are tagged with `@a11y` for isolated execution
+   - CI runs accessibility as a separate job after quality gate
+
+Every new feature / screen MUST include accessibility tests using `checkAccessibility()` from the helper. Use `includedImpacts: ['critical', 'serious']` by default; disable known false positives with `disabledRules`.
 
 ---
 
@@ -309,6 +384,7 @@ After the quality gate passes, you can trigger an automated UI/UX/Accessibility/
 ```
 
 This invokes the **QA Coordinator**, which spawns 4 subagents in parallel:
+
 - **UI Reviewer** — visual consistency, layout, typography, component states
 - **UX Analyzer** — user experience, Nielsen's heuristics, click efficiency
 - **A11y Auditor** — WCAG 2.1 AA, Axe-core, keyboard, ARIA, contrast
@@ -319,33 +395,33 @@ The review is **optional** — it does NOT block the pipeline. Results are saved
 
 ### MCP servers used by QA subagents
 
-| MCP Server | Purpose |
-|------------|---------|
-| Playwright MCP | Browser automation, navigation, screenshots, viewport resizing |
-| Chrome DevTools MCP | Axe-core audits, ARIA tree inspection, contrast checks |
-| GitHub MCP | Optional: create GitHub Issues from QA reports |
+| MCP Server          | Purpose                                                        |
+| ------------------- | -------------------------------------------------------------- |
+| Playwright MCP      | Browser automation, navigation, screenshots, viewport resizing |
+| Chrome DevTools MCP | Axe-core audits, ARIA tree inspection, contrast checks         |
+| GitHub MCP          | Optional: create GitHub Issues from QA reports                 |
 
 ---
 
 ## Agent Model Assignments
 
-| Agent | Model | Why |
-|-------|-------|-----|
-| Architect | DeepSeek-V4-Pro | Architecture design, ADRs — deep reasoning required |
-| Business Analyst | DeepSeek-V4-Pro | Requirements analysis — deep reasoning required |
-| PR Reviewer | DeepSeek-V4-Pro | Code review — correctness, regression, conventions, architecture |
-| Critical Thinking | DeepSeek-V4-Pro | Assumption analysis, strategic thinking |
-| Doublecheck | DeepSeek-V4-Pro | Claim verification, adversarial review |
-| Tutor | DeepSeek-V4-Pro | Teaching and explaining concepts |
-| Senior Frontend Dev | DeepSeek-V4-Flash | Code implementation following strict conventions — procedural |
-| Automation Playwright Tester | DeepSeek-V4-Flash | E2E test generation — procedural, tool-driven |
-| QA Coordinator | DeepSeek-V4-Flash | Orchestration — lightweight decision-making |
-| UI Reviewer | DeepSeek-V4-Flash | Visual analysis — procedural |
-| UX Analyzer | DeepSeek-V4-Flash | Heuristic evaluation — procedural |
-| A11y Auditor | DeepSeek-V4-Flash | Audits are tool-driven |
-| Responsive Checker | DeepSeek-V4-Flash | Viewport testing — procedural |
-| Perf Investigator | DeepSeek-V4-Flash | Performance diagnostics — tool-driven |
-| CI Monitor Subagent | DeepSeek-V4-Flash | Simple MCP tool calls |
+| Agent                        | Model             | Why                                                              |
+| ---------------------------- | ----------------- | ---------------------------------------------------------------- |
+| Architect                    | DeepSeek-V4-Pro   | Architecture design, ADRs — deep reasoning required              |
+| Business Analyst             | DeepSeek-V4-Pro   | Requirements analysis — deep reasoning required                  |
+| PR Reviewer                  | DeepSeek-V4-Pro   | Code review — correctness, regression, conventions, architecture |
+| Critical Thinking            | DeepSeek-V4-Pro   | Assumption analysis, strategic thinking                          |
+| Doublecheck                  | DeepSeek-V4-Pro   | Claim verification, adversarial review                           |
+| Tutor                        | DeepSeek-V4-Pro   | Teaching and explaining concepts                                 |
+| Senior Frontend Dev          | DeepSeek-V4-Flash | Code implementation following strict conventions — procedural    |
+| Automation Playwright Tester | DeepSeek-V4-Flash | E2E test generation — procedural, tool-driven                    |
+| QA Coordinator               | DeepSeek-V4-Flash | Orchestration — lightweight decision-making                      |
+| UI Reviewer                  | DeepSeek-V4-Flash | Visual analysis — procedural                                     |
+| UX Analyzer                  | DeepSeek-V4-Flash | Heuristic evaluation — procedural                                |
+| A11y Auditor                 | DeepSeek-V4-Flash | Audits are tool-driven                                           |
+| Responsive Checker           | DeepSeek-V4-Flash | Viewport testing — procedural                                    |
+| Perf Investigator            | DeepSeek-V4-Flash | Performance diagnostics — tool-driven                            |
+| CI Monitor Subagent          | DeepSeek-V4-Flash | Simple MCP tool calls                                            |
 
 ---
 
@@ -368,23 +444,27 @@ The review is **optional** — it does NOT block the pipeline. Results are saved
 ```
 
 ### Offline Strategy
+
 1. **Write**: always to Ionic Storage first, then sync to Firestore in background
 2. **Read**: from Ionic Storage (fast), with Firestore listener for remote updates
 3. **Conflict**: Last-Write-Wins (LWW) — sufficient for 2-person use
 4. **Sync queue**: if offline → save locally, push when connectivity returns
 
 ### Route Structure
+
 - `/login` — login page (guarded by `noAuthGuard`)
 - `/register` — registration page (guarded by `noAuthGuard`)
 - `/dashboard` — main dashboard (guarded by `authGuard`)
 
 ### Firebase Setup
+
 - Initialized once in `apps/car-manager/src/app/core/firebase.ts`
 - Exports `app`, `db`, `auth` instances
 - Firestore offline persistence enabled by default
 - Emulator support via environment config (future)
 
 ### Ionic Storage
+
 - Database name: `__car_manager_db`
 - Driver order: `[IndexedDB, LocalStorage]`
 - Store name in IndexedDB: `_ionickv`
@@ -392,4 +472,4 @@ The review is **optional** — it does NOT block the pipeline. Results are saved
 
 ---
 
-*Ostatnia aktualizacja: 04.11.2026*
+_Ostatnia aktualizacja: 04.11.2026_
