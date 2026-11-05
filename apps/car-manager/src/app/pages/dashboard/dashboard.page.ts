@@ -7,7 +7,6 @@ import { NavController } from '@ionic/angular';
 import {
   IonHeader,
   IonToolbar,
-  IonTitle,
   IonButtons,
   IonButton,
   IonIcon,
@@ -48,7 +47,6 @@ import { formatPln } from '../../core/utils/consumption.util';
     IonLabel,
     IonButton,
     IonButtons,
-    IonTitle,
     IonToolbar,
     IonSpinner,
     IonText,

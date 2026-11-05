@@ -10,7 +10,6 @@ import {
   IonContent,
   IonInput,
   IonIcon,
-  IonText,
   NavController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -31,7 +30,6 @@ import { CarService } from '../../core/services/car.service';
     IonContent,
     IonInput,
     IonIcon,
-    IonText,
   ],
   template: `
     <ion-header>

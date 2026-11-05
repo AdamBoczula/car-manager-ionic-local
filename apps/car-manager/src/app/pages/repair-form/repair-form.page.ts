@@ -5,7 +5,6 @@ import { NavController } from '@ionic/angular';
 import {
   IonHeader,
   IonToolbar,
-  IonTitle,
   IonButtons,
   IonBackButton,
   IonContent,
@@ -36,7 +35,6 @@ addIcons({ mic });
   imports: [
     IonHeader,
     IonToolbar,
-    IonTitle,
     IonButtons,
     IonBackButton,
     IonContent,

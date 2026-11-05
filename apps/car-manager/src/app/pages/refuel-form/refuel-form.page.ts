@@ -5,7 +5,6 @@ import { NavController } from '@ionic/angular';
 import {
   IonHeader,
   IonToolbar,
-  IonTitle,
   IonButtons,
   IonBackButton,
   IonContent,
@@ -32,7 +31,6 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
   imports: [
     IonHeader,
     IonToolbar,
-    IonTitle,
     IonButtons,
     IonBackButton,
     IonContent,
