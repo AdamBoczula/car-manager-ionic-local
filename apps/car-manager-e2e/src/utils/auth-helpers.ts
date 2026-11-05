@@ -93,9 +93,12 @@ export async function skipIfFirebaseUnavailable(): Promise<void> {
 
 /**
  * Skip tests when Firebase Auth Emulator is not reachable.
- * Tests that require IndexedDB seeding + reload (like car-switcher) work
- * reliably only with the local emulator. CI uses real Firebase Auth which
- * may override local IndexedDB data via Firestore sync on reload.
+ * Use this for tests that require the local emulator (e.g., IndexedDB seeding
+ * + page reload scenarios). In CI, real Firebase Auth creates users but
+ * Firestore sync overrides seeded IndexedDB data after reload.
+ *
+ * ✅ Works locally with: `npx firebase emulators:start --only auth,firestore`
+ * ⏭️ Skipped on CI (GitHub Actions) — emulator not available
  *
  * Usage:
  *   test.beforeAll(async () => await skipIfNoEmulator());

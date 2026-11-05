@@ -1,5 +1,12 @@
 // covers: docs/bugs/01-car-switcher-confirmation-redirect.md
 // covers: docs/bugs/03-list-car-switcher-and-repair-back.md
+//
+// NOTE: These tests are SKIPPED on CI (GitHub Actions) because they require
+// the Firebase Auth Emulator for reliable IndexedDB seeding + page reload.
+// In CI, real Firebase Auth creates users but Firestore sync overrides the
+// seeded IndexedDB car data after reload, causing the car-switcher to show
+// "Auto testowe" instead of "Toyota Corolla" / "Honda Civic".
+// Run locally with emulators: `npx firebase emulators:start`
 import { test, expect, type Page } from '@playwright/test';
 import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helpers';
 import { seedAuthUser, clearAuthState, skipIfNoEmulator } from './utils/auth-helpers';
