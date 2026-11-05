@@ -1,11 +1,9 @@
-import { initializeApp, FirebaseApp } from 'firebase/app';
-import {
-  getFirestore,
-  Firestore,
-  enableIndexedDbPersistence,
-  connectFirestoreEmulator,
-} from 'firebase/firestore';
-import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
+import type { FirebaseApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
+import type { Firestore } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import type { Auth } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { environment } from '../../environments/environment';
 
 /**
@@ -17,6 +15,8 @@ const app: FirebaseApp = initializeApp(environment.firebase);
 const db: Firestore = getFirestore(app);
 const auth: Auth = getAuth(app);
 
+export { db, auth };
+
 /**
  * Włącz offline persistence dla Firestore (kluczowe dla offline-first).
  * Firestore automatycznie cache'uje dane w IndexedDB i synchronizuje,
@@ -24,12 +24,8 @@ const auth: Auth = getAuth(app);
  */
 enableIndexedDbPersistence(db).catch((err) => {
   if (err.code === 'failed-precondition') {
-    console.warn(
-      'Firestore offline – wiele kart otwartych, persistence działa tylko w jednej.'
-    );
+    console.warn('Firestore offline – wiele kart otwartych, persistence działa tylko w jednej.');
   } else if (err.code === 'unimplemented') {
     console.warn('Firestore offline – przeglądarka nie wspiera IndexedDB.');
   }
 });
-
-export { app, db, auth };

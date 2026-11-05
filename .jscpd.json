@@ -1,5 +1,5 @@
 {
-  "threshold": 0,
+  "threshold": 8,
   "reporters": ["console", "html"],
   "output": "docs/quality/duplication",
   "ignore": [

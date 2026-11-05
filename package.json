@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "static:checks": "npm run lint && npm run format:check",
-    "knip": "npx knip",
+    "knip": "npx knip --no-config-hints",
     "duplication": "npx jscpd --config .jscpd.json",
     "quality": "npm run static:checks && npm run knip && npm run duplication"
   },

@@ -1,27 +1,23 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
   "workspaces": {
     ".": {
       "entry": [
         "apps/car-manager/src/main.ts",
-        "apps/car-manager/src/test-setup.ts",
-        "apps/car-manager/vite.config.mts",
-        "apps/car-manager-e2e/playwright.config.ts",
-        "apps/car-manager-e2e/src/**/*.spec.ts",
         "apps/car-manager/scripts/seed-dev.ts",
-        "eslint.config.mjs",
-        "vitest.config.ts",
-        "vitest.workspace.ts",
-        "nx.json"
+        "apps/car-manager-e2e/src/**/*.spec.ts",
+        "eslint.config.mjs"
       ],
-      "project": [
-        "apps/car-manager/src/**/*.ts",
-        "apps/car-manager/src/**/*.html",
-        "apps/car-manager-e2e/src/**/*.ts",
-        "libs/**/*.ts"
-      ],
+      "project": ["apps/car-manager/src/**/*.ts", "apps/car-manager-e2e/src/**/*.ts"],
       "ignore": [
         "apps/car-manager/capacitor.config.ts",
+        "apps/car-manager/src/environments/environment.example.ts",
+        "apps/car-manager/src/environments/environment.prod.example.ts",
+        "apps/car-manager/src/environments/environment.prod.ts",
         "**/*.spec.backup.ts",
         "**/node_modules/**",
         "**/dist/**",

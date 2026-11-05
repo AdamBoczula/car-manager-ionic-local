@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+.nx/
+*.log
+.cache/
+android/
+ios/
+docs/quality/
