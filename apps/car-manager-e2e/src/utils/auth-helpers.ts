@@ -2,21 +2,32 @@ import type { Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 /**
- * Firebase Auth Emulator helpers for Car Manager E2E tests.
+ * Firebase Auth helpers for Car Manager E2E tests.
  *
- * Uses the Firebase Auth Emulator REST API to create/delete users,
- * then signs in via `window.__e2e__.signIn()` exposed by the app.
+ * When the Firebase Auth Emulator is reachable (local development), uses the
+ * emulator REST API to create users and routes Firebase SDK requests through
+ * the emulator via `page.route()`.
  *
- * Prerequisites:
- *   1. Firebase Auth Emulator running on localhost:9099
- *   2. App built with `useEmulators` enabled in environment.ts
+ * When the emulator is NOT reachable (CI), falls back to the real Firebase Auth
+ * REST API, creating users against the production-like Firebase project defined
+ * in the app's e2e environment config.
  *
  * Emulator REST API docs:
  *   https://firebase.google.com/docs/reference/rest/auth#section-create-email-password
  */
 
 const AUTH_EMULATOR_URL = 'http://127.0.0.1:9099';
-const FIREBASE_API_KEY = 'fake-api-key'; // any value works with emulator
+const EMULATOR_PING_TIMEOUT_MS = 1_000;
+
+// Real Firebase API key from the e2e environment config.
+// Used as a fallback when the emulator is not reachable (e.g., CI).
+const FIREBASE_API_KEY = 'AIzaSyBsZgCA0e0AZKWSAThiaSYKpLQPyZ8K6xk';
+
+// In emulator mode, any API key works (even a fake one).
+// This override is used when the emulator is available.
+const FAKE_API_KEY = 'fake-api-key';
+
+let emulatorReachable: boolean | undefined;
 const pagesWithAuthRouting = new WeakSet<Page>();
 
 /** Test user credentials — consistent across all E2E tests */
@@ -41,6 +52,40 @@ export interface SeededAuthUser {
   readonly password: string;
 }
 
+/**
+ * Check whether the Firebase Auth Emulator is reachable.
+ * The result is cached for the lifetime of the test process.
+ */
+async function isEmulatorReachable(): Promise<boolean> {
+  if (emulatorReachable !== undefined) {
+    return emulatorReachable;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), EMULATOR_PING_TIMEOUT_MS);
+    await fetch(
+      `${AUTH_EMULATOR_URL}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FAKE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'ping@test.local',
+          password: 'Ping1234!',
+          returnSecureToken: false,
+        }),
+        signal: controller.signal,
+      },
+    );
+    clearTimeout(timeout);
+    // EMULATOR returns 400 with EMAIL_EXISTS or a success — either means it's alive.
+    emulatorReachable = true;
+  } catch {
+    emulatorReachable = false;
+  }
+  return emulatorReachable;
+}
+
 function createUniqueEmail(email: string): string {
   const separatorIndex = email.lastIndexOf('@');
   const localPart = separatorIndex > 0 ? email.slice(0, separatorIndex) : 'e2e-test';
@@ -49,15 +94,26 @@ function createUniqueEmail(email: string): string {
 }
 
 /**
- * Create a user in the Firebase Auth Emulator via REST API.
- * Does NOT sign in — use `signInUser` for that.
+ * Create a user via REST API.
+ *
+ * When the Firebase Auth Emulator is reachable (local dev), users are created
+ * against the emulator. Otherwise (CI), users are created against the real
+ * Firebase Auth REST API using the project's API key.
+ *
+ * Does NOT sign in — use `signInUser` or `seedAuthUser` for that.
  */
 async function createEmulatorUser(
   email: string,
   password: string,
   displayName?: string,
 ): Promise<string> {
-  const url = `${AUTH_EMULATOR_URL}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`;
+  const usingEmulator = await isEmulatorReachable();
+  const apiKey = usingEmulator ? FAKE_API_KEY : FIREBASE_API_KEY;
+  const baseUrl = usingEmulator
+    ? `${AUTH_EMULATOR_URL}/identitytoolkit.googleapis.com`
+    : 'https://identitytoolkit.googleapis.com';
+
+  const url = `${baseUrl}/v1/accounts:signUp?key=${apiKey}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -72,24 +128,19 @@ async function createEmulatorUser(
 
   if (!response.ok) {
     const body = await response.text();
-    // User may already exist from a previous test that wasn't cleaned up.
-    // Emulator returns 400 with EMAIL_EXISTS — treat as success.
+    // User may already exist. Firebase returns 400 with EMAIL_EXISTS.
     if (response.status === 400 && body.includes('EMAIL_EXISTS')) {
-      // We need the localId. Fetch it via sign-in instead.
-      const signInResp = await fetch(
-        `${AUTH_EMULATOR_URL}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, returnSecureToken: false }),
-        },
-      );
+      const signInResp = await fetch(`${baseUrl}/v1/accounts:signInWithPassword?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, returnSecureToken: false }),
+      });
       if (signInResp.ok) {
         const signInData = await signInResp.json();
         return signInData.localId as string;
       }
     }
-    throw new Error(`Emulator signUp failed (${response.status}): ${body}`);
+    throw new Error(`Auth signUp failed (${response.status}): ${body}`);
   }
 
   const data = await response.json();
@@ -98,6 +149,13 @@ async function createEmulatorUser(
 
 async function routeFirebaseAuthToEmulator(page: Page): Promise<void> {
   if (pagesWithAuthRouting.has(page)) {
+    return;
+  }
+
+  // Only route requests through the emulator when it's actually reachable.
+  // In CI, the emulator doesn't exist, so requests go to real Firebase Auth.
+  if (!(await isEmulatorReachable())) {
+    pagesWithAuthRouting.add(page);
     return;
   }
 
