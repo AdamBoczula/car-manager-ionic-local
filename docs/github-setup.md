@@ -29,15 +29,24 @@ Powinny pojawić się GitHub resources (issues, pull requests, files).
 
 ## 2. CodeRabbit AI Code Review
 
-CodeRabbit to AI code reviewer. Działa przez GitHub App.
+CodeRabbit to AI code reviewer dostępny w GitHub Marketplace.
 
 ### Instalacja
 
-1. Otwórz: https://github.com/apps/coderabbit
-2. Kliknij **Install** lub **Configure**
-3. Wybierz organizację `AdamBoczula`
-4. Wybierz repo: `car-manager-ionic-local`
-5. Kliknij **Install**
+1. Wejdź na repo w GitHub: https://github.com/AdamBoczula/car-manager-ionic-local
+2. Kliknij zakładkę **Settings** (prawy górny róg)
+3. W sidebarze kliknij **GitHub Apps** (w sekcji Integrations)
+4. Kliknij **Configure** przy CodeRabbit (jeśli widnieje na liście)
+5. Jeśli nie ma — kliknij **Visit GitHub Marketplace** → wyszukaj "CodeRabbit"
+6. Kliknij **Install** dla CodeRabbit
+7. Wybierz repo: `car-manager-ionic-local`
+8. Kliknij **Install**
+
+### Alternatywnie — bezpośredni link
+
+Otwórz: https://github.com/marketplace/coderabbitai
+
+Kliknij **Set up a plan** → wybierz **Free** → wybierz repo.
 
 ### Konfiguracja
 
@@ -61,3 +70,4 @@ reviews:
 - CodeRabbit automatycznie review'uje każdy PR na `main`
 - Komentuje w PR z sugestiami
 - Możesz go wywołać komentarzem `/review` w PR
+- Wyniki widać w zakładce **Files changed** w PR
