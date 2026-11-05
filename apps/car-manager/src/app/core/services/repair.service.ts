@@ -228,9 +228,16 @@ export class RepairService {
     }
   }
 
-  private toFirestoreData(repair: Repair): Omit<Repair, 'id'> {
+  /**
+   * Strip `id` and `undefined` fields before writing to Firestore.
+   * Firestore rejects documents with undefined values.
+   */
+  private toFirestoreData(repair: Repair): Record<string, unknown> {
     const { id: _id, ...data } = repair;
     void _id; // explicitly unused — stripped before Firestore write
-    return data;
+    // Remove undefined fields — Firestore does not accept them
+    return Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    );
   }
 }

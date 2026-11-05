@@ -258,11 +258,9 @@ export class RefuelService {
     const cached = await this.storage.get<Refuel[]>(this.storageKey(carId));
     if (cached) {
       const updated = cached.map((r) =>
-        r.id === refuel.id ? { ...refuel } : null
+        r.id === refuel.id ? { ...refuel } : r
       );
-      // Remove nulls (old temp-ID entries) and add updated version
-      const filtered = updated.filter((r): r is Refuel => r !== null);
-      await this.storage.set(this.storageKey(carId), filtered);
+      await this.storage.set(this.storageKey(carId), updated);
     }
   }
 
@@ -304,9 +302,16 @@ export class RefuelService {
     );
   }
 
-  private toFirestoreData(refuel: Refuel): Omit<Refuel, 'id'> {
+  /**
+   * Strip `id` and `undefined` fields before writing to Firestore.
+   * Firestore rejects documents with undefined values.
+   */
+  private toFirestoreData(refuel: Refuel): Record<string, unknown> {
     const { id: _id, ...data } = refuel;
     void _id; // explicitly unused — stripped before Firestore write
-    return data;
+    // Remove undefined fields — Firestore does not accept them
+    return Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    );
   }
 }

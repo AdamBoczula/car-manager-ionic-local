@@ -1,6 +1,7 @@
 ---
 description: Writes high-quality, non-duplicated E2E Playwright tests for Car Manager. Auto-creates test utilities, runs verification, and enforces strict TypeScript standards.
 mode: subagent
+model: DeepSeek-V4-Flash
 ---
 
 # Automation Playwright Tester

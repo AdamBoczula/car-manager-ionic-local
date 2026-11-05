@@ -1,4 +1,5 @@
 // spec: docs/specs/05-car-management.md
+// spec: docs/specs/04-filter-sort-lists.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 import {
@@ -9,13 +10,13 @@ import {
   effect,
   DestroyRef,
   NgZone,
+  signal,
 } from '@angular/core';
 import { NavController } from '@ionic/angular';
 import { DatePipe } from '@angular/common';
 import {
   IonHeader,
   IonToolbar,
-  IonTitle,
   IonButtons,
   IonButton,
   IonIcon,
@@ -31,10 +32,16 @@ import {
   IonText,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { add, trash } from 'ionicons/icons';
+import { add, trash, searchOutline } from 'ionicons/icons';
 import { RefuelService } from '../../core/services/refuel.service';
 import { CarService } from '../../core/services/car.service';
+import { StorageService } from '../../core/services/storage.service';
 import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
+import {
+  FilterSortBarComponent,
+  type ListPreferences,
+  type FilterSortChange,
+} from '../../shared/components/filter-sort-bar/filter-sort-bar.component';
 import { formatPln } from '../../core/utils/consumption.util';
 
 @Component({
@@ -45,7 +52,6 @@ import { formatPln } from '../../core/utils/consumption.util';
     DatePipe,
     IonHeader,
     IonToolbar,
-    IonTitle,
     IonButtons,
     IonButton,
     IonIcon,
@@ -60,6 +66,7 @@ import { formatPln } from '../../core/utils/consumption.util';
     IonSpinner,
     IonText,
     CarSwitcherComponent,
+    FilterSortBarComponent,
   ],
   template: `
     <ion-header>
@@ -86,6 +93,15 @@ import { formatPln } from '../../core/utils/consumption.util';
     </ion-header>
 
     <ion-content>
+      <!-- Filter & Sort Bar (hidden when no data) -->
+      @if (hasRefuels()) {
+        <app-filter-sort-bar
+          [prefs]="preferences()"
+          [availableYears]="availableYears()"
+          (prefsChange)="handlePrefsChange($event)"
+        />
+      }
+
       @if (isLoading()) {
         <div class="refuel-list__loading" role="status">
           <ion-spinner name="crescent" />
@@ -98,9 +114,17 @@ import { formatPln } from '../../core/utils/consumption.util';
             <p>Brak tankowań – dodaj pierwsze!</p>
           </ion-text>
         </div>
+      } @else if (!hasFilteredRefuels()) {
+        <div class="refuel-list__empty" role="status">
+          <ion-icon name="search-outline" class="refuel-list__empty-icon" />
+          <ion-text color="medium">
+            <p>Brak wpisów w wybranym okresie.</p>
+            <p>Zmień filtr lub dodaj nowy wpis.</p>
+          </ion-text>
+        </div>
       } @else {
         <ion-list>
-          @for (refuel of refuels(); track refuel.id) {
+          @for (refuel of filteredRefuels(); track refuel.id) {
             <ion-item-sliding>
               <ion-item [button]="true" (click)="navigateToForm()">
                 <ion-label>
@@ -140,17 +164,81 @@ import { formatPln } from '../../core/utils/consumption.util';
 export class RefuelListPage implements OnDestroy {
   private readonly refuelService = inject(RefuelService);
   readonly carService = inject(CarService);
+  private readonly storageService = inject(StorageService);
   private readonly navController = inject(NavController);
   private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
 
+  private readonly STORAGE_KEY = 'list_prefs:refuel';
+
   readonly refuels = this.refuelService.refuels;
   readonly isLoading = this.refuelService.isLoading;
 
+  readonly preferences = signal<ListPreferences>({
+    selectedMonth: 'all',
+    selectedYear: 'all',
+    sortBy: 'date',
+    sortDirection: 'desc',
+  });
+
   readonly hasRefuels = computed(() => this.refuels().length > 0);
 
+  /** Years present in the data, newest first. */
+  readonly availableYears = computed(() => {
+    const years = new Set<number>();
+    for (const r of this.refuels()) {
+      years.add(new Date(r.date).getFullYear());
+    }
+    return Array.from(years).sort((a, b) => b - a);
+  });
+
+  /** Filtered and sorted list derived from refuels() + preferences(). */
+  readonly filteredRefuels = computed(() => {
+    const list = [...this.refuels()];
+    const { selectedMonth, selectedYear, sortBy, sortDirection } =
+      this.preferences();
+
+    // Filter by month
+    if (selectedMonth !== 'all') {
+      const filtered = list.filter(
+        (r) => new Date(r.date).getMonth() === selectedMonth
+      );
+      list.length = 0;
+      list.push(...filtered);
+    }
+
+    // Filter by year
+    if (selectedYear !== 'all') {
+      const filtered = list.filter(
+        (r) => new Date(r.date).getFullYear() === selectedYear
+      );
+      list.length = 0;
+      list.push(...filtered);
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      let cmp: number;
+      if (sortBy === 'date') {
+        cmp = a.date.localeCompare(b.date);
+      } else {
+        cmp = a.amount - b.amount;
+      }
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+
+    return list;
+  });
+
+  readonly hasFilteredRefuels = computed(
+    () => this.filteredRefuels().length > 0
+  );
+
   constructor() {
-    addIcons({ add, trash });
+    addIcons({ add, trash, searchOutline });
+
+    // Load persisted preferences
+    this.loadPreferences();
 
     // React to active car changes
     const carListener = effect(() => {
@@ -167,6 +255,27 @@ export class RefuelListPage implements OnDestroy {
 
   ngOnDestroy(): void {
     this.refuelService.stopListening();
+  }
+
+  /** Load persisted filter/sort preferences from Ionic Storage. */
+  private async loadPreferences(): Promise<void> {
+    try {
+      const saved =
+        await this.storageService.get<ListPreferences>(this.STORAGE_KEY);
+      if (saved) {
+        this.preferences.set(saved);
+      }
+    } catch {
+      // Storage not ready – use defaults
+    }
+  }
+
+  /** Handle filter/sort changes: update signal and persist to storage. */
+  handlePrefsChange(change: FilterSortChange): void {
+    this.preferences.update((p) => ({ ...p, ...change }));
+    this.storageService
+      .set(this.STORAGE_KEY, this.preferences())
+      .catch(() => false);
   }
 
   navigateToForm(): void {

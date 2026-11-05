@@ -1,17 +1,14 @@
 // spec: docs/specs/refuel/02-refuel-crud.md
 
 .refuel-form {
-  &__section {
-    margin-bottom: 1rem;
+  &__error-note {
+    display: block;
+    padding: 0 16px 8px;
+    font-size: 0.75rem;
   }
 
-  &__section-title {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--ion-color-medium);
-    padding: 0 16px;
-    margin: 1rem 0 0.5rem;
+  &__textarea-item {
+    --min-height: 120px;
   }
 }
 

@@ -373,5 +373,7 @@ In addition to manual QA, an automated UI/UX/A11y/Responsive review can be trigg
 | `a11y-auditor` | WCAG 2.1 AA, Axe-core, ARIA, keyboard navigation | Chrome DevTools MCP + Playwright MCP | DeepSeek-V4-Flash |
 | `responsive-checker` | Viewport testing, touch targets, layout integrity | Playwright MCP | DeepSeek-V4-Flash |
 
+Full agent model assignments are maintained in `AGENTS.md`. The table above covers only QA subagents.
+
 Results are compiled into a unified report at `docs/qa/YYYY-MM-DD-qa-report.md`. The review
 does **not** block the pipeline — it is an informational aid for the developer.

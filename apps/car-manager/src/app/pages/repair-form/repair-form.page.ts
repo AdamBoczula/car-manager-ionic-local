@@ -280,7 +280,7 @@ export class RepairFormPage {
       });
 
       this.showToast('Naprawa zapisana!', 'success');
-      this.zone.run(() => this.navController.navigateBack('/repair-list'));
+      this.zone.run(() => this.navController.navigateForward('/dashboard'));
     } catch (err) {
       console.error('Failed to save repair:', err);
       this.showToast('Nie udało się zapisać naprawy.', 'danger');

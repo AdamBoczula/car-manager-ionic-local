@@ -156,7 +156,9 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
 
     // Verify the dashboard is actually rendered — also confirms
     // that storage.init() has been called, creating the IndexedDB object store
-    await expect(page.getByText('Witaj!')).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole('heading', { name: /Tankowania/i })
+    ).toBeVisible({ timeout: 10000 });
 
     // ── Phase 2: Replace the temporary car in initialized Ionic Storage ──
     await seedCarList(page, seededUser.uid, [CAR_1, CAR_2]);
@@ -171,7 +173,9 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     // Wait for dashboard to load again, this time with the seeded cars
     await page.waitForURL(/dashboard/, { timeout: 15000 });
     await waitForIonicPage(page);
-    await expect(page.getByText('Witaj!')).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole('heading', { name: /Tankowania/i })
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('should show confirmation alert when selecting a different car, then navigate to dashboard with correct content', async ({
@@ -226,8 +230,10 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     // dashboard content is rendered, not just the URL.
     await waitForIonicPage(page);
 
-    // "Witaj!" heading
-    await expect(page.getByText('Witaj!')).toBeVisible({ timeout: 5000 });
+    // Dashboard heading
+    await expect(
+      page.getByRole('heading', { name: /Tankowania/i })
+    ).toBeVisible({ timeout: 5000 });
 
     // Tankowania card
     // The Ionic overlay can keep the underlying page aria-hidden while its
@@ -241,8 +247,7 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
       timeout: 5000,
     });
 
-    // User email
-    await expect(page.getByText(seededEmail)).toBeVisible({ timeout: 5000 });
+
 
     // The selected car is active after the confirmation handler completes.
     await expect(switcherButton).toContainText(CAR_2.name);
@@ -284,7 +289,9 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     await expect(switcherButton).toContainText(CAR_1.name);
 
     // ── Assert 5: dashboard content is still intact ──
-    await expect(page.getByText('Witaj!')).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByRole('heading', { name: /Tankowania/i })
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test('should not show confirmation alert when selecting the same (already active) car', async ({
@@ -312,7 +319,9 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     // ── Assert 2: no navigation/reload, dashboard content stays intact ──
     await expect(page).toHaveURL(/dashboard/);
     await expect(switcherButton).toContainText(CAR_1.name);
-    await expect(page.getByText('Witaj!', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Tankowania/i })
+    ).toBeVisible();
   });
 
   for (const list of [
@@ -378,7 +387,9 @@ test.describe('CarSwitcher – zmiana auta z potwierdzeniem', () => {
     await activeRepairList.locator('ion-back-button').click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByText('Witaj!', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Tankowania/i })
+    ).toBeVisible();
     await expect(
       page.locator('app-dashboard.ion-page:not(.ion-page-hidden)')
     ).toBeVisible();

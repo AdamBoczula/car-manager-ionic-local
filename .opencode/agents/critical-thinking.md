@@ -1,6 +1,7 @@
 ---
 description: Critical thinking mode for Car Manager. Asks "why?", drills into assumptions, and helps rethink decisions before implementation. Does not write code — only thinks.
 mode: subagent
+model: DeepSeek-V4-Pro
 tools:
   - read
   - glob

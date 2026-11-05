@@ -1,6 +1,7 @@
 ---
 description: Senior Angular Frontend Developer for Car Manager. Implements features, refactors code, writes tests (TDD), and enforces architecture standards. Expert in Ionic 9, Angular 22 Signals, Firebase v13, Nx boundaries, Vitest, semantic HTML with Ionic, SCSS + Ionic CSS variables, and strict TypeScript.
 mode: subagent
+model: DeepSeek-V4-Flash
 ---
 
 # Senior Frontend Developer — Ionic/Angular
@@ -348,34 +349,377 @@ constructor() {
 }
 ```
 
-### Signal Forms (Default Pattern for New Forms)
+### Plain Signals with `ionInput` (Actual Project Pattern for Forms)
+
+> **This is the pattern used in the codebase.** Despite AGENTS.md mentioning "Signal Forms",
+> the project uses **plain Angular Signals** (`signal()`, `computed()`) with Ionic's
+> `(ionInput)` event binding. Do NOT import `FormsModule`, `ReactiveFormsModule`, or
+> `FormControl`/`FormGroup` from `@angular/forms` — they are not used in this project.
 
 ```typescript
-// ✅ Signal Forms — new code
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+// ✅ Plain Signals + ionInput — the project's actual pattern
+// spec: docs/specs/<domain>/<name>.md
+import { Component, inject, signal, computed, NgZone } from '@angular/core';
+import { NavController } from '@ionic/angular';
+import {
+  IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
+  IonContent, IonList, IonItem, IonInput, IonTextarea, IonLabel,
+  IonButton, IonFooter, IonToast, IonNote,
+} from '@ionic/angular';
 
-readonly refuelForm = new FormGroup({
-  amount: new FormControl<number | null>(null, {
-    validators: [Validators.required, Validators.min(0.01)],
-  }),
-  mileage: new FormControl<number | null>(null, {
-    validators: [Validators.required, Validators.min(0)],
-  }),
-  date: new FormControl<string>(new Date().toISOString().split('T')[0]),
-  liters: new FormControl<number | null>(null),
-  isVerva: new FormControl<boolean>(false),
-  isSkipped: new FormControl<boolean>(false),
-  skippedReason: new FormControl<string>(''),
-});
+@Component({
+  selector: 'app-my-form',
+  host: { class: 'ion-page' },
+  standalone: true,
+  imports: [
+    IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
+    IonContent, IonList, IonItem, IonInput, IonTextarea, IonLabel,
+    IonButton, IonFooter, IonToast, IonNote,
+  ],
+  template: `
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-back-button defaultHref="/my-list" />
+        </ion-buttons>
+        <app-car-switcher
+          [cars]="carService.cars()"
+          [activeCar]="carService.activeCar()"
+          (carSelected)="carService.setActiveCar($event)"
+          (carAdded)="handleCarAdded($event)"
+        />
+      </ion-toolbar>
+    </ion-header>
 
-readonly isFormValid = computed(() => this.refuelForm.valid);
-readonly amountValue = computed(() => this.refuelForm.controls.amount.value ?? 0);
+    <ion-content>
+      <form class="my-form" (submit)="handleSubmit($event)">
+        <ion-list>
+          <!-- Required field with validation error -->
+          <ion-item>
+            <ion-label position="stacked">Kwota (PLN)</ion-label>
+            <ion-input
+              type="number"
+              [value]="amount()"
+              (ionInput)="amount.set($any($event).detail.value ? +$any($event).detail.value : 0)"
+              placeholder="0.00"
+              aria-label="Kwota w PLN"
+            />
+          </ion-item>
+          @if (amountError()) {
+            <ion-note color="danger" class="my-form__error-note">
+              {{ amountError() }}
+            </ion-note>
+          }
+
+          <!-- Optional field (no validation) -->
+          <ion-item>
+            <ion-label position="stacked">Notatka (opcjonalnie)</ion-label>
+            <ion-textarea
+              [value]="note()"
+              (ionInput)="note.set($any($event).detail.value ?? '')"
+              placeholder="Opcjonalna notatka..."
+              rows="3"
+              aria-label="Notatka"
+            />
+          </ion-item>
+
+          <!-- Toggle — bind with [checked] + (ionChange) -->
+          <ion-item>
+            <ion-label>Flaga?</ion-label>
+            <ion-toggle
+              [checked]="myFlag()"
+              (ionChange)="myFlag.set($any($event).detail.checked)"
+              justify="space-between"
+              aria-label="Flaga?"
+            />
+          </ion-item>
+
+          <!-- Checkbox — bind with [checked] + (ionChange) -->
+          <ion-item>
+            <ion-checkbox
+              [checked]="myCheck()"
+              (ionChange)="myCheck.set($any($event).detail.checked)"
+              justify="start"
+            >
+              Pomiń wpis
+            </ion-checkbox>
+          </ion-item>
+
+          <!-- Conditional field -->
+          @if (myCheck()) {
+            <ion-item>
+              <ion-label position="stacked">Powód</ion-label>
+              <ion-input
+                [value]="reason()"
+                (ionInput)="reason.set($any($event).detail.value ?? '')"
+                placeholder="Powód..."
+                aria-label="Powód"
+              />
+            </ion-item>
+          }
+        </ion-list>
+      </form>
+    </ion-content>
+
+    <ion-footer>
+      <ion-toolbar>
+        <ion-button
+          expand="block"
+          [disabled]="!isFormValid()"
+          (click)="handleSubmit()"
+          data-testid="submit-button"
+        >
+          Zapisz
+        </ion-button>
+      </ion-toolbar>
+    </ion-footer>
+
+    <ion-toast
+      [isOpen]="toastOpen()"
+      [message]="toastMessage()"
+      [color]="toastColor()"
+      [duration]="3000"
+      (didDismiss)="toastOpen.set(false)"
+    />
+  `,
+  styleUrl: './my-form.page.scss',
+})
+export class MyFormPage {
+  private readonly myService = inject(MyService);
+  readonly carService = inject(CarService);
+  private readonly navController = inject(NavController);
+  private readonly zone = inject(NgZone);
+
+  // ── Form fields — each field is a signal ──
+  readonly date = signal(new Date().toISOString().split('T')[0]);
+  readonly amount = signal(0);
+  readonly note = signal('');
+  readonly myFlag = signal(false);
+  readonly myCheck = signal(false);
+  readonly reason = signal('');
+
+  // ── Toast — signals ──
+  readonly toastOpen = signal(false);
+  readonly toastMessage = signal('');
+  readonly toastColor = signal<'success' | 'danger'>('success');
+
+  // ── Validation — computed() signals with error messages ──
+  readonly amountError = computed(() =>
+    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null
+  );
+
+  readonly isFormValid = computed(() =>
+    !this.amountError()  // add more validators as needed
+  );
+
+  // ── Submit handler ──
+  async handleSubmit(event?: Event): Promise<void> {
+    event?.preventDefault();
+
+    if (!this.isFormValid()) return;
+
+    const carId = this.carService.activeCarId();
+    if (!carId) {
+      this.showToast('Brak aktywnego auta.', 'danger');
+      return;
+    }
+
+    try {
+      await this.myService.add({
+        carId,
+        date: this.date(),
+        amount: this.amount(),
+        note: this.note().trim(),
+        myFlag: this.myFlag(),
+        myCheck: this.myCheck(),
+        reason: this.myCheck() ? this.reason().trim() || undefined : undefined,
+      });
+
+      this.showToast('Zapisano!', 'success');
+      this.zone.run(() => this.navController.navigateBack('/my-list'));
+    } catch (err) {
+      console.error('Failed to save:', err);
+      this.showToast('Nie udało się zapisać.', 'danger');
+    }
+  }
+
+  private showToast(message: string, color: 'success' | 'danger'): void {
+    this.toastMessage.set(message);
+    this.toastColor.set(color);
+    this.toastOpen.set(true);
+  }
+}
 ```
 
-### NgModel / FormsModule
+### Form Creation — Critical Checklist
 
-Use **only** in existing code that already uses it.
-Do not introduce `FormsModule` in new components — use Signal Forms instead.
+When creating a new form, follow these rules **in order**:
+
+#### 1. Binding: `[value]` + `(ionInput)`, NOT `[(ngModel)]`
+
+```typescript
+// ✅ Correct — plain Signals + Ionic events
+[value]="field()"
+(ionInput)="field.set($any($event).detail.value ?? '')"
+
+// ❌ Wrong — don't use ngModel
+[(ngModel)]="field"
+
+// ❌ Wrong — don't import FormsModule at all
+import { FormsModule } from '@angular/forms';
+```
+
+**Special cases:**
+- **Number inputs**: `$any($event).detail.value ? +$any($event).detail.value : 0`
+- **Toggle**: `[checked]` + `(ionChange)` — `isVerva.set($any($event).detail.checked)`
+- **Checkbox**: `[checked]` + `(ionChange)` — `isSkipped.set($any($event).detail.checked)`
+- **Text/textarea**: `$any($event).detail.value ?? ''`
+
+#### 2. Validation: `computed()` with error messages, NOT silent fails
+
+```typescript
+// ✅ Correct — computed validation with user-facing error messages
+readonly amountError = computed(() =>
+  this.amount() <= 0 ? 'Kwota musi być większa od 0' : null
+);
+readonly isFormValid = computed(() => !this.amountError());
+
+// In template: show error under each field
+@if (amountError()) {
+  <ion-note color="danger" class="my-form__error-note">{{ amountError() }}</ion-note>
+}
+
+// ❌ Wrong — silent return without feedback
+if (this.amount == null) return;  // user has no idea what's wrong!
+```
+
+#### 3. Labels: `<ion-label position="stacked">`, NOT `label` attribute on input
+
+```html
+<!-- ✅ Correct — separate ion-label element -->
+<ion-item>
+  <ion-label position="stacked">Kwota (PLN)</ion-label>
+  <ion-input ... />
+</ion-item>
+
+<!-- ❌ Wrong — attribute shorthand (not used in this project) -->
+<ion-input label="Kwota (PLN)" labelPlacement="stacked" />
+```
+
+#### 4. Toast: signals + private `showToast()` method
+
+```typescript
+readonly toastOpen = signal(false);
+readonly toastMessage = signal('');
+readonly toastColor = signal<'success' | 'danger'>('success');
+
+private showToast(message: string, color: 'success' | 'danger'): void {
+  this.toastMessage.set(message);
+  this.toastColor.set(color);
+  this.toastOpen.set(true);
+}
+
+// In template: (didDismiss) event
+<ion-toast
+  [isOpen]="toastOpen()"
+  [message]="toastMessage()"
+  [color]="toastColor()"
+  [duration]="3000"
+  (didDismiss)="toastOpen.set(false)"
+/>
+```
+
+#### 5. SCSS: always include `__error-note` style
+
+```scss
+.my-form {
+  &__error-note {
+    display: block;
+    padding: 0 16px 8px;
+    font-size: 0.75rem;
+  }
+}
+```
+
+### Offline-First Write Flow — Understanding the "Domino Effect" Pitfall
+
+The offline-first pattern in this project has a critical nuance:
+
+```typescript
+// Service's add() method — correct flow
+async add(data: Omit<T, 'id' | 'createdAt' | 'createdBy'>): Promise<T> {
+  const entity: T = {
+    ...data,
+    id: crypto.randomUUID(),  // temporary UUID
+    createdAt: Timestamp.now(),
+    createdBy: user.uid,
+  };
+
+  // 1. Save to Ionic Storage FIRST (offline-safe)
+  await this.saveLocal(entity.carId, entity);
+
+  // 2. Update the signal immediately (UI refresh)
+  const allLocal = await this.storage.get<T[]>(this.storageKey(entity.carId));
+  this.items.set(allLocal ?? []);
+
+  // 3. Sync to Firestore in background (best-effort)
+  try {
+    const docRef = await addDoc(collection(db, COLLECTION), this.toFirestoreData(entity));
+    entity.id = docRef.id;
+    await this.updateLocalId(entity.carId, entity);
+  } catch (err) {
+    console.warn('Failed to sync to Firestore (offline?):', err);
+  }
+
+  return entity;
+}
+```
+
+**⚠️ The "Domino Effect" — why `toFirestoreData` MUST strip `undefined`:**
+
+```
+1. Form sends:       skippedReason: undefined
+                          ↓
+2. saveLocal() → Ionic Storage ✅  (IndexedDB tolerates undefined)
+                          ↓
+3. addDoc() → Firestore ❌  "Unsupported field value: undefined"
+                          ↓
+4. onSnapshot() fires with Firestore data (MISSING the new item)
+                          ↓
+5. storage.set(key, remote) → OVERWRITES Ionic Storage with stale data!
+                          ↓
+   RESULT: the new item VANISHES from both Firestore AND Ionic Storage
+```
+
+**The fix — `toFirestoreData` must filter out `undefined` fields:**
+
+```typescript
+// ✅ Correct — strips id AND undefined values
+private toFirestoreData(entity: T): Record<string, unknown> {
+  const { id: _id, ...data } = entity;
+  void _id;
+  return Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
+}
+
+// ❌ Wrong — keeps undefined, Firestore rejects the document
+private toFirestoreData(entity: T): Omit<T, 'id'> {
+  const { id: _id, ...data } = entity;
+  return data;  // undefined fields cause Firestore rejection!
+}
+```
+
+**This rule applies to ALL services** (refuel, repair, car). Every service that writes to
+Firestore must strip `undefined` in `toFirestoreData`. Optional model fields
+(`liters?`, `skippedReason?`, `currentMileage?`, `year?`, `vin?`) are the main source
+of `undefined` values.
+
+### NgModel / FormsModule — DEPRECATED
+
+**Never** introduce `FormsModule` or `ngModel` in new components.
+Use the plain Signals + `ionInput` pattern documented above.
+Remove `FormsModule` when migrating existing forms to Signals.
 
 ### Ionic Component Patterns
 
@@ -956,7 +1300,12 @@ npm exec nx affected -t lint test build
 - ❌ Don't use `enum` — only string literals
 - ❌ Don't duplicate money calculation logic — always use utility functions
 - ❌ Don't duplicate consumption calculation — always use dedicated utils
-- ❌ Don't introduce `ReactiveFormsModule` or `FormsModule` in new code
+- ❌ Don't introduce `ReactiveFormsModule`/`FormsModule`/`ngModel` in new code — use Signals + `ionInput`
+- ❌ Don't use `@angular/forms` (`FormGroup`, `FormControl`, `Validators`) — not used in this project
+- ❌ Don't use `[(ngModel)]` binding — use `[value]` + `(ionInput)` with signals
+- ❌ Don't pass `undefined` to Firestore — `toFirestoreData` must strip undefined fields
+- ❌ Don't use `label="..."` / `labelPlacement="stacked"` on `<ion-input>` — use `<ion-label position="stacked">`
+- ❌ Don't silently return on validation failure — use `computed()` error signals with `<ion-note color="danger">`
 - ❌ Don't stuff all fields into one type with optional properties
 - ❌ Don't write duplicate tests that cover the same code path
 - ❌ Don't test framework/library code (Angular, Ionic, Firebase SDK, RxJS internals)

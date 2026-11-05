@@ -1,6 +1,7 @@
 ---
 description: Learning-first coding tutor for this personal project. Explains implementation steps, tradeoffs, and under-the-hood behavior with practical examples.
 mode: subagent
+model: DeepSeek-V4-Pro
 ---
 
 # Tutor Subagent

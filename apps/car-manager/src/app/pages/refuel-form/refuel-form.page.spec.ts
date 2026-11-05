@@ -65,7 +65,7 @@ function createMockCarService(overrides?: { activeCarId?: string | null }) {
 
 function mockNavController() {
   return {
-    navigateBack: vi.fn(),
+    navigateBack: vi.fn().mockResolvedValue(true),
     navigateForward: vi.fn(),
     navigateRoot: vi.fn(),
   };
@@ -89,13 +89,13 @@ describe('RefuelFormPage', () => {
       ],
     });
 
-    expect(screen.getByLabelText('Data')).toBeInTheDocument();
-    expect(screen.getByLabelText('Kwota (PLN)')).toBeInTheDocument();
-    expect(screen.getByLabelText('Przebieg (km)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Data tankowania')).toBeInTheDocument();
+    expect(screen.getByLabelText('Kwota w PLN')).toBeInTheDocument();
+    expect(screen.getByLabelText('Przebieg w kilometrach')).toBeInTheDocument();
     expect(
       screen.getByLabelText('Ilość litrów (opcjonalnie)')
     ).toBeInTheDocument();
-    expect(screen.getByText('Verva?')).toBeInTheDocument();
+    expect(screen.getByLabelText('Verva?')).toBeInTheDocument();
     expect(screen.getByText('Pomiń wpis')).toBeInTheDocument();
     expect(screen.getByText('Zapisz tankowanie')).toBeInTheDocument();
   });
@@ -125,7 +125,10 @@ describe('RefuelFormPage', () => {
     const mockCarSvc = createMockCarService({ activeCarId: 'car-abc' });
     const user = userEvent.setup();
 
-    const navMock = mockNavController();
+    const navMock = {
+      ...mockNavController(),
+      navigateBack: vi.fn().mockResolvedValue(true),
+    };
 
     await render(RefuelFormPage, {
       providers: [
@@ -137,8 +140,8 @@ describe('RefuelFormPage', () => {
       ],
     });
 
-    await user.type(screen.getByLabelText('Kwota (PLN)'), '250');
-    await user.type(screen.getByLabelText('Przebieg (km)'), '125000');
+    await user.type(screen.getByLabelText('Kwota w PLN'), '250');
+    await user.type(screen.getByLabelText('Przebieg w kilometrach'), '125000');
     await user.type(screen.getByLabelText('Ilość litrów (opcjonalnie)'), '40');
 
     await user.click(screen.getByText('Zapisz tankowanie'));
@@ -197,10 +200,10 @@ describe('RefuelFormPage', () => {
       ],
     });
 
-    await user.type(screen.getByLabelText('Kwota (PLN)'), '300');
-    await user.type(screen.getByLabelText('Przebieg (km)'), '130000');
+    await user.type(screen.getByLabelText('Kwota w PLN'), '300');
+    await user.type(screen.getByLabelText('Przebieg w kilometrach'), '130000');
 
-    const vervaToggle = screen.getByText('Verva?');
+    const vervaToggle = screen.getByLabelText('Verva?');
     await user.click(vervaToggle);
 
     const skipCheckbox = screen.getByText('Pomiń wpis');
@@ -239,8 +242,8 @@ describe('RefuelFormPage', () => {
       ],
     });
 
-    await user.type(screen.getByLabelText('Kwota (PLN)'), '250');
-    await user.type(screen.getByLabelText('Przebieg (km)'), '125000');
+    await user.type(screen.getByLabelText('Kwota w PLN'), '250');
+    await user.type(screen.getByLabelText('Przebieg w kilometrach'), '125000');
 
     await user.click(screen.getByText('Zapisz tankowanie'));
 
@@ -266,8 +269,8 @@ describe('RefuelFormPage', () => {
       ],
     });
 
-    await user.type(screen.getByLabelText('Kwota (PLN)'), '250');
-    await user.type(screen.getByLabelText('Przebieg (km)'), '125000');
+    await user.type(screen.getByLabelText('Kwota w PLN'), '250');
+    await user.type(screen.getByLabelText('Przebieg w kilometrach'), '125000');
 
     await user.click(screen.getByText('Zapisz tankowanie'));
 

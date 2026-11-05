@@ -33,7 +33,9 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
     await navigateToDashboard(page);
 
     // Verify key elements are visible
-    await expect(page.getByText('Witaj!')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Tankowania/i })
+    ).toBeVisible();
     await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Naprawy/i })).toBeVisible();
 
@@ -191,7 +193,6 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
 
     await navigateToDashboard(page);
 
-    await expect(page.getByText('Witaj!')).toBeVisible();
     await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Naprawy/i })).toBeVisible();
 
@@ -216,7 +217,7 @@ test.describe('QA Phase 2 — Screenshot verification', () => {
 
     await navigateToDashboard(page);
 
-    await expect(page.getByText('Witaj!')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Tankowania/i })).toBeVisible();
 
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/phase2-08-tablet-dashboard-430x932.png`,

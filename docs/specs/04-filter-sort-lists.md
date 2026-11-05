@@ -191,4 +191,10 @@ interface FilterSortChange {
 
 | Plik | Cel |
 |------|-----|
-| _Do uzupełnienia w trakcie implementacji_ | |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.ts` | Komponent FilterSortBar – segment miesięcy, select roku, przyciski sortowania |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.scss` | Style – przewijalny segment, fade-out, controls row |
+| `shared/components/filter-sort-bar/filter-sort-bar.component.spec.ts` | Testy jednostkowe (15 testów) – rendering, emisja zdarzeń, ikony |
+| `pages/refuel-list/refuel-list.page.ts` | Integracja FilterSortBar, `filteredRefuels()`, `availableYears()`, persystencja preferencji |
+| `pages/refuel-list/refuel-list.page.spec.ts` | Aktualizacja mocków (StorageService) |
+| `pages/repair-list/repair-list.page.ts` | Integracja FilterSortBar, `filteredRepairs()`, `availableYears()`, persystencja preferencji |
+| `pages/repair-list/repair-list.page.spec.ts` | Aktualizacja mocków (StorageService) |

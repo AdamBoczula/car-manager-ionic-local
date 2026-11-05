@@ -331,9 +331,16 @@ export class CarService {
     }
   }
 
-  private toFirestoreData(car: Car): Omit<Car, 'id'> {
+  /**
+   * Strip `id` and `undefined` fields before writing to Firestore.
+   * Firestore rejects documents with undefined values.
+   */
+  private toFirestoreData(car: Car): Record<string, unknown> {
     const { id: _id, ...data } = car;
     void _id; // explicitly unused — stripped before Firestore write
-    return data;
+    // Remove undefined fields — Firestore does not accept them
+    return Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    );
   }
 }

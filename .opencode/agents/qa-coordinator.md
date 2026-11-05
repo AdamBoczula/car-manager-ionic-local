@@ -1,6 +1,6 @@
 ---
 mode: subagent
-model: DeepSeek-V4-Pro
+model: DeepSeek-V4-Flash
 description: Orchestrates QA reviews by spawning 4 parallel subagents.
 ---
 

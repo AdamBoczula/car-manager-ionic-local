@@ -1,6 +1,7 @@
 ---
 description: Verification agent for Car Manager. Checks the correctness of AI output (code, config, documentation) through three-layer verification: self-audit, source verification, adversarial review.
 mode: subagent
+model: DeepSeek-V4-Pro
 tools:
   - read
   - glob

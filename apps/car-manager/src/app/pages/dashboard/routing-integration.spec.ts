@@ -193,8 +193,8 @@ describe('DashboardPage routing integration', () => {
     // After navigation, we verify the content is actually dashboard content
     const dashContent = document.querySelector('.dashboard-content');
     expect(dashContent).toBeTruthy();
-    const header = document.querySelector('h1');
-    expect(header?.textContent).toContain('Witaj!');
+    const refuelCard = document.querySelector('[data-testid="card-refuel"]');
+    expect(refuelCard).toBeTruthy();
 
     // Verify that if we navigate via NavController, dashboard content persists
     expect(navControllerMock.navigateForward).toBeDefined();
@@ -272,7 +272,7 @@ describe('DashboardPage routing integration — real NavController', () => {
 
     // Verify we start on dashboard
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
-    expect(document.querySelector('h1')?.textContent).toContain('Witaj!');
+    expect(document.querySelector('[data-testid="card-refuel"]')).toBeTruthy();
 
     // Click the Tankowania card
     const card = document.querySelector(
@@ -313,7 +313,7 @@ describe('DashboardPage routing integration — real NavController', () => {
 
     // Verify dashboard content is present before navigation
     expect(document.querySelector('.dashboard-content')).toBeTruthy();
-    expect(document.querySelector('h1')?.textContent).toContain('Witaj!');
+    expect(document.querySelector('[data-testid="card-refuel"]')).toBeTruthy();
 
     // Click Tankowania card
     const card = document.querySelector(

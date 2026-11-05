@@ -13,6 +13,7 @@ import { signal } from '@angular/core';
 import { RefuelListPage } from './refuel-list.page';
 import { RefuelService } from '../../core/services/refuel.service';
 import { CarService } from '../../core/services/car.service';
+import { StorageService } from '../../core/services/storage.service';
 import type { Refuel } from '../../core/models/refuel.model';
 import type { Car } from '../../core/models/car.model';
 
@@ -82,6 +83,13 @@ function createMockCarService(overrides?: {
   };
 }
 
+function createMockStorageService() {
+  return {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+  } as unknown as StorageService;
+}
+
 describe('RefuelListPage', () => {
   it('should display empty state when no refuels exist', async () => {
     // covers: docs/specs/refuel/02-refuel-crud.md#AC-2
@@ -94,6 +102,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -115,6 +124,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -146,6 +156,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -169,6 +180,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -188,6 +200,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -205,6 +218,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -226,6 +240,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -242,6 +257,7 @@ describe('RefuelListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -263,6 +279,7 @@ describe('RefuelListPage', () => {
         { provide: RefuelService, useValue: mockRefuelSvc },
         { provide: CarService, useValue: mockCarSvc },
         { provide: NavController, useValue: navController },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -272,5 +289,81 @@ describe('RefuelListPage', () => {
     expect(navController.navigateRoot).toHaveBeenCalledWith('/refuel-list', {
       animated: false,
     });
+  });
+
+  // ── Filtering & sorting (docs/specs/04-filter-sort-lists.md) ──
+
+  // covers: docs/specs/04-filter-sort-lists.md#AC-4
+  it('should show filtered empty state when no refuels match selected period', async () => {
+    const mockRefuelSvc = createMockRefuelService({
+      refuels: signal([mockRefuel]), // January 2026
+    });
+    const mockCarSvc = createMockCarService();
+    const mockStorageSvc = createMockStorageService();
+    // Return preferences with February selected (no data for February)
+    mockStorageSvc.get.mockResolvedValue({
+      selectedMonth: 1, // February (0-indexed)
+      selectedYear: 'all',
+      sortBy: 'date' as const,
+      sortDirection: 'desc' as const,
+    });
+
+    const { fixture } = await render(RefuelListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: mockStorageSvc },
+      ],
+    });
+
+    // Wait for async loadPreferences
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(
+      screen.getByText('Brak wpisów w wybranym okresie.')
+    ).toBeInTheDocument();
+  });
+
+  // covers: docs/specs/04-filter-sort-lists.md#AC-16
+  it('should render FilterSortBar when refuels exist', async () => {
+    const mockRefuelSvc = createMockRefuelService({
+      refuels: signal([mockRefuel]),
+    });
+    const mockCarSvc = createMockCarService();
+
+    const { container } = await render(RefuelListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
+      ],
+    });
+
+    expect(container.querySelector('app-filter-sort-bar')).toBeTruthy();
+  });
+
+  // covers: docs/specs/04-filter-sort-lists.md#AC-16
+  it('should not render FilterSortBar when no refuels exist', async () => {
+    const mockRefuelSvc = createMockRefuelService({
+      refuels: signal([]),
+    });
+    const mockCarSvc = createMockCarService();
+
+    const { container } = await render(RefuelListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
+      ],
+    });
+
+    expect(container.querySelector('app-filter-sort-bar')).toBeFalsy();
   });
 });

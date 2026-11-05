@@ -46,7 +46,7 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
       .locator('input')
       .press('Enter');
 
-    const welcome = page.getByText('Witaj!', { exact: true });
+    const dashboardHeading = page.getByRole('heading', { name: /Tankowania/i });
     const emptyRefuelList = page.getByText('Brak tankowań – dodaj pierwsze!', {
       exact: true,
     });
@@ -61,7 +61,7 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
     );
 
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(welcome).toBeVisible();
+    await expect(dashboardHeading).toBeVisible();
     await expect(activeDashboard).toBeVisible();
 
     // Act: use the real dashboard card click, not window.__e2e__.navigateTo.
@@ -70,7 +70,7 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
     // Assert
     await expect(page).toHaveURL(/\/refuel-list$/);
     await expect(emptyRefuelList).toBeVisible();
-    await expect(welcome).not.toBeVisible();
+    await expect(dashboardHeading).not.toBeVisible();
     await expect(activeRefuelList).toBeVisible();
     await expect(activeDashboard).toHaveCount(0);
 
@@ -79,7 +79,7 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
 
     // Assert
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(welcome).toBeVisible();
+    await expect(dashboardHeading).toBeVisible();
     await expect(activeDashboard).toBeVisible();
     await expect(emptyRefuelList).not.toBeVisible();
 
@@ -89,7 +89,7 @@ test.describe('Regresja nawigacji Ionic z dashboardu', () => {
     // Assert
     await expect(page).toHaveURL(/\/repair-list$/);
     await expect(emptyRepairList).toBeVisible();
-    await expect(welcome).not.toBeVisible();
+    await expect(dashboardHeading).not.toBeVisible();
     await expect(
       page.locator('app-repair-list.ion-page:not(.ion-page-hidden)')
     ).toBeVisible();

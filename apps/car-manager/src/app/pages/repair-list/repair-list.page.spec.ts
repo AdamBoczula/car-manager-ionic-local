@@ -9,6 +9,7 @@ import { signal } from '@angular/core';
 import { RepairListPage } from './repair-list.page';
 import { RepairService } from '../../core/services/repair.service';
 import { CarService } from '../../core/services/car.service';
+import { StorageService } from '../../core/services/storage.service';
 import type { Repair } from '../../core/models/repair.model';
 import type { Car } from '../../core/models/car.model';
 
@@ -77,6 +78,13 @@ function createMockCarService(overrides?: {
   };
 }
 
+function createMockStorageService() {
+  return {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+  } as unknown as StorageService;
+}
+
 describe('RepairListPage', () => {
   // ── AC-1: Pusty stan ──
   it('powinien wyświetlić pusty stan gdy brak napraw', async () => {
@@ -90,6 +98,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -112,6 +121,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -147,6 +157,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -168,6 +179,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -188,6 +200,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -206,6 +219,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -225,6 +239,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -242,6 +257,7 @@ describe('RepairListPage', () => {
         provideIonicAngular({ mode: 'md' }),
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -265,6 +281,7 @@ describe('RepairListPage', () => {
         { provide: RepairService, useValue: mockRepairSvc },
         { provide: CarService, useValue: mockCarSvc },
         { provide: NavController, useValue: navController },
+        { provide: StorageService, useValue: createMockStorageService() },
       ],
     });
 
@@ -274,5 +291,59 @@ describe('RepairListPage', () => {
     expect(navController.navigateRoot).toHaveBeenCalledWith('/repair-list', {
       animated: false,
     });
+  });
+
+  // ── Filtering & sorting (docs/specs/04-filter-sort-lists.md) ──
+
+  // covers: docs/specs/04-filter-sort-lists.md#AC-4
+  it('powinien wyświetlić pusty stan filtrowania gdy brak wpisów w wybranym okresie', async () => {
+    const mockRepairSvc = createMockRepairService({
+      repairs: signal([mockRepair]), // October 2026
+    });
+    const mockCarSvc = createMockCarService();
+    const mockStorageSvc = createMockStorageService();
+    mockStorageSvc.get.mockResolvedValue({
+      selectedMonth: 0, // January
+      selectedYear: 'all',
+      sortBy: 'date' as const,
+      sortDirection: 'desc' as const,
+    });
+
+    const { fixture } = await render(RepairListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: mockStorageSvc },
+      ],
+    });
+
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(
+      screen.getByText('Brak wpisów w wybranym okresie.')
+    ).toBeInTheDocument();
+  });
+
+  // covers: docs/specs/04-filter-sort-lists.md#AC-16
+  it('powinien renderować FilterSortBar gdy są naprawy', async () => {
+    const mockRepairSvc = createMockRepairService({
+      repairs: signal([mockRepair]),
+    });
+    const mockCarSvc = createMockCarService();
+
+    const { container } = await render(RepairListPage, {
+      providers: [
+        provideRouter([]),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: StorageService, useValue: createMockStorageService() },
+      ],
+    });
+
+    expect(container.querySelector('app-filter-sort-bar')).toBeTruthy();
   });
 });

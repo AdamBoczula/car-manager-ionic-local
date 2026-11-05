@@ -160,7 +160,7 @@ test.describe('System logowania – E2E', () => {
       await waitForIonicPage(page);
 
       await expect(
-        page.getByText('Witaj!')
+        page.locator('[data-testid="card-refuel"]')
       ).toBeVisible();
     });
 
@@ -259,7 +259,7 @@ test.describe('System logowania – E2E', () => {
       await expect(page).toHaveURL(/\/dashboard/);
       await expect(page.locator('app-dashboard.ion-page:not(.ion-page-hidden)')).toBeVisible();
       await expect(page.locator('app-add-car.ion-page:not(.ion-page-hidden)')).toHaveCount(0);
-      await expect(page.getByText('Witaj!')).toBeVisible();
+      await expect(page.locator('[data-testid="card-refuel"]')).toBeVisible();
     });
   });
 

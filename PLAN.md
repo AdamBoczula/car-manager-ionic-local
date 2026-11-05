@@ -251,32 +251,35 @@ Gdy zajdzie potrzeba:
 
 ## 10. Harmonogram prac (propozycja)
 
-### Faza 1 – Fundament (MVP)
-- [ ] Inicjalizacja projektu Ionic + Angular + Capacitor
-- [ ] Konfiguracja Firebase (projekt, Auth, Firestore)
-- [ ] Ekran logowania (email + Google)
-- [ ] Modele danych + serwisy bazowe (refuel, repair)
-- [ ] Ionic Storage – offline-first
+### Faza 1 – Fundament (MVP) ✅
+- [x] Inicjalizacja projektu Ionic + Angular + Capacitor
+- [x] Konfiguracja Firebase (projekt, Auth, Firestore)
+- [x] Ekran logowania (email + Google)
+- [x] Modele danych + serwisy bazowe (refuel, repair)
+- [x] Ionic Storage – offline-first
 
-### Faza 2 – Główne funkcje
-- [ ] Dashboard (podsumowanie, szybkie akcje)
-- [ ] CRUD tankowania (lista + formularz)
-- [ ] Automatyczne wyliczanie spalania
-- [ ] CRUD napraw (lista + formularz z textarea)
-- [ ] Speech-to-text dla napraw
+### Faza 2 – Główne funkcje ✅
+- [x] Dashboard (podsumowanie, szybkie akcje)
+- [x] CRUD tankowania (lista + formularz)
+- [x] Automatyczne wyliczanie spalania
+- [x] CRUD napraw (lista + formularz z textarea)
+- [x] Speech-to-text dla napraw
 
-### Faza 3 – Szlify
-- [ ] **Car Wizard + Car Service** – dodawanie aut w wizardzie (pierwsze użycie), car-switcher w headerze, zastąpienie `default-car`
-- [ ] Filtrowanie i sortowanie list
+### Faza 3 – Szlify ✅
+- [x] **Car Wizard + Car Service** – dodawanie aut w wizardzie (pierwsze użycie), car-switcher w headerze, zastąpienie `default-car`
+- [x] **Filtrowanie i sortowanie list** ✅ (spec: `docs/specs/04-filter-sort-lists.md`)
 - [ ] ~~Współdzielenie auta między użytkownikami~~ (usunięte – ADR-002: jeden garaż na konto)
-- [ ] PWA + deployment
-- [ ] Testy na Android/iOS (Capacitor build)
 
 ### Faza 4 – Opcjonalne dodatki
 - [ ] Wykresy spalania (Chart.js / ngx-charts)
 - [ ] Eksport danych do CSV/PDF
 - [ ] Powiadomienia push (przypomnienie o przeglądzie)
-- [ ] Wiele samochodów ✅ (od razu w MVP)
+- [ ] Dark mode – automatyczny lub wymuszony
+- [ ] Przypomnienia serwisowe – na podstawie przebiegu lub daty
+
+### Faza 5 – Deployment i testy natywne
+- [ ] PWA + deployment (Firebase Hosting)
+- [ ] Testy na Android/iOS (Capacitor build)
 
 ---
 
@@ -301,4 +304,4 @@ Gdy zajdzie potrzeba:
 
 ---
 
-*Ostatnia aktualizacja: 02.11.2026*
+*Ostatnia aktualizacja: 04.11.2026*

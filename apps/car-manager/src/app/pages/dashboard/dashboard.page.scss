@@ -5,7 +5,7 @@ ion-content {
   --padding-start: 16px;
   --padding-end: 16px;
   --padding-top: 16px;
-  --padding-bottom: 120px; // extra bottom space below cards so FAB doesn't overlap content
+  --padding-bottom: 120px; // extra bottom space below content so FAB doesn't overlap
 }
 
 .dashboard-content {
@@ -14,99 +14,78 @@ ion-content {
   gap: 1.5rem;
 }
 
-// ── Header section ──
+// ── Action Row ──
 
-.dashboard-header {
-  text-align: center;
-  padding-top: 0.5rem;
-
-  h1 {
-    font-size: 1.75rem;
-    color: var(--ion-color-dark);
-    margin: 0 0 0.25rem;
-  }
-}
-
-.user-email {
-  color: var(--ion-color-medium);
-  font-size: 0.9rem;
-  margin: 0 0 0.75rem;
-}
-
-// ── Cards ──
-
-.card {
+.action-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding: 1.5rem;
-  border: none;
-  border-radius: 14px;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-  font-family: inherit;
-  background: var(--ion-card-background, #fff);
+  gap: 0.75rem;
 
-  &:active {
-    transform: scale(0.97);
-  }
-
-  .card-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  h2 {
-    margin: 0 0 0.2rem;
-    font-size: 1.1rem;
-    color: var(--ion-color-dark);
-  }
-
-  p {
+  ion-button {
+    flex: 1;
     margin: 0;
+    font-weight: 600;
+  }
+}
+
+// ── Recent Sections ──
+
+.recent-section {
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+    }
+  }
+
+  .recent-list {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+
+    ion-item {
+      --padding-start: 0;
+      --padding-end: 0;
+      --inner-padding-end: 0;
+      --background: transparent;
+      --border-color: var(--ion-color-light-shade);
+
+      h3 {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--ion-color-dark);
+      }
+
+      p {
+        font-size: 0.8rem;
+        color: var(--ion-color-medium);
+      }
+
+      .consumption-info {
+        font-weight: 500;
+        color: var(--ion-color-primary, #1b6b4a) !important;
+      }
+    }
+  }
+
+  .empty-hint {
+    margin: 0.5rem 0 0;
     font-size: 0.85rem;
     color: var(--ion-color-medium);
-  }
-}
-
-.card-refuel {
-  // Jaśniejszy zielony background – lepszy kontrast z czarnym tekstem i ciemną ikoną
-  background: #eef7f0;
-  border: 1px solid var(--ion-color-primary, #1b6b4a);
-
-  h2 {
-    color: var(--ion-color-primary, #1b6b4a);
-  }
-
-  .card-icon {
-    color: var(--ion-color-primary, #1b6b4a);
-    font-size: 2.8rem; // slightly larger for visibility
-  }
-}
-
-.card-repair {
-  // Jaśniejszy pomarańczowy background – lepszy kontrast
-  background: #fff7f0;
-  border: 1px solid var(--ion-color-tertiary, #e67e22);
-
-  h2 {
-    color: var(--ion-color-tertiary, #e67e22);
-  }
-
-  .card-icon {
-    color: var(--ion-color-tertiary, #e67e22);
-    font-size: 2.8rem; // match refuel card size
+    font-style: italic;
   }
 }
 
 // ── FAB ──
 
 ion-fab {
-  // Move FAB up so it's fully visible above the bottom edge
-  margin-bottom: 130px;
+  margin-bottom: 40px;
   margin-right: 8px;
 }
 

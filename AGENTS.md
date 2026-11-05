@@ -200,6 +200,7 @@ Before making changes, read these files in order:
 3. `nx.json` – workspace configuration
 4. `package.json` – dependencies & scripts
 5. `docs/specs/` – feature specifications
+6. `docs/conventions/navigation.md` – navigation & redirect rules
 
 ---
 
@@ -295,6 +296,7 @@ And run the full `nx affected` command before marking the task complete.
 11. **Angular 22 specifics** – omit `standalone: true` (now default). Use `@Service()` instead of `@Injectable({ providedIn: 'root' })`. Use `input()` signals instead of `@Input()` decorator. Use `resource()` and `linkedSignal()` for async data. Signal Forms (`@angular/forms/signals`) are the default pattern for new forms. Reactive Forms (`FormRecord`, `FormControl`) are the standard for complex dynamic forms. Template MUST be inline (`template: \`...\``). Styles MUST be in a separate `.scss` file (`styleUrl: './*.component.scss'`) — never `styles: \`...\`` inline.
 12. **Money/logic** – fuel consumption calculations must live in dedicated pure utility functions. Round half-up to 2 decimals for display; keep raw values for intermediate calculations.
 13. **Architecture** – organize code by feature domain (refuel, repair, auth). Keep services cohesive. Respect Nx module boundaries.
+14. **Navigation** – every NavController call (`navigateForward`, `navigateBack`, `navigateRoot`) MUST be wrapped in `this.zone.run(() => ...)`. Every page that uses NavController MUST inject `NgZone`. Use `navigateForward` (not `navigateBack`) for all forward navigations — `navigateBack(url)` destroys the stack via `setRoot()` when the target isn't in history. Hub pages (dashboard) MUST NOT call `stopListening()` in `ngOnDestroy` — the next page's `startListening()` handles cleanup. Full rules: `docs/conventions/navigation.md`.
 
 ---
 
@@ -329,15 +331,21 @@ The review is **optional** — it does NOT block the pipeline. Results are saved
 
 | Agent | Model | Why |
 |-------|-------|-----|
-| QA Coordinator | DeepSeek-V4-Pro | Orchestration, report merging, decision-making |
-| UI Reviewer | DeepSeek-V4-Flash | Visual analysis — doesn't need deep reasoning |
-| UX Analyzer | DeepSeek-V4-Flash | Heuristic evaluation — procedural task |
-| A11y Auditor | DeepSeek-V4-Flash | Audits are tool-driven, not reasoning-heavy |
-| Responsive Checker | DeepSeek-V4-Flash | Viewport testing is procedural |
-| Senior Frontend Dev | DeepSeek-V4-Pro | Primary implementation |
-| Business Analyst | DeepSeek-V4-Pro | Requirements analysis |
-| Automation Playwright Tester | DeepSeek-V4-Flash | E2E test generation — procedural, tool-driven |
+| Architect | DeepSeek-V4-Pro | Architecture design, ADRs — deep reasoning required |
+| Business Analyst | DeepSeek-V4-Pro | Requirements analysis — deep reasoning required |
 | PR Reviewer | DeepSeek-V4-Pro | Code review — correctness, regression, conventions, architecture |
+| Critical Thinking | DeepSeek-V4-Pro | Assumption analysis, strategic thinking |
+| Doublecheck | DeepSeek-V4-Pro | Claim verification, adversarial review |
+| Tutor | DeepSeek-V4-Pro | Teaching and explaining concepts |
+| Senior Frontend Dev | DeepSeek-V4-Flash | Code implementation following strict conventions — procedural |
+| Automation Playwright Tester | DeepSeek-V4-Flash | E2E test generation — procedural, tool-driven |
+| QA Coordinator | DeepSeek-V4-Flash | Orchestration — lightweight decision-making |
+| UI Reviewer | DeepSeek-V4-Flash | Visual analysis — procedural |
+| UX Analyzer | DeepSeek-V4-Flash | Heuristic evaluation — procedural |
+| A11y Auditor | DeepSeek-V4-Flash | Audits are tool-driven |
+| Responsive Checker | DeepSeek-V4-Flash | Viewport testing — procedural |
+| Perf Investigator | DeepSeek-V4-Flash | Performance diagnostics — tool-driven |
+| CI Monitor Subagent | DeepSeek-V4-Flash | Simple MCP tool calls |
 
 ---
 

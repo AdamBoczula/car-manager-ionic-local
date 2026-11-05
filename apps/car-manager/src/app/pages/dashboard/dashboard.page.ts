@@ -4,12 +4,14 @@ import {
   Component,
   inject,
   signal,
+  computed,
   OnInit,
   OnDestroy,
   effect,
   DestroyRef,
   NgZone,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { NavController } from '@ionic/angular';
 import {
   IonHeader,
@@ -25,20 +27,27 @@ import {
   IonLabel,
   IonSpinner,
   IonText,
+  IonList,
+  IonItem,
+  IonNote,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { add, carSport, construct, logOut } from 'ionicons/icons';
+import { add, carSport, construct, logOut, chevronForward } from 'ionicons/icons';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { SyncService } from '../../core/services/sync.service';
 import { CarService } from '../../core/services/car.service';
+import { RefuelService } from '../../core/services/refuel.service';
+import { RepairService } from '../../core/services/repair.service';
 import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
+import { formatPln } from '../../core/utils/consumption.util';
 
 @Component({
   selector: 'app-dashboard',
   host: { class: 'ion-page' },
   standalone: true,
   imports: [
+    DatePipe,
     IonContent,
     IonFab,
     IonFabButton,
@@ -52,6 +61,9 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
     IonToolbar,
     IonSpinner,
     IonText,
+    IonList,
+    IonItem,
+    IonNote,
     CarSwitcherComponent,
   ],
   template: `
@@ -68,7 +80,7 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
         <ion-buttons slot="end">
           <ion-button
             (click)="handleLogout()"
-            aria-label="Wyloguj się"
+            aria-label="Wyloguj si&#x119;"
             data-testid="logout-button"
           >
             <ion-icon name="log-out" slot="icon-only" />
@@ -80,34 +92,115 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
     <ion-content class="ion-padding">
       @if (storageReady()) {
         <div class="dashboard-content">
-          <!-- Welcome -->
-          <div class="dashboard-header">
-            <h1>Witaj!</h1>
-            @if (userEmail) {
-              <p class="user-email">{{ userEmail }}</p>
+          <!-- Add action buttons -->
+          <div class="action-row">
+            <ion-button
+              expand="block"
+              (click)="navigateTo('/refuel-form')"
+              data-testid="btn-add-refuel"
+            >
+              <ion-icon name="car-sport" slot="start" />
+              Dodaj tankowanie
+            </ion-button>
+            <ion-button
+              expand="block"
+              color="tertiary"
+              (click)="navigateTo('/repair-form')"
+              data-testid="btn-add-repair"
+            >
+              <ion-icon name="construct" slot="start" />
+              Dodaj napraw&#x119;
+            </ion-button>
+          </div>
+
+          <!-- Recent refuels -->
+          <div class="recent-section">
+            <div class="section-header">
+              <h3>Ostatnie tankowania</h3>
+              @if (recentRefuels().length) {
+                <ion-button
+                  fill="clear"
+                  size="small"
+                  (click)="navigateTo('/refuel-list')"
+                  data-testid="link-all-refuels"
+                >
+                  Zobacz wszystkie
+                  <ion-icon name="chevron-forward" slot="end" />
+                </ion-button>
+              }
+            </div>
+            @if (recentRefuels().length) {
+              <ion-list class="recent-list" data-testid="recent-refuels-list">
+                @for (refuel of recentRefuels(); track refuel.id) {
+                  <ion-item
+                    [button]="true"
+                    (click)="navigateTo('/refuel-list')"
+                    detail="false"
+                    data-testid="recent-refuel-item"
+                  >
+                    <ion-label>
+                      <h3>{{ refuel.date | date: 'dd.MM.yyyy' }}</h3>
+                      <p>{{ formatAmount(refuel.amount) }} &middot; {{ refuel.mileage }} km</p>
+                      @if (refuel.consumption != null) {
+                        <p class="consumption-info">
+                          Spalanie: {{ refuel.consumption }} L/100km
+                        </p>
+                      }
+                    </ion-label>
+                    @if (refuel.isVerva) {
+                      <ion-note slot="end" color="primary">Verva</ion-note>
+                    }
+                  </ion-item>
+                }
+              </ion-list>
+            } @else {
+              <p class="empty-hint" data-testid="empty-refuels">
+                Brak tankowa&#x144; &ndash; dodaj pierwsze!
+              </p>
             }
           </div>
 
-          <!-- Quick-action cards -->
-          <button
-            class="card card-refuel"
-            (click)="navigateTo('/refuel-list')"
-            data-testid="card-refuel"
-          >
-            <ion-icon name="car-sport" class="card-icon" />
-            <h2>Tankowania</h2>
-            <p>Przeglądaj i dodawaj tankowania</p>
-          </button>
-
-          <button
-            class="card card-repair"
-            (click)="navigateTo('/repair-list')"
-            data-testid="card-repair"
-          >
-            <ion-icon name="construct" class="card-icon" />
-            <h2>Naprawy</h2>
-            <p>Zarządzaj naprawami i serwisem</p>
-          </button>
+          <!-- Recent repairs -->
+          <div class="recent-section">
+            <div class="section-header">
+              <h3>Ostatnie naprawy</h3>
+              @if (recentRepairs().length) {
+                <ion-button
+                  fill="clear"
+                  size="small"
+                  (click)="navigateTo('/repair-list')"
+                  data-testid="link-all-repairs"
+                >
+                  Zobacz wszystkie
+                  <ion-icon name="chevron-forward" slot="end" />
+                </ion-button>
+              }
+            </div>
+            @if (recentRepairs().length) {
+              <ion-list class="recent-list" data-testid="recent-repairs-list">
+                @for (repair of recentRepairs(); track repair.id) {
+                  <ion-item
+                    [button]="true"
+                    (click)="navigateTo('/repair-list')"
+                    detail="false"
+                    data-testid="recent-repair-item"
+                  >
+                    <ion-label>
+                      <h3>{{ repair.date | date: 'dd.MM.yyyy' }}</h3>
+                      <p>{{ formatAmount(repair.amount) }} &middot; {{ repair.mileage }} km</p>
+                      @if (repair.location) {
+                        <p>{{ repair.location }}</p>
+                      }
+                    </ion-label>
+                  </ion-item>
+                }
+              </ion-list>
+            } @else {
+              <p class="empty-hint" data-testid="empty-repairs">
+                Brak napraw &ndash; dodaj pierwsz&#x105;!
+              </p>
+            }
+          </div>
         </div>
       } @else {
         <div class="loading-container">
@@ -134,7 +227,7 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
             (click)="navigateTo('/repair-form')"
             color="tertiary"
             data-testid="fab-repair"
-            aria-label="Dodaj naprawę"
+            aria-label="Dodaj napraw&#x119;"
           >
             <ion-icon name="construct" />
           </ion-fab-button>
@@ -149,11 +242,23 @@ export class DashboardPage implements OnInit, OnDestroy {
   private readonly storage = inject(StorageService);
   readonly sync = inject(SyncService);
   readonly carService = inject(CarService);
+  readonly refuelService = inject(RefuelService);
+  readonly repairService = inject(RepairService);
   private readonly navController = inject(NavController);
   private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly storageReady = signal(false);
+
+  /** Last 5 refuels sorted by date descending (newest first). */
+  readonly recentRefuels = computed(() =>
+    this.refuelService.refuels().slice(0, 5)
+  );
+
+  /** Last 5 repairs sorted by date descending (newest first). */
+  readonly recentRepairs = computed(() =>
+    this.repairService.repairs().slice(0, 5)
+  );
 
   constructor() {
     addIcons({
@@ -161,20 +266,45 @@ export class DashboardPage implements OnInit, OnDestroy {
       carSport,
       construct,
       logOut,
+      chevronForward,
     });
-  }
 
-  get userEmail(): string {
-    return this.authService.currentUser()?.email ?? '';
+    // React to active car changes – start listening for refuels & repairs
+    const carListener = effect(() => {
+      const carId = this.carService.activeCarId();
+      if (carId) {
+        this.refuelService.startListening(carId);
+        this.repairService.startListening(carId);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      carListener.destroy();
+    });
   }
 
   async ngOnInit(): Promise<void> {
     await this.storage.init();
     this.storageReady.set(true);
+
+    // Safety net: ensure listeners are started even if the effect above
+    // ran before activeCarId was available (race condition during first load).
+    const carId = this.carService.activeCarId();
+    if (carId) {
+      this.refuelService.startListening(carId);
+      this.repairService.startListening(carId);
+    }
   }
 
   ngOnDestroy(): void {
-    // Cleanup handled by services
+    // DO NOT call stopListening() here – it would increment the generation counter
+    // and race with the next page's startListening(), causing data to never load.
+    // The next page's startListening() calls stopListening() internally before starting.
+  }
+
+  /** Format PLN amount for display (e.g. 145.5 => "145,50 zł"). */
+  formatAmount(amount: number): string {
+    return formatPln(amount);
   }
 
   /** Handle a new car added from the car-switcher modal. */

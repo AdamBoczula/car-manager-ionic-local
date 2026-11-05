@@ -1,8 +1,7 @@
 // spec: docs/specs/05-car-management.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
-import { Component, inject, NgZone } from '@angular/core';
+import { Component, inject, signal, computed, NgZone } from '@angular/core';
 import { NavController } from '@ionic/angular';
-import { FormsModule } from '@angular/forms';
 import {
   IonHeader,
   IonToolbar,
@@ -16,9 +15,11 @@ import {
   IonToggle,
   IonCheckbox,
   IonTextarea,
+  IonLabel,
   IonButton,
   IonFooter,
   IonToast,
+  IonNote,
 } from '@ionic/angular';
 import { RefuelService } from '../../core/services/refuel.service';
 import { CarService } from '../../core/services/car.service';
@@ -29,7 +30,6 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
   host: { class: 'ion-page' },
   standalone: true,
   imports: [
-    FormsModule,
     IonHeader,
     IonToolbar,
     IonTitle,
@@ -42,9 +42,11 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
     IonToggle,
     IonCheckbox,
     IonTextarea,
+    IonLabel,
     IonButton,
     IonFooter,
     IonToast,
+    IonNote,
     CarSwitcherComponent,
   ],
   template: `
@@ -62,80 +64,82 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding">
-      <form (ngSubmit)="handleSubmit()" #refuelForm="ngForm">
+    <ion-content>
+      <form class="refuel-form" (submit)="handleSubmit($event)">
         <ion-list>
           <!-- Data -->
           <ion-item>
+            <ion-label position="stacked">Data</ion-label>
             <ion-input
-              label="Data"
-              labelPlacement="stacked"
               type="date"
-              [(ngModel)]="date"
-              name="date"
-              required
+              [value]="date()"
+              (ionInput)="date.set($any($event).detail.value)"
+              aria-label="Data tankowania"
             />
           </ion-item>
 
           <!-- Kwota -->
           <ion-item>
+            <ion-label position="stacked">Kwota (PLN)</ion-label>
             <ion-input
-              label="Kwota (PLN)"
-              labelPlacement="stacked"
               type="number"
-              [(ngModel)]="amount"
-              name="amount"
+              [value]="amount()"
+              (ionInput)="amount.set($any($event).detail.value ? +$any($event).detail.value : 0)"
               placeholder="0.00"
-              min="0.01"
-              step="0.01"
-              required
+              aria-label="Kwota w PLN"
             />
           </ion-item>
+          @if (amountError()) {
+            <ion-note color="danger" class="refuel-form__error-note">
+              {{ amountError() }}
+            </ion-note>
+          }
 
           <!-- Przebieg -->
           <ion-item>
+            <ion-label position="stacked">Przebieg (km)</ion-label>
             <ion-input
-              label="Przebieg (km)"
-              labelPlacement="stacked"
               type="number"
-              [(ngModel)]="mileage"
-              name="mileage"
+              [value]="mileage()"
+              (ionInput)="mileage.set($any($event).detail.value ? +$any($event).detail.value : 0)"
               placeholder="0"
-              min="0"
-              required
+              aria-label="Przebieg w kilometrach"
             />
           </ion-item>
+          @if (mileageError()) {
+            <ion-note color="danger" class="refuel-form__error-note">
+              {{ mileageError() }}
+            </ion-note>
+          }
 
           <!-- Ilość litrów -->
           <ion-item>
+            <ion-label position="stacked">Ilość litrów (opcjonalnie)</ion-label>
             <ion-input
-              label="Ilość litrów (opcjonalnie)"
-              labelPlacement="stacked"
               type="number"
-              [(ngModel)]="liters"
-              name="liters"
+              [value]="liters()"
+              (ionInput)="liters.set($any($event).detail.value ? +$any($event).detail.value : 0)"
               placeholder="0.00"
-              min="0"
-              step="0.01"
+              aria-label="Ilość litrów (opcjonalnie)"
             />
           </ion-item>
 
           <!-- Verva -->
           <ion-item>
+            <ion-label>Verva?</ion-label>
             <ion-toggle
-              [(ngModel)]="isVerva"
-              name="isVerva"
+              [checked]="isVerva()"
+              (ionChange)="isVerva.set($any($event).detail.checked)"
               justify="space-between"
-            >
-              Verva?
-            </ion-toggle>
+              aria-label="Verva?"
+            />
           </ion-item>
 
           <!-- Pomiń wpis -->
           <ion-item>
             <ion-checkbox
-              [(ngModel)]="isSkipped"
-              name="isSkipped"
+              [checked]="isSkipped()"
+              (ionChange)="isSkipped.set($any($event).detail.checked)"
               justify="start"
             >
               Pomiń wpis
@@ -143,15 +147,15 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
           </ion-item>
 
           <!-- Powód pominięcia -->
-          @if (isSkipped) {
-            <ion-item>
+          @if (isSkipped()) {
+            <ion-item class="refuel-form__textarea-item">
+              <ion-label position="stacked">Powód pominięcia</ion-label>
               <ion-textarea
-                label="Powód pominięcia"
-                labelPlacement="stacked"
-                [(ngModel)]="skippedReason"
-                name="skippedReason"
+                [value]="skippedReason()"
+                (ionInput)="skippedReason.set($any($event).detail.value ?? '')"
                 placeholder="Np. ktoś inny zatankował"
                 rows="3"
+                aria-label="Powód pominięcia"
               />
             </ion-item>
           }
@@ -163,8 +167,9 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
       <ion-toolbar>
         <ion-button
           expand="block"
-          [disabled]="!refuelForm.form.valid"
+          [disabled]="!isFormValid()"
           (click)="handleSubmit()"
+          data-testid="submit-refuel-button"
         >
           Zapisz tankowanie
         </ion-button>
@@ -172,11 +177,11 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
     </ion-footer>
 
     <ion-toast
-      [isOpen]="isToastOpen"
-      [message]="toastMessage"
-      [color]="toastColor"
+      [isOpen]="toastOpen()"
+      [message]="toastMessage()"
+      [color]="toastColor()"
       [duration]="3000"
-      (ionToastDidDismiss)="isToastOpen = false"
+      (didDismiss)="toastOpen.set(false)"
     />
   `,
   styleUrl: './refuel-form.page.scss',
@@ -187,56 +192,63 @@ export class RefuelFormPage {
   private readonly navController = inject(NavController);
   private readonly zone = inject(NgZone);
 
-  // Form fields — plain class properties for ngModel binding
-  date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  amount: number | null = null;
-  mileage: number | null = null;
-  liters: number | null = null;
-  isVerva = false;
-  isSkipped = false;
-  skippedReason = '';
+  // Form fields — signals
+  readonly date = signal(new Date().toISOString().split('T')[0]);
+  readonly amount = signal(0);
+  readonly mileage = signal(0);
+  readonly liters = signal(0);
+  readonly isVerva = signal(false);
+  readonly isSkipped = signal(false);
+  readonly skippedReason = signal('');
 
-  // Toast state
-  isToastOpen = false;
-  toastMessage = '';
-  toastColor: 'success' | 'danger' = 'success';
+  // Toast
+  readonly toastOpen = signal(false);
+  readonly toastMessage = signal('');
+  readonly toastColor = signal<'success' | 'danger'>('success');
 
-  async handleSubmit(): Promise<void> {
-    if (this.amount == null || this.mileage == null) {
-      return;
-    }
+  // Validation errors (computed)
+  readonly amountError = computed(() =>
+    this.amount() <= 0 ? 'Kwota musi być większa od 0' : null
+  );
+
+  readonly mileageError = computed(() =>
+    this.mileage() <= 0 ? 'Przebieg musi być większy od 0' : null
+  );
+
+  readonly isFormValid = computed(
+    () => !this.amountError() && !this.mileageError()
+  );
+
+  async handleSubmit(event?: Event): Promise<void> {
+    event?.preventDefault();
+
+    if (!this.isFormValid()) return;
 
     const carId = this.carService.activeCarId();
     if (!carId) {
-      this.toastColor = 'danger';
-      this.toastMessage = 'Brak aktywnego auta. Dodaj auto w kreatorze.';
-      this.isToastOpen = true;
+      this.showToast('Brak aktywnego auta. Dodaj auto w kreatorze.', 'danger');
       return;
     }
 
     try {
       await this.refuelService.add({
         carId,
-        date: this.date,
-        amount: this.amount,
-        mileage: this.mileage,
-        liters: this.liters ?? undefined,
-        isVerva: this.isVerva,
-        isSkipped: this.isSkipped,
-        skippedReason: this.isSkipped
-          ? this.skippedReason || undefined
+        date: this.date(),
+        amount: this.amount(),
+        mileage: this.mileage(),
+        liters: this.liters() > 0 ? this.liters() : undefined,
+        isVerva: this.isVerva(),
+        isSkipped: this.isSkipped(),
+        skippedReason: this.isSkipped()
+          ? this.skippedReason().trim() || undefined
           : undefined,
       });
 
-      this.toastColor = 'success';
-      this.toastMessage = 'Tankowanie zapisane!';
-      this.isToastOpen = true;
-      this.zone.run(() => this.navController.navigateBack('/refuel-list'));
+      this.showToast('Tankowanie zapisane!', 'success');
+      this.zone.run(() => this.navController.navigateForward('/dashboard'));
     } catch (err) {
-      console.error('Failed to add refuel:', err);
-      this.toastColor = 'danger';
-      this.toastMessage = 'Błąd zapisywania tankowania.';
-      this.isToastOpen = true;
+      console.error('Failed to save refuel:', err);
+      this.showToast('Nie udało się zapisać tankowania.', 'danger');
     }
   }
 
@@ -257,5 +269,11 @@ export class RefuelFormPage {
     } catch (err) {
       console.error('Failed to add car from refuel form:', err);
     }
+  }
+
+  private showToast(message: string, color: 'success' | 'danger'): void {
+    this.toastMessage.set(message);
+    this.toastColor.set(color);
+    this.toastOpen.set(true);
   }
 }
