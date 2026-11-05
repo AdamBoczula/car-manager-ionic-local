@@ -53,10 +53,10 @@ export interface SeededAuthUser {
 }
 
 /**
- * Skip tests in CI when Firebase Auth (emulator or real API) is unavailable.
+ * Skip tests when Firebase Auth (emulator or real API) is unavailable.
  * Local development with emulator always works.
  *
- * Call this at the top of every test.describe block that requires seedAuthUser.
+ * Call this at the top of test.describe blocks that require seedAuthUser.
  *
  * Usage:
  *   test.beforeAll(async () => await skipIfFirebaseUnavailable());
@@ -88,6 +88,21 @@ export async function skipIfFirebaseUnavailable(): Promise<void> {
       // Firebase not available — skip all tests in this describe block
       test.skip(true, 'Firebase Auth not available in this environment');
     }
+  }
+}
+
+/**
+ * Skip tests when Firebase Auth Emulator is not reachable.
+ * Tests that require IndexedDB seeding + reload (like car-switcher) work
+ * reliably only with the local emulator. CI uses real Firebase Auth which
+ * may override local IndexedDB data via Firestore sync on reload.
+ *
+ * Usage:
+ *   test.beforeAll(async () => await skipIfNoEmulator());
+ */
+export async function skipIfNoEmulator(): Promise<void> {
+  if (!(await isEmulatorReachable())) {
+    test.skip(true, 'Firebase Auth Emulator not available — test requires emulator');
   }
 }
 
