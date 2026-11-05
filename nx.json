@@ -48,6 +48,5 @@
       "style": "scss"
     }
   },
-  "nxCloudAccessToken": "NX_CLOUD_ACCESS_TOKEN",
   "analytics": true
 }

@@ -11,9 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  # Nx Cloud is optional (set NX_CLOUD_ACCESS_TOKEN secret in GitHub for remote caching)
+  # NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
   NX_BRANCH: ${{ github.head_ref || github.ref_name }}
-  NX_CLOUD_NO_TIMEOUTS: true
+  # Firebase emulator variables (safe defaults, no real credentials needed)
   # Firebase emulator variables (safe defaults, no real credentials needed)
   FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
   FIRESTORE_EMULATOR_HOST: localhost:8080
