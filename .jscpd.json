@@ -1,0 +1,26 @@
+{
+  "threshold": 0,
+  "reporters": ["console", "html"],
+  "output": "docs/quality/duplication",
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.angular/**",
+    "**/coverage/**",
+    "**/*.spec.ts",
+    "**/*.spec.backup.ts",
+    "**/test-setup.ts",
+    "**/capacitor.config.ts",
+    "**/environments/*.ts"
+  ],
+  "absolute": true,
+  "gitignore": true,
+  "minLines": 10,
+  "minTokens": 70,
+  "maxLines": 500,
+  "pattern": [
+    "apps/car-manager/src/**/*.ts",
+    "apps/car-manager/src/**/*.html",
+    "libs/**/*.ts"
+  ]
+}
