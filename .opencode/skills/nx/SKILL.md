@@ -1,6 +1,6 @@
 ---
 name: nx
-description: "Explore, run tasks, generate code, find plugins, and link packages in the Nx workspace. USE WHEN: exploring projects/targets/dependencies, running build/test/lint/serve tasks, scaffolding apps/libs, finding/installing plugins, or fixing workspace package resolution errors. DO NOT USE FOR: importing external repositories (use nx-import skill instead)."
+description: 'Explore, run tasks, generate code, find plugins, and link packages in the Nx workspace. USE WHEN: exploring projects/targets/dependencies, running build/test/lint/serve tasks, scaffolding apps/libs, finding/installing plugins, or fixing workspace package resolution errors. DO NOT USE FOR: importing external repositories (use nx-import skill instead).'
 ---
 
 # Nx Workspace Skill
@@ -73,6 +73,7 @@ nx g @nx/<plugin>:<generator> --name=<name> <options> --no-interactive
 ```
 
 **Key rules:**
+
 - Default to **non-buildable libraries** unless there's a specific reason for buildable
 - Always run `--dry-run` first
 - After generating, format: `nx format --fix`
@@ -94,27 +95,33 @@ nx add @nx/<plugin>
 When importing from sibling packages causes "cannot find module" or TS2307 errors:
 
 ### pnpm (this workspace)
+
 ```bash
 pnpm add <package> --filter <consumer> --workspace
 ```
+
 Result: `"<package>": "workspace:*"` in consumer's `package.json`
 
 ### npm
+
 ```bash
 npm install <package> --workspace <consumer>
 ```
 
 ### yarn
+
 ```bash
 yarn workspace <consumer> add <package>
 ```
 
 ### bun
+
 ```bash
 cd packages/<consumer> && bun add <package>
 ```
 
 **Debug steps for resolution errors:**
+
 1. Check if dependency is declared in consumer's `package.json`
 2. If not, add it using the appropriate command above
 3. Run install (`pnpm install` / `npm install`)

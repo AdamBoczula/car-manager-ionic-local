@@ -39,14 +39,17 @@ You orchestrate automated UI/UX/Accessibility/Responsive reviews by spawning 4 p
 # QA Review – YYYY-MM-DD
 
 ## Summary
+
 - UI: X issues (Y HIGH, Z MEDIUM)
 - UX: X issues
 - A11y: X issues
 - Responsive: X issues
 
 ## Findings
+
 [per-subagent findings]
 
 ## Recommendations
+
 [prioritized list]
 ```

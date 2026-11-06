@@ -40,6 +40,7 @@ Angular Testing Library, and strict TypeScript.
 ### 0. Load Context
 
 Before making changes, read in order:
+
 1. `AGENTS.md`
 2. `PLAN.md`
 3. `nx.json`
@@ -82,11 +83,13 @@ If critical path changes: `npm exec nx affected -t lint test build e2e`
 ## TypeScript Standards
 
 ### String Literals Over Enums
+
 ```typescript
 type FuelType = 'regular' | 'verva'; // ✅
 ```
 
 ### DTOs Only for External Communication
+
 ```typescript
 // DTO — data layer
 interface Refuel { id: string; carId: string; date: string; ... }
@@ -95,27 +98,32 @@ type RefuelView = { id: string; formattedAmount: string; ... };
 ```
 
 ### Targeted Types — No "Bag of Optional Fields"
+
 ```typescript
-type RefuelSuccess = { status: 'success'; data: Refuel[]; };
-type RefuelError = { status: 'error'; message: string; };
+type RefuelSuccess = { status: 'success'; data: Refuel[] };
+type RefuelError = { status: 'error'; message: string };
 type RefuelState = RefuelSuccess | RefuelError;
 ```
 
 ### `never` Instead of `null | undefined`
+
 ```typescript
-type FormLoading = { status: 'loading'; data: never; error: never; };
-type FormSuccess = { status: 'success'; data: Refuel; error: never; };
+type FormLoading = { status: 'loading'; data: never; error: never };
+type FormSuccess = { status: 'success'; data: Refuel; error: never };
 ```
 
 ### Explicit Return Types on Exported Functions
+
 ```typescript
 export function calculateConsumption(liters: number, mileage: number, prevMileage: number): number { ... }
 ```
 
 ### Never Use `any`
+
 Zero tolerance. Use `unknown` + type guard.
 
 ### Use `satisfies` Instead of Type Annotations
+
 ```typescript
 const config = { storagePrefix: '_ionickv' } satisfies Record<string, string>;
 ```
@@ -123,6 +131,7 @@ const config = { storagePrefix: '_ionickv' } satisfies Record<string, string>;
 ## Angular/Ionic Standards
 
 ### Signals as Default
+
 ```typescript
 readonly selectedCar = signal<CarView | null>(null);
 readonly filteredRefuels = computed(() => ...);
@@ -130,6 +139,7 @@ readonly refuelsResource = resource({ request: ..., loader: ... });
 ```
 
 ### Forms: Signal Forms (@angular/forms/signals) - New Projects
+
 ```typescript
 import { FormsModule } from '@angular/forms/signals';
 
@@ -146,12 +156,14 @@ export class RefuelFormComponent {
 **Never:** `FormsModule` (from `@angular/forms`), `ReactiveFormsModule`, `ngModel`, `FormGroup`, `FormControl`.
 
 ### Validation: Signal Forms validators or computed() with error messages
+
 ```typescript
 readonly amountError = computed(() => this.amount() <= 0 ? 'Kwota musi być większa od 0' : null);
 readonly isFormValid = computed(() => !this.amountError());
 ```
 
 ### Toast: signals + private method
+
 ```typescript
 readonly toastOpen = signal(false);
 readonly toastMessage = signal('');
@@ -159,6 +171,7 @@ private showToast(message: string, color: 'success' | 'danger'): void { ... }
 ```
 
 ### Offline-First Write Flow
+
 ```typescript
 async add(data: Omit<T, 'id' | 'createdAt' | 'createdBy'>): Promise<T> {
   const entity: T = { ...data, id: crypto.randomUUID(), createdAt: Timestamp.now(), createdBy: user.uid };
@@ -171,6 +184,7 @@ async add(data: Omit<T, 'id' | 'createdAt' | 'createdBy'>): Promise<T> {
 ```
 
 **⚠️ The "Domino Effect" — `toFirestoreData` must strip `undefined`:**
+
 ```typescript
 private toFirestoreData(entity: T): Record<string, unknown> {
   const { id: _id, ...data } = entity; void _id;
@@ -179,24 +193,31 @@ private toFirestoreData(entity: T): Record<string, unknown> {
 ```
 
 ### Page Structure
+
 ```html
-<ion-header><ion-toolbar><ion-back-button /><ion-title>...</ion-title></ion-toolbar></ion-header>
+<ion-header
+  ><ion-toolbar><ion-back-button /><ion-title>...</ion-title></ion-toolbar></ion-header
+>
 <ion-content>
   <form (submit)="handleSubmit($event)">
     <ion-list>...</ion-list>
   </form>
   <ion-fab vertical="bottom" horizontal="end" slot="fixed">...</ion-fab>
 </ion-content>
-<ion-footer><ion-toolbar><ion-button expand="block" ... /></ion-toolbar></ion-footer>
+<ion-footer
+  ><ion-toolbar><ion-button expand="block" ... /></ion-toolbar
+></ion-footer>
 <ion-toast [isOpen]="toastOpen()" ... />
 ```
 
 ### Component Architecture: Container/Presenter
+
 - Page (container): orchestrates data, routing, modals
 - Child components (presenter): `input()` signals, `output()` events, no direct service injection
 - Extract component when: ~3 responsibilities, ~200 LOC TS, ~80 LOC template, 5+ DI
 
 ### Key Ionic Rules
+
 - `<ion-header>` + `<ion-toolbar>` at top
 - `<ion-content>` main scrollable area
 - `<ion-fab>` for primary action (bottom-right)
@@ -208,6 +229,7 @@ private toFirestoreData(entity: T): Record<string, unknown> {
 - `<ion-label position="stacked">` — not `label` attribute on input
 
 ### Firebase Patterns
+
 ```typescript
 // Auth
 @Injectable({ providedIn: 'root' })
@@ -223,6 +245,7 @@ readonly refuels = toSignal(this.refuelService.getRefuelsLive(this.carId), { ini
 ## SCSS Standards
 
 ### Ionic CSS Variables
+
 ```scss
 :host {
   --card-bg: var(--ion-color-step-50, #f5f5f5);
@@ -231,19 +254,26 @@ readonly refuels = toSignal(this.refuelService.getRefuelsLive(this.carId), { ini
 ```
 
 ### Nesting — Max 3 Levels with BEM
+
 ```scss
 .refuel-form {
-  &__field { margin-bottom: 16px; }
-  &__field--error { border-color: var(--ion-color-danger); }
+  &__field {
+    margin-bottom: 16px;
+  }
+  &__field--error {
+    border-color: var(--ion-color-danger);
+  }
 }
 ```
 
 ### Component-Encapsulated
+
 No global styles. Each component has its own `.scss` via `styleUrl`.
 
 ## Testing (TDD)
 
 ### Shallow Component Testing via Angular Testing Library
+
 - Test through rendered HTML, not implementation details
 - `render()` from `@testing-library/angular`
 - `screen` queries: `getByRole`, `getByLabelText`, `getByText`, `getByTestId` (last resort)
@@ -251,12 +281,14 @@ No global styles. Each component has its own `.scss` via `styleUrl`.
 - Mock deps via `providers` in `render()` options
 
 ### DOM Query Priority
+
 1. `getByRole` — always preferred
 2. `getByLabelText` — form inputs
 3. `getByText` — visible text
 4. `getByTestId` — last resort only
 
 ### Never
+
 - Use `TestBed.createComponent()` or `fixture.debugElement.query()` in component tests
 - Test framework/library code (Angular, Ionic, RxJS internals)
 - Test mock/stub logic that exists only in the test file

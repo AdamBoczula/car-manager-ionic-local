@@ -23,19 +23,23 @@ You are a **Senior Code Reviewer** for the Car Manager project. You review bug f
 ## Review Checklist
 
 ### 1. Poprawność (Correctness)
+
 - Does the fix actually resolve the root cause?
 - Is the fix in the right place (service vs. component vs. utility)?
 - Edge cases handled (null, undefined, empty arrays, boundaries)?
 - Calculations follow rounding rules? Raw values preserved?
 
 ### 2. Regresja (Regression Risk)
+
 - Could this break existing behavior?
 - Other callers of modified function/method need updating?
 - Async operations properly awaited?
 - Observable subscriptions managed (no memory leaks)?
 
 ### 3. Konwencje (Conventions)
+
 Validate against `AGENTS.md`:
+
 - Standalone components (no NgModules)
 - `input()` signals instead of `@Input()` decorator
 - Inline templates, separate SCSS (`styleUrl`)
@@ -44,24 +48,29 @@ Validate against `AGENTS.md`:
 - `// spec:` / `// bugfix:` annotations
 
 ### 4. Testy (Tests)
+
 - Regression test reproduces original bug?
 - Unit tests meaningful (not coverage padding)?
 - Component tests present if UI behavior touched?
 - All tests pass? Run `npm exec nx test car-manager` to verify.
 
 ### 5. Narzędzia statyczne (Static Analysis)
+
 Run `npm run quality` and verify exit code 0:
+
 - `static:checks` — ESLint + Prettier: no errors/warnings
 - `knip` — no dead code
 - `jscpd` — no code duplication above threshold
 
 ### 6. Architektura (Architecture)
+
 - Correct layer (service, utility, component)?
 - No leaky abstractions (Firestore details in components)
 - Offline-first: Storage first, then Firestore
 - Nx module boundaries respected
 
 ### 7. Kod (Code Quality)
+
 - TypeScript strict: no `any`, proper typing, no `!` assertions
 - No `console.log` in production code
 - Error handling for async operations

@@ -53,41 +53,41 @@ This project uses **7 main agents** (each with specific skills assigned to them)
 
 ### Main Agents (assigned to workflow phases)
 
-| Agent | Model | Role | Assigned Skills |
-|---|---|---|---|
-| `analyst` | DeepSeek-V4-Pro | Requirements gathering & bug diagnosis (SDD P1, BFW P1) | `business-analyst` |
-| `architect` | DeepSeek-V4-Pro | Architecture design & ADRs (SDD P2) | — |
-| `developer` | DeepSeek-V4-Flash | Code implementation via TDD (SDD P3 Dev, BFW P3 Fix) | — |
-| `tester` | DeepSeek-V4-Flash | E2E & regression tests (SDD P3 Tester, BFW P2) | — |
-| `reviewer` | DeepSeek-V4-Pro | Code review (SDD P3/4, BFW P4) | — |
-| `qa-coordinator` | DeepSeek-V4-Flash | UI/UX/A11y/Responsive QA orchestration (optional) | — |
-| `ci-monitor` | DeepSeek-V4-Flash | Nx Cloud CI monitoring & self-healing | `monitor-ci` |
+| Agent            | Model             | Role                                                    | Assigned Skills    |
+| ---------------- | ----------------- | ------------------------------------------------------- | ------------------ |
+| `analyst`        | DeepSeek-V4-Pro   | Requirements gathering & bug diagnosis (SDD P1, BFW P1) | `business-analyst` |
+| `architect`      | DeepSeek-V4-Pro   | Architecture design & ADRs (SDD P2)                     | —                  |
+| `developer`      | DeepSeek-V4-Flash | Code implementation via TDD (SDD P3 Dev, BFW P3 Fix)    | —                  |
+| `tester`         | DeepSeek-V4-Flash | E2E & regression tests (SDD P3 Tester, BFW P2)          | —                  |
+| `reviewer`       | DeepSeek-V4-Pro   | Code review (SDD P3/4, BFW P4)                          | —                  |
+| `qa-coordinator` | DeepSeek-V4-Flash | UI/UX/A11y/Responsive QA orchestration (optional)       | —                  |
+| `ci-monitor`     | DeepSeek-V4-Flash | Nx Cloud CI monitoring & self-healing                   | `monitor-ci`       |
 
 ### Helper Agents (special tasks, invoked directly by user)
 
-| Agent | Model | Role |
-|---|---|---|
-| `critical-thinking` | DeepSeek-V4-Pro | Challenge assumptions, strategic thinking |
-| `doublecheck` | DeepSeek-V4-Pro | Verify AI-generated output against sources |
-| `tutor` | DeepSeek-V4-Pro | Explain concepts and teach |
+| Agent               | Model           | Role                                       |
+| ------------------- | --------------- | ------------------------------------------ |
+| `critical-thinking` | DeepSeek-V4-Pro | Challenge assumptions, strategic thinking  |
+| `doublecheck`       | DeepSeek-V4-Pro | Verify AI-generated output against sources |
+| `tutor`             | DeepSeek-V4-Pro | Explain concepts and teach                 |
 
 ### QA Sub-agents (called by qa-coordinator)
 
-| Agent | Model | Role |
-|---|---|---|
-| `ui-reviewer` | DeepSeek-V4-Flash | Visual consistency review |
-| `ux-analyzer` | DeepSeek-V4-Flash | UX heuristic evaluation |
-| `a11y-auditor` | DeepSeek-V4-Flash | WCAG 2.1 AA accessibility audit |
+| Agent                | Model             | Role                            |
+| -------------------- | ----------------- | ------------------------------- |
+| `ui-reviewer`        | DeepSeek-V4-Flash | Visual consistency review       |
+| `ux-analyzer`        | DeepSeek-V4-Flash | UX heuristic evaluation         |
+| `a11y-auditor`       | DeepSeek-V4-Flash | WCAG 2.1 AA accessibility audit |
 | `responsive-checker` | DeepSeek-V4-Flash | Viewport & touch target testing |
 
 ### Globally Available Skills (for main agent — me)
 
-| Skill | When to Use |
-|---|---|
-| `nx` | Exploring workspace, running tasks, scaffolding, plugins, package linking |
-| `nx-import` | Importing external repositories into the workspace |
-| `conventional-commit` | Generating conventional commit messages (end of each implementation) |
-| `anti-ui-slop` | UI guardrail — enforcing Ionic design system consistency |
+| Skill                 | When to Use                                                               |
+| --------------------- | ------------------------------------------------------------------------- |
+| `nx`                  | Exploring workspace, running tasks, scaffolding, plugins, package linking |
+| `nx-import`           | Importing external repositories into the workspace                        |
+| `conventional-commit` | Generating conventional commit messages (end of each implementation)      |
+| `anti-ui-slop`        | UI guardrail — enforcing Ionic design system consistency                  |
 
 ---
 
@@ -230,6 +230,7 @@ npm run static:checks
 ```
 
 This runs:
+
 - `lint` — ESLint (TypeScript + Angular template accessibility rules)
 - `format:check` — Prettier formatting validation
 
@@ -356,6 +357,7 @@ After the quality gate passes, you can trigger an automated UI/UX/Accessibility/
 ```
 
 This invokes the **QA Coordinator** (`qa-coordinator`), which spawns 4 subagents in parallel:
+
 - `ui-reviewer` — visual consistency, layout, typography, component states
 - `ux-analyzer` — user experience, Nielsen's heuristics, click efficiency
 - `a11y-auditor` — WCAG 2.1 AA, Axe-core, keyboard, ARIA, contrast

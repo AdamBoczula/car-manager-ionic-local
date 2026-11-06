@@ -35,6 +35,7 @@ refactor, and maintain Playwright E2E tests in `apps/car-manager-e2e/src/`.
 ### 0. Load Context
 
 Before writing tests, read:
+
 1. `AGENTS.md` — authoritative project guidance
 2. `PLAN.md` — current project plan
 3. `apps/car-manager-e2e/src/` — all existing spec files (know what's already tested)
@@ -59,13 +60,13 @@ Before writing tests, read:
 
 When 2+ spec files need the same logic, extract to utility files in `apps/car-manager-e2e/src/utils/`.
 
-| Utility | Purpose |
-|---------|---------|
-| `seed-data.ts` | Seed refuels/repairs/cars into Ionic Storage |
-| `storage-helpers.ts` | Read/write/clear Ionic Storage |
-| `modal-helpers.ts` | Open/close/verify Ionic modals |
-| `navigation-helpers.ts` | Route navigation helpers |
-| `auth-helpers.ts` | Login/logout helpers |
+| Utility                 | Purpose                                      |
+| ----------------------- | -------------------------------------------- |
+| `seed-data.ts`          | Seed refuels/repairs/cars into Ionic Storage |
+| `storage-helpers.ts`    | Read/write/clear Ionic Storage               |
+| `modal-helpers.ts`      | Open/close/verify Ionic modals               |
+| `navigation-helpers.ts` | Route navigation helpers                     |
+| `auth-helpers.ts`       | Login/logout helpers                         |
 
 ### 4. Write Tests
 
@@ -96,6 +97,7 @@ For single spec: `npx playwright test --config apps/car-manager-e2e/playwright.c
 ## Test Writing Standards
 
 ### Selector Priority
+
 1. `getByRole` — always preferred
 2. `getByLabelText` — form inputs
 3. `getByText` — visible text
@@ -104,6 +106,7 @@ For single spec: `npx playwright test --config apps/car-manager-e2e/playwright.c
 6. Ionic-specific: `page.locator('ion-modal')`, `page.locator('ion-toast')`
 
 ### Ionic-Specific Selectors
+
 ```typescript
 await page.fill('ion-input[label="Kwota (PLN)"] input', '250');
 await page.fill('ion-textarea[label="Opis prac"] textarea', 'Wymiana oleju');
@@ -115,6 +118,7 @@ await expect(page.locator('ion-toast')).toBeVisible();
 ```
 
 ### Test Isolation — Mandatory
+
 ```typescript
 test.beforeEach(async ({ page }) => {
   await page.goto('/refuels');
@@ -123,12 +127,15 @@ test.beforeEach(async ({ page }) => {
 ```
 
 ### No Duplicate Tests
+
 Every test verifies unique behavior. Read all existing tests first.
 
 ### No `waitForTimeout`
+
 Use proper waiting: `await expect(locator).toBeVisible()`, `await page.waitForLoadState('networkidle')`.
 
 ### Arrange → Act → Assert
+
 ```typescript
 test('should persist new refuel to Ionic Storage', async ({ page }) => {
   // Arrange
@@ -147,6 +154,7 @@ test('should persist new refuel to Ionic Storage', async ({ page }) => {
 ```
 
 ### What to Test
+
 - Critical flows: add/edit/delete refuel & repair
 - Ionic modal interactions
 - Toast notifications
@@ -157,6 +165,7 @@ test('should persist new refuel to Ionic Storage', async ({ page }) => {
 - Swipe actions (ion-item-sliding)
 
 ### Annotation
+
 ```typescript
 // spec: docs/specs/refuel/refuel-form.md
 // covers: docs/specs/refuel/refuel-form.md#AC-N

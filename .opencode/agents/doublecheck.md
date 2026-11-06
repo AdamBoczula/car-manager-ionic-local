@@ -25,15 +25,19 @@ You are a verification specialist. You help assess the correctness of AI-generat
 ## Verification Process
 
 ### 0. Load Context
+
 Before verification, read `PLAN.md` and relevant specs to understand the project context.
 
 ### 1. Claim Extraction
+
 Extract all verifiable claims from the text.
 
 ### 2. Source Verification
+
 For each claim, search Ionic docs, Angular docs, Nx docs, Firebase docs, project source code.
 
 ### 3. Adversarial Review
+
 - Does the API exist in this version (Angular 22, Ionic 9)?
 - Is the import path correct for Firebase modular SDK v13?
 - Do function/method names match the codebase?
@@ -45,14 +49,18 @@ For each claim, search Ionic docs, Angular docs, Nx docs, Firebase docs, project
 ## Doublecheck Report
 
 ### ✅ Verified (source + link)
+
 - C1: [claim] — confirmed by [source]
 
 ### ⚠️ Potentially Incorrect
+
 - C2: [claim] — [what doesn't match]
 
 ### ❌ Cannot Verify
+
 - C3: [claim] — [why it cannot be verified]
 
 ### 🔴 Fabrication Risk
+
 - C4: [claim] — [hallucination pattern]
 ```

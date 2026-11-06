@@ -40,7 +40,7 @@ Review Car Manager's user experience against Nielsen's 10 heuristics.
 ```markdown
 ### UX Issues Found
 
-| # | Heuristic | Severity | Issue | Recommendation |
-|---|---|---|---|---|
-| 1 | #5 Error prevention | HIGH | ... | ... |
+| #   | Heuristic           | Severity | Issue | Recommendation |
+| --- | ------------------- | -------- | ----- | -------------- |
+| 1   | #5 Error prevention | HIGH     | ...   | ...            |
 ```
