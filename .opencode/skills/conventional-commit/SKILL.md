@@ -47,17 +47,21 @@ You generate conventional commit messages compliant with the
 
 ### Scope (optional)
 
-For Car Manager, use scopes corresponding to modules:
+For Car Manager, use scopes corresponding to feature domains or infrastructure:
 
-- `refuel` — for refuel/tanking functionality
-- `repair` — for repair functionality
-- `dashboard` — for dashboard functionality
-- `auth` — for authentication functionality
-- `shared` — for libs/shared/**
-- `app` — for apps/car-manager/**
-- `e2e` — for apps/car-manager-e2e/**
-- `nx` — Nx configuration changes
-- `deps` — dependency changes
+- `refuel` — refuel/tanking feature (form, list, service)
+- `repair` — repair feature (form, list, service)
+- `car` — car management (add/edit/delete cars, car selector)
+- `dashboard` — dashboard page and widgets
+- `auth` — login, register, guards
+- `sync` — offline sync, connectivity, push
+- `ui` — shared UI components (not feature-specific)
+- `models` — libs/shared/models only
+- `core` — core app setup: firebase, storage, routing, config
+- `e2e` — apps/car-manager-e2e/** only
+- `nx` — Nx configuration, workspace setup
+- `deps` — dependency updates
+- `ci` — CI/CD pipeline, Nx Cloud
 
 ### Examples
 

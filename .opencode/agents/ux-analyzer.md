@@ -1,9 +1,16 @@
 ---
+description: Reviews Car Manager's user experience against Nielsen's 10 heuristics. Called by QA Coordinator.
 mode: subagent
 model: DeepSeek-V4-Flash
+tools:
+  - read
+  - write
+  - glob
+  - grep
+  - shell
 ---
 
-# UX Analyzer
+# UX Analyzer — Car Manager
 
 Review Car Manager's user experience against Nielsen's 10 heuristics.
 
@@ -33,7 +40,7 @@ Review Car Manager's user experience against Nielsen's 10 heuristics.
 ```markdown
 ### UX Issues Found
 
-| #   | Heuristic           | Severity | Issue | Recommendation |
-| --- | ------------------- | -------- | ----- | -------------- |
-| 1   | #5 Error prevention | HIGH     | ...   | ...            |
+| # | Heuristic | Severity | Issue | Recommendation |
+|---|---|---|---|---|
+| 1 | #5 Error prevention | HIGH | ... | ... |
 ```

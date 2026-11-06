@@ -10,22 +10,15 @@
 
 ## General Guidelines for working with Nx
 
-- For navigating/exploring the workspace, invoke the `nx-workspace` skill first — it has patterns for querying projects, targets, and dependencies
-- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
-- Prefix nx commands with the workspace's package manager (e.g., `npm exec nx build`, `npm exec nx test`) — avoids using globally installed CLI
-- You have access to the Nx MCP server and its tools, use them to help the user
-- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file — proceed without it if unavailable.
-- NEVER guess CLI flags — always check nx_docs or `--help` first when unsure
+- For navigating/exploring the workspace, invoke the `nx` skill first
+- When running tasks, always use `nx` (e.g., `npm exec nx build car-manager`)
+- Prefix nx commands with the workspace's package manager (e.g., `npm exec nx build`)
+- You have access to the Nx MCP server and its tools
+- NEVER guess CLI flags — check `--help` first when unsure
 
 ## Scaffolding & Generators
 
-- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
-
-## When to use nx_docs
-
-- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
-- DON'T USE for: basic generator syntax, standard commands, things you already know
-- The `nx-generate` skill handles generator discovery internally — don't call nx_docs just to look up generator syntax
+- For scaffolding tasks, invoke the `nx` skill FIRST
 
 <!-- nx configuration end-->
 
@@ -54,35 +47,77 @@ backed by IndexedDB, with Firebase Firestore as the remote source-of-truth.
 
 ---
 
+## Agent Architecture
+
+This project uses **7 main agents** (each with specific skills assigned to them) and **3 helper agents** for special tasks. Skills are no longer globally available — they are bound to specific agents, reducing ambiguity.
+
+### Main Agents (assigned to workflow phases)
+
+| Agent | Model | Role | Assigned Skills |
+|---|---|---|---|
+| `analyst` | DeepSeek-V4-Pro | Requirements gathering & bug diagnosis (SDD P1, BFW P1) | `business-analyst` |
+| `architect` | DeepSeek-V4-Pro | Architecture design & ADRs (SDD P2) | — |
+| `developer` | DeepSeek-V4-Flash | Code implementation via TDD (SDD P3 Dev, BFW P3 Fix) | — |
+| `tester` | DeepSeek-V4-Flash | E2E & regression tests (SDD P3 Tester, BFW P2) | — |
+| `reviewer` | DeepSeek-V4-Pro | Code review (SDD P3/4, BFW P4) | — |
+| `qa-coordinator` | DeepSeek-V4-Flash | UI/UX/A11y/Responsive QA orchestration (optional) | — |
+| `ci-monitor` | DeepSeek-V4-Flash | Nx Cloud CI monitoring & self-healing | `monitor-ci` |
+
+### Helper Agents (special tasks, invoked directly by user)
+
+| Agent | Model | Role |
+|---|---|---|
+| `critical-thinking` | DeepSeek-V4-Pro | Challenge assumptions, strategic thinking |
+| `doublecheck` | DeepSeek-V4-Pro | Verify AI-generated output against sources |
+| `tutor` | DeepSeek-V4-Pro | Explain concepts and teach |
+
+### QA Sub-agents (called by qa-coordinator)
+
+| Agent | Model | Role |
+|---|---|---|
+| `ui-reviewer` | DeepSeek-V4-Flash | Visual consistency review |
+| `ux-analyzer` | DeepSeek-V4-Flash | UX heuristic evaluation |
+| `a11y-auditor` | DeepSeek-V4-Flash | WCAG 2.1 AA accessibility audit |
+| `responsive-checker` | DeepSeek-V4-Flash | Viewport & touch target testing |
+
+### Globally Available Skills (for main agent — me)
+
+| Skill | When to Use |
+|---|---|
+| `nx` | Exploring workspace, running tasks, scaffolding, plugins, package linking |
+| `nx-import` | Importing external repositories into the workspace |
+| `conventional-commit` | Generating conventional commit messages (end of each implementation) |
+| `anti-ui-slop` | UI guardrail — enforcing Ionic design system consistency |
+
+---
+
 ## Spec-Driven Development (SDD)
 
 This project uses **Spec-Driven Development** for new features and significant changes.
-The full workflow is defined below.
 
 ### Quick SDD overview
 
-1. **Analysis** — invoke the `business-analyst` skill to gather requirements
-2. **Architecture** — design module structure, component tree, data flow, and ADRs (if needed)
-3. **Implementation (parallel)** — Dev (TDD + code + "Implemented in" updates) || Tester (E2E tests)
+1. **Analysis** — invoke `analyst` agent to gather requirements
+2. **Architecture** — invoke `architect` agent to design module structure, component tree, data flow
+3. **Implementation (parallel)** — Dev: invoke `developer` (TDD + code) || Tester: invoke `tester` (E2E tests)
 4. **Quality Gate** — `npm exec nx affected -t lint test build e2e`
 5. **Done** — code ready, reviewed locally by user
 
 ### Phase 1: Analysis
 
-- Use `business-analyst` skill to drill down requirements
+- Use `analyst` agent (invokes `business-analyst` skill internally)
 - Output: `docs/specs/XX-feature-name.md`
 
 ### Phase 2: Architecture
 
+- Use `architect` agent
 - Design module structure, component tree, data flow
 - Output: Architecture decisions in spec or `docs/adr/`
 
 ### Phase 3: Implementation (parallel)
 
-- **Dev track:** TDD → implement → update "Implemented in" table in the spec
-- **Tester track:** E2E tests with Playwright
-- Use `senior-frontend-dev` agent for code
-- Use `automation-playwright-tester` agent for tests
+- **Dev track:** use `developer` agent — TDD → implement → update "Implemented in" table in spec
+- **Tester track:** use `tester` agent — E2E tests with Playwright
 
 ### Phase 4: Quality Gate
 
@@ -92,7 +127,7 @@ npm exec nx affected -t lint test build e2e
 
 ### Phase 5: Done
 
-- Commit with Conventional Commits format
+- Commit with Conventional Commits format (use `conventional-commit` skill)
 - Open PR (if applicable)
 
 ### SDD Traceability
@@ -106,72 +141,46 @@ npm exec nx affected -t lint test build e2e
 ## Bug Fix Workflow (BFW)
 
 This project uses a **structured Bug Fix Workflow** to ensure fixes are correct,
-verified, and don't introduce regressions. The key principle: **reproduce first,
+verified, and don't introduce regressions. Key principle: **reproduce first,
 then fix via TDD, then review**.
 
 ### Quick BFW overview
 
-1. **Diagnoza** — analyze the bug, understand root cause, document findings
-2. **Test regresyjny** — write a failing E2E/integration test that reproduces the bug (Playwright)
-3. **TDD Fix** — implement the fix using TDD approach (unit tests + code)
-4. **Code Review** — independent review of the change by a reviewer agent
-5. **Post-Review Fix** — address review findings, iterate until approved
+1. **Diagnoza** — use `analyst` agent to analyze bug, document findings
+2. **Test regresyjny** — use `tester` agent to write failing E2E test (Playwright)
+3. **TDD Fix** — use `developer` agent to implement fix via TDD
+4. **Code Review** — use `reviewer` agent for independent review
+5. **Post-Review Fix** — use `developer` agent to address findings
 6. **Quality Gate** — `npm exec nx affected -t lint test build e2e`
 7. **Done** — commit with Conventional Commits, bug doc updated
 
 ### Phase 1: Diagnoza
 
-- Analyze the bug: what is the actual behavior vs. expected behavior?
-- Identify root cause: which component/service/utility is at fault?
-- Determine impact: is this a regression? Which user flows are affected?
-- Output: `docs/bugs/XX-bug-name.md` with the following structure:
-  - **Objawy** — what the user sees (actual vs. expected)
-  - **Kroki do reprodukcji** — step-by-step reproduction instructions
-  - **Root cause analysis** — technical explanation of the defect
-  - **Dotknięte pliki** — files involved in the bug
-  - **Proponowane rozwiązanie** — high-level fix strategy (before implementation)
-- Use `senior-frontend-dev` agent for the analysis phase
+- Use `analyst` agent
+- Output: `docs/bugs/XX-bug-name.md`
 
 ### Phase 2: Test regresyjny (RED)
 
-- Write an E2E/integration test that **demonstrates the bug** (must FAIL before the fix)
-- Use `automation-playwright-tester` agent for E2E tests
-- For unit-level regressions, write a Vitest unit test instead
-- The test must clearly document what the expected behavior should be
-- Annotate with: `// covers: docs/bugs/<name>.md`
-- Commit the failing test separately (or keep it staged) to prove it catches the bug
+- Use `tester` agent
+- Write E2E test that **demonstrates the bug** (must FAIL before the fix)
+- Annotate: `// covers: docs/bugs/<name>.md`
 
 ### Phase 3: TDD Fix (GREEN)
 
-- Use `senior-frontend-dev` agent to implement the fix
-- Follow TDD: run the failing test → write minimal code to make it pass → refactor
-- Add/update unit tests for the fixed code
-- Add/update component tests if the fix touches UI behavior
-- Update the bug doc: add "Rozwiązanie" section and "Naprawione pliki" table
-- Run project-specific tests to verify:
-
-```bash
-npm exec nx test car-manager
-npm exec nx build car-manager
-```
+- Use `developer` agent
+- Follow TDD: failing test → minimal code → refactor
+- Update bug doc: "Rozwiązanie" section and "Naprawione pliki" table
 
 ### Phase 4: Code Review
 
-- Use `pr-reviewer` agent to review the entire change
-- Review criteria:
-  - **Poprawność** — does the fix actually resolve the root cause?
-  - **Regresja** — could this break anything else?
-  - **Konwencje** — does the code follow project conventions (AGENTS.md)?
-  - **Testy** — are tests sufficient and meaningful? Do they pass?
-  - **Architektura** — is the fix in the right layer? No leaky abstractions?
-- Output: review comments in the bug doc or conversation thread
-- If changes requested → go to Phase 5
+- Use `reviewer` agent
+- Review criteria: poprawność, regresja, konwencje, testy, architektura, kod
+- If changes requested → Phase 5
 
 ### Phase 5: Post-Review Fix
 
-- Use `senior-frontend-dev` agent to address review findings
-- Iterate on Phase 4–5 until the reviewer approves
-- Update the bug doc with final resolution details
+- Use `developer` agent to address findings
+- Iterate until reviewer approves
 
 ### Phase 6: Quality Gate
 
@@ -179,25 +188,15 @@ npm exec nx build car-manager
 npm exec nx affected -t lint test build e2e
 ```
 
-All checks must pass. If E2E tests are too slow, run project-specific tests first:
-
-```bash
-npm exec nx test car-manager
-npm exec nx build car-manager
-```
-
 ### Phase 7: Done
 
 - Commit with Conventional Commits format (`fix: <description>`)
-- Update bug doc: add "Data naprawy" and "Zweryfikowano przez" fields
-- Close the bug
+- Update bug doc with final details
 
 ### BFW Traceability
 
 - Every bug fix source file must reference: `// bugfix: docs/bugs/<name>.md`
 - Every regression test must annotate: `// covers: docs/bugs/<name>.md`
-- During fix implementation, update the bug doc's "Naprawione pliki" table
-- The bug doc serves as a permanent record of the defect and its resolution
 
 ---
 
@@ -231,13 +230,10 @@ npm run static:checks
 ```
 
 This runs:
-
 - `lint` — ESLint (TypeScript + Angular template accessibility rules)
 - `format:check` — Prettier formatting validation
 
 These checks are **non-negotiable** — treat failures as blocking.
-
-> Agents: Run `npm run static:checks` before every commit.
 
 ### Dead code & duplication checks (guardrail)
 
@@ -255,11 +251,8 @@ npm run quality
 ```
 
 These checks are **strict — must pass with zero errors and zero warnings**.
-Treat failures as blocking, just like `static:checks`.
 
 > Agents: Run `npm run quality` before every PR and before marking a task as done.
-> `npm run quality` fails (exit code ≠ 0) if any issues are found.
-> Do not mark a task as done unless `npm run quality` passes cleanly.
 
 The full guardrail workflow before marking complete:
 
@@ -280,21 +273,13 @@ npm exec nx affected -t lint test build e2e  # if full quality gate is needed
 ## Mandatory Testing Workflow
 
 For **any** code change (new feature, refactor, bug fix), the agent MUST create or update tests
-**at the same time as the code change**, without waiting for user reminders. This applies to:
+**at the same time as the code change**, without waiting for user reminders.
+
+### Test layers
 
 1. **Unit tests** (Vitest) – services, utilities, pure functions, dumb components
-   - Framework: Vitest + `TestBed` or direct function testing
-   - Location: `*.spec.ts` next to the source file
-
 2. **Component/Integration tests** (`@testing-library/angular`) – user-facing component behavior
-   - Use `render()`, `screen` queries, `userEvent` for interactions
-   - Test: rendering states, form submissions, dialog open/close, computed outputs
-   - Location: `*.spec.ts` next to the component file
-
 3. **E2E tests** (Playwright) – critical user flows across the full stack
-   - Use `page.goto()`, `page.locator()`, `expect().toBeVisible()`
-   - Location: `apps/car-manager-e2e/src/*.spec.ts`
-   - Base URL is set via `test.use({ baseURL: 'http://localhost:4200' })`
 
 ### When to write each layer
 
@@ -307,33 +292,22 @@ For **any** code change (new feature, refactor, bug fix), the agent MUST create 
 | Refactor (no behavior change) | ✅ (existing must pass) | ✅ (existing must pass) | —                     |
 | Refactor (behavior changes)   | ✅ Updated              | ✅ Updated              | ✅ Updated            |
 
-### Testing patterns used in this project
+### Testing patterns
 
 - **Services**: `TestBed.configureTestingModule` with mock providers, `firstValueFrom` for observables
 - **Component (testing-library)**: `await render(Component, { providers: [...] })` + `screen.getByText/Role/LabelText`
 - **Component (TestBed)**: `TestBed.createComponent(Component)` + `fixture.debugElement.query(By.css(...))`
-- **Ionic components**: mock `IonModal`, `ModalController`, `NavController` when testing pages with overlays
-- **Firebase-dependent services**: mock `auth`, `db`, `firestore` exports from `core/firebase.ts`
+- **Ionic components**: mock `IonModal`, `ModalController`, `NavController`
+- **Firebase-dependent services**: mock `auth`, `db`, `firestore` from `core/firebase.ts`
 - **Ionic Storage-dependent services**: mock `Storage` from `@ionic/storage`
 - **Guard tests**: mock `AuthService`, test route activation/redirection
-- **E2E**: seed data via Ionic Storage helpers (see `apps/car-manager-e2e/src/utils/db-helpers.ts`), use `page.goto('/dashboard')`, wait for `ion-page` visibility
+- **E2E**: seed data via Ionic Storage helpers, use `page.goto('/dashboard')`, wait for `ion-page`
 
 ### Verification after every change
-
-After implementing code + tests, run:
 
 ```bash
 npm exec nx affected -t lint test build e2e
 ```
-
-If the full suite is too slow for iteration, run project-specific tests first:
-
-```bash
-npm exec nx test car-manager
-npm exec nx build car-manager
-```
-
-And run the full `nx affected` command before marking the task complete.
 
 ### Accessibility (static audit)
 
@@ -349,11 +323,8 @@ This project uses **static accessibility analysis** at two levels:
    - Test file: `apps/car-manager-e2e/src/accessibility.spec.ts`
    - Helper: `apps/car-manager-e2e/src/utils/accessibility-helpers.ts`
    - Run: `npm exec nx run car-manager-e2e:a11y`
-   - Or: `npm run a11y`
-   - Tests are tagged with `@a11y` for isolated execution
-   - CI runs accessibility as a separate job after quality gate
 
-Every new feature / screen MUST include accessibility tests using `checkAccessibility()` from the helper. Use `includedImpacts: ['critical', 'serious']` by default; disable known false positives with `disabledRules`.
+Every new feature / screen MUST include accessibility tests using `checkAccessibility()`.
 
 ---
 
@@ -372,7 +343,7 @@ Every new feature / screen MUST include accessibility tests using `checkAccessib
 11. **Angular 22 specifics** – omit `standalone: true` (now default). Use `@Service()` instead of `@Injectable({ providedIn: 'root' })`. Use `input()` signals instead of `@Input()` decorator. Use `resource()` and `linkedSignal()` for async data. Signal Forms (`@angular/forms/signals`) are the default pattern for new forms. Reactive Forms (`FormRecord`, `FormControl`) are the standard for complex dynamic forms. Template MUST be inline (`template: \`...\``). Styles MUST be in a separate `.scss` file (`styleUrl: './*.component.scss'`) — never `styles: \`...\`` inline.
 12. **Money/logic** – fuel consumption calculations must live in dedicated pure utility functions. Round half-up to 2 decimals for display; keep raw values for intermediate calculations.
 13. **Architecture** – organize code by feature domain (refuel, repair, auth). Keep services cohesive. Respect Nx module boundaries.
-14. **Navigation** – every NavController call (`navigateForward`, `navigateBack`, `navigateRoot`) MUST be wrapped in `this.zone.run(() => ...)`. Every page that uses NavController MUST inject `NgZone`. Use `navigateForward` (not `navigateBack`) for all forward navigations — `navigateBack(url)` destroys the stack via `setRoot()` when the target isn't in history. Hub pages (dashboard) MUST NOT call `stopListening()` in `ngOnDestroy` — the next page's `startListening()` handles cleanup. Full rules: `docs/conventions/navigation.md`.
+14. **Navigation** – every NavController call (`navigateForward`, `navigateBack`, `navigateRoot`) MUST be wrapped in `this.zone.run(() => ...)`. Every page that uses NavController MUST inject `NgZone`. Use `navigateForward` (not `navigateBack`) for all forward navigations. Hub pages (dashboard) MUST NOT call `stopListening()` in `ngOnDestroy` — the next page's `startListening()` handles cleanup. Full rules: `docs/conventions/navigation.md`.
 
 ---
 
@@ -384,45 +355,14 @@ After the quality gate passes, you can trigger an automated UI/UX/Accessibility/
 /qa-review
 ```
 
-This invokes the **QA Coordinator**, which spawns 4 subagents in parallel:
-
-- **UI Reviewer** — visual consistency, layout, typography, component states
-- **UX Analyzer** — user experience, Nielsen's heuristics, click efficiency
-- **A11y Auditor** — WCAG 2.1 AA, Axe-core, keyboard, ARIA, contrast
-- **Responsive Checker** — viewport breakpoints, touch targets, overflow
+This invokes the **QA Coordinator** (`qa-coordinator`), which spawns 4 subagents in parallel:
+- `ui-reviewer` — visual consistency, layout, typography, component states
+- `ux-analyzer` — user experience, Nielsen's heuristics, click efficiency
+- `a11y-auditor` — WCAG 2.1 AA, Axe-core, keyboard, ARIA, contrast
+- `responsive-checker` — viewport breakpoints, touch targets, overflow
 
 The review is **optional** — it does NOT block the pipeline. Results are saved to
-`docs/qa/YYYY-MM-DD-qa-report.md`. See `.opencode/agents/qa-coordinator.md` for details.
-
-### MCP servers used by QA subagents
-
-| MCP Server          | Purpose                                                        |
-| ------------------- | -------------------------------------------------------------- |
-| Playwright MCP      | Browser automation, navigation, screenshots, viewport resizing |
-| Chrome DevTools MCP | Axe-core audits, ARIA tree inspection, contrast checks         |
-| GitHub MCP          | Optional: create GitHub Issues from QA reports                 |
-
----
-
-## Agent Model Assignments
-
-| Agent                        | Model             | Why                                                              |
-| ---------------------------- | ----------------- | ---------------------------------------------------------------- |
-| Architect                    | DeepSeek-V4-Pro   | Architecture design, ADRs — deep reasoning required              |
-| Business Analyst             | DeepSeek-V4-Pro   | Requirements analysis — deep reasoning required                  |
-| PR Reviewer                  | DeepSeek-V4-Pro   | Code review — correctness, regression, conventions, architecture |
-| Critical Thinking            | DeepSeek-V4-Pro   | Assumption analysis, strategic thinking                          |
-| Doublecheck                  | DeepSeek-V4-Pro   | Claim verification, adversarial review                           |
-| Tutor                        | DeepSeek-V4-Pro   | Teaching and explaining concepts                                 |
-| Senior Frontend Dev          | DeepSeek-V4-Flash | Code implementation following strict conventions — procedural    |
-| Automation Playwright Tester | DeepSeek-V4-Flash | E2E test generation — procedural, tool-driven                    |
-| QA Coordinator               | DeepSeek-V4-Flash | Orchestration — lightweight decision-making                      |
-| UI Reviewer                  | DeepSeek-V4-Flash | Visual analysis — procedural                                     |
-| UX Analyzer                  | DeepSeek-V4-Flash | Heuristic evaluation — procedural                                |
-| A11y Auditor                 | DeepSeek-V4-Flash | Audits are tool-driven                                           |
-| Responsive Checker           | DeepSeek-V4-Flash | Viewport testing — procedural                                    |
-| Perf Investigator            | DeepSeek-V4-Flash | Performance diagnostics — tool-driven                            |
-| CI Monitor Subagent          | DeepSeek-V4-Flash | Simple MCP tool calls                                            |
+`docs/qa/YYYY-MM-DD-qa-report.md`.
 
 ---
 
@@ -473,4 +413,4 @@ The review is **optional** — it does NOT block the pipeline. Results are saved
 
 ---
 
-_Ostatnia aktualizacja: 04.11.2026_
+_Ostatnia aktualizacja: 06.11.2026_

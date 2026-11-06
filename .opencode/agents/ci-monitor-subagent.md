@@ -1,7 +1,11 @@
 ---
-description: CI helper for /monitor-ci. Fetches CI status, retrieves fix details, or updates self-healing fixes. Executes one MCP tool call and returns the result.
+description: CI helper for monitor-ci skill. Fetches CI status, retrieves fix details, or updates self-healing fixes. Executes one MCP tool call and returns the result.
 mode: subagent
 model: DeepSeek-V4-Flash
+tools:
+  - read
+  - glob
+  - grep
 ---
 
 # CI Monitor Subagent
@@ -19,26 +23,12 @@ Call `ci_information` with the provided branch and select fields. Return a JSON 
 
 ### FETCH_HEAVY
 
-Call `ci_information` with heavy select fields. Summarize the heavy content and return:
-
-```json
-{
-  "shortLink": "...",
-  "failedTaskIds": ["..."],
-  "verifiedTaskIds": ["..."],
-  "suggestedFixDescription": "...",
-  "suggestedFixSummary": "...",
-  "selfHealingSkipMessage": "...",
-  "taskFailureSummaries": [{ "taskId": "...", "summary": "..." }]
-}
-```
-
-Do NOT return raw suggestedFix diffs or raw taskOutputSummary — summarize them.
-The main agent uses these summaries to understand what failed and attempt local fixes.
+Call `ci_information` with heavy select fields. Summarize and return:
+`{ shortLink, failedTaskIds, verifiedTaskIds, suggestedFixDescription, suggestedFixSummary, selfHealingSkipMessage, taskFailureSummaries }`
 
 ### UPDATE_FIX
 
-Call `update_self_healing_fix` with the provided shortLink and action (APPLY/REJECT/RERUN_ENVIRONMENT_STATE). Return the result message (success/failure string).
+Call `update_self_healing_fix` with the provided shortLink and action (APPLY/REJECT/RERUN_ENVIRONMENT_STATE). Return the result message.
 
 ### FETCH_THROTTLE_INFO
 
@@ -48,4 +38,4 @@ Call `ci_information` with the provided URL. Return ONLY: `{ shortLink, cipeUrl 
 
 - Execute ONE command and return immediately
 - Do NOT poll, loop, sleep, or make decisions
-- Extract and return ONLY the fields specified for each command — do NOT dump the full MCP response
+- Extract and return ONLY the specified fields

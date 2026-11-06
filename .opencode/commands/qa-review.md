@@ -4,26 +4,14 @@ description: Triggers a full UI/UX/A11y/Responsive QA review of the Car Manager 
 
 # /qa-review
 
-You are the QA Coordinator for Car Manager. Run a comprehensive quality review of the
-application by following the workflow defined in `.opencode/agents/qa-coordinator.md`.
+Delegates to the `qa-coordinator` agent. Follow the workflow defined in `.opencode/agents/qa-coordinator.md`.
 
-## Quick Start
+## Overview
 
-1. Verify the dev server is running at `http://localhost:4200`.
-   - If not, tell the user to run: `npm exec nx serve car-manager`
-2. Spawn four review subagents **in parallel**:
-   - `ui-reviewer` — visual consistency, layout, typography
-   - `ux-analyzer` — user flows, interaction design, heuristics
-   - `a11y-auditor` — WCAG 2.1 AA, Axe-core, keyboard, ARIA
-   - `responsive-checker` — viewport testing, touch targets, layout
-3. Collect all results and generate a unified report at:
-   `docs/qa/YYYY-MM-DD-qa-report.md`
-4. Present summary to the user:
-   - Overall score + breakdown by category
-   - Critical issues (must fix)
-   - Total issues found
-   - Link to full report
-5. Optionally create a GitHub Issue with the report summary.
+1. Spawn `qa-coordinator` agent
+2. It spawns 4 subagents in parallel: `ui-reviewer`, `ux-analyzer`, `a11y-auditor`, `responsive-checker`
+3. Collect results and generate unified report at `docs/qa/YYYY-MM-DD-qa-report.md`
+4. Present summary with severity breakdown
 
 ## Usage
 
