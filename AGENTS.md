@@ -88,6 +88,9 @@ This project uses **7 main agents** (each with specific skills assigned to them)
 | `nx-import`           | Importing external repositories into the workspace                        |
 | `conventional-commit` | Generating conventional commit messages (end of each implementation)      |
 | `anti-ui-slop`        | UI guardrail — enforcing Ionic design system consistency                  |
+| `monitor-ci`          | Nx Cloud CI monitoring & self-healing                                     |
+| `scan-secrets`        | Scanning changed files for accidentally committed secrets                 |
+| `qa-review`           | UI/UX/A11y/Responsive QA review orchestration                             |
 
 ---
 

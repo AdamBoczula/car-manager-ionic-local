@@ -171,11 +171,11 @@ lub automatyczny przegląd UI/UX przez `/qa-review`.
 Oba **nie blokują pipeline'u** i są wykonywane niezależnie.
 
 Lista kontrolna manual QA znajduje się w `docs/ai/03-testing-quality-gates.md#manual-qa-checklist`.
-Automatyczny przegląd UI/UX przez QA Coordinator jest opisany w `.opencode/agents/qa-coordinator.md`.
+Automatyczny przegląd UI/UX przez QA Coordinator jest opisany w `.agents/agents/qa-coordinator.md` oraz `.agents/skills/qa-review/SKILL.md`.
 
 ### Automatyczny przegląd UI/UX (faza [4b])
 
-Wywołaj `/qa-review` w OpenCode aby uruchomić automatyczny przegląd:
+Wywołaj `/qa-review` aby uruchomić automatyczny przegląd:
 
 - **UI Reviewer** — spójność wizualna, layout, typografia, stany komponentów
 - **UX Analyzer** — user experience, heurystyki Nielsena, efektywność
@@ -189,9 +189,23 @@ Raport zapisywany jest w `docs/qa/YYYY-MM-DD-qa-report.md`.
 - `docs/specs/02-spec-template.md` – szablon speca
 - `docs/specs/03-spec-glossary.md` – słownik pojęć
 - `docs/adr/adr-template.md` – szablon ADR
-- `.opencode/skills/business-analyst.md` – definicja skillu analityka
 - `docs/ai/02-agent-operating-model.md` – role agenta i permission model
 - `docs/ai/03-testing-quality-gates.md` – quality gates i manual QA checklist
+- `docs/qa/qa-report-template.md` – szablon raportu QA
+
+### Agenci i skille (Antigravity / Gemini)
+
+- `.agents/agents/analyst.md` – definicja agenta analityka
+- `.agents/agents/qa-coordinator.md` – QA Coordinator (faza [4b])
+- `.agents/agents/ui-reviewer.md` – UI Reviewer subagent
+- `.agents/agents/ux-analyzer.md` – UX Analyzer subagent
+- `.agents/agents/a11y-auditor.md` – A11y Auditor subagent
+- `.agents/agents/responsive-checker.md` – Responsive Checker subagent
+- `.agents/skills/qa-review/SKILL.md` – skill / komenda /qa-review
+
+### Agenci i komendy (OpenCode)
+
+- `.opencode/agents/analyst.md` – definicja agenta analityka
 - `.opencode/agents/qa-coordinator.md` – QA Coordinator (faza [4b])
 - `.opencode/agents/ui-reviewer.md` – UI Reviewer subagent
 - `.opencode/agents/ux-analyzer.md` – UX Analyzer subagent

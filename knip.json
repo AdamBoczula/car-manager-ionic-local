@@ -48,7 +48,8 @@
         "@capacitor/cli",
         "jsdom",
         "@eslint/eslintrc"
-      ]
+      ],
+      "ignoreBinaries": ["adb"]
     }
   }
 }
