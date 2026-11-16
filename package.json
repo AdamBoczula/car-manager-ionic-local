@@ -16,7 +16,11 @@
     "static:checks": "npm run lint && npm run format:check",
     "knip": "npx knip --no-config-hints",
     "duplication": "npx jscpd --config .jscpd.json",
-    "quality": "npm run static:checks && npm run knip && npm run duplication"
+    "quality": "npm run static:checks && npm run knip && npm run duplication",
+    "build:android": "nx build car-manager && npx cap sync android && cd android && ./gradlew assembleDebug && cp app/build/outputs/apk/debug/app-debug.apk ../car-manager.apk",
+    "install:phone": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.carmanager.app/.MainActivity",
+    "deploy:android": "npm run build:android && npm run install:phone",
+    "deploy:phone": "npm run deploy:android"
   },
   "private": true,
   "dependencies": {
@@ -30,6 +34,7 @@
     "@capacitor/android": "^8.6.0",
     "@capacitor/core": "^8.6.0",
     "@capacitor/ios": "^8.6.0",
+    "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
     "@ionic/angular": "^9.0.10",
     "@ionic/core": "^9.0.10",
     "@ionic/storage": "^4.0.0",
@@ -64,6 +69,7 @@
     "@nx/workspace": "^24.0.3",
     "@playwright/test": "^1.64.1",
     "@testing-library/angular": "^19.6.0",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/user-event": "^14.6.8",
     "@types/node": "^22.0.0",

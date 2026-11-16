@@ -1,0 +1,1 @@
+apps/car-manager/capacitor.config.ts

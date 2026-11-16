@@ -4,19 +4,46 @@ import type { Auth } from 'firebase/auth';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { NavController } from '@ionic/angular';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { AuthService } from './auth.service';
 
-// Mock firebase/auth (direct SDK)
-vi.mock('firebase/auth', () => ({
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  createUserWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn(),
-  GoogleAuthProvider: vi.fn(),
-  signInWithPopup: vi.fn(),
-  signInWithRedirect: vi.fn(),
-  getRedirectResult: vi.fn(),
+// Mock @capacitor/core
+vi.mock('@capacitor/core', () => ({
+  Capacitor: {
+    isNativePlatform: vi.fn(),
+  },
 }));
+
+// Mock @codetrix-studio/capacitor-google-auth
+vi.mock('@codetrix-studio/capacitor-google-auth', () => ({
+  GoogleAuth: {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    signIn: vi.fn(),
+    signOut: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// Mock firebase/auth (direct SDK)
+vi.mock('firebase/auth', () => {
+  const credentialFn = vi
+    .fn()
+    .mockReturnValue({ providerId: 'google.com', signInMethod: 'google.com' });
+  const providerClass = vi.fn();
+  (providerClass as unknown as { credential: typeof credentialFn }).credential = credentialFn;
+
+  return {
+    onAuthStateChanged: vi.fn(),
+    signInWithEmailAndPassword: vi.fn(),
+    createUserWithEmailAndPassword: vi.fn(),
+    signOut: vi.fn(),
+    GoogleAuthProvider: providerClass,
+    signInWithPopup: vi.fn(),
+    signInWithRedirect: vi.fn(),
+    getRedirectResult: vi.fn(),
+    signInWithCredential: vi.fn(),
+  };
+});
 
 // Mock the ../firebase module to provide a mock auth instance
 vi.mock('../firebase', () => ({
@@ -30,6 +57,7 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithCredential,
   getRedirectResult,
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
@@ -47,6 +75,7 @@ describe('AuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     navigateSpy = vi.fn().mockResolvedValue(true);
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
 
     // Default: onAuthStateChanged emits null (not logged in)
     (onAuthStateChanged as ReturnType<typeof vi.fn>).mockImplementation(
@@ -162,14 +191,85 @@ describe('AuthService', () => {
       expect(service.isLoggedIn()).toBe(true);
       expect(navigateSpy).toHaveBeenCalledWith('/dashboard', { animated: false });
     });
+
+    it('powinien użyć GoogleAuth.signIn i signInWithCredential na platformie natywnej', async () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+      vi.mocked(GoogleAuth.signIn).mockResolvedValue({
+        id: 'user-id',
+        email: 'test@example.com',
+        name: 'Test User',
+        familyName: 'User',
+        givenName: 'Test',
+        imageUrl: 'http://example.com/avatar.png',
+        serverAuthCode: 'auth-code',
+        authentication: {
+          accessToken: 'access-token',
+          idToken: 'mock-google-id-token',
+        },
+      });
+      (signInWithCredential as ReturnType<typeof vi.fn>).mockResolvedValue({
+        user: mockUser,
+      });
+
+      await service.loginWithGoogle();
+
+      expect(GoogleAuth.initialize).toHaveBeenCalled();
+      expect(GoogleAuth.signIn).toHaveBeenCalled();
+      expect(GoogleAuthProvider.credential).toHaveBeenCalledWith('mock-google-id-token');
+      expect(signInWithCredential).toHaveBeenCalledWith(expect.any(Object), expect.any(Object));
+      expect(service.currentUser()).toBe(mockUser);
+      expect(service.isLoggedIn()).toBe(true);
+      expect(navigateSpy).toHaveBeenCalledWith('/dashboard', { animated: false });
+    });
+
+    it('powinien zignorować anulowanie logowania na platformie natywnej (kod 12501)', async () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+      vi.mocked(GoogleAuth.signIn).mockRejectedValue({
+        code: '12501',
+        message: 'The user canceled the sign-in flow.',
+      });
+
+      await expect(service.loginWithGoogle()).resolves.toBeUndefined();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it('powinien rzucić błąd gdy brak idToken na platformie natywnej', async () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+      vi.mocked(GoogleAuth.signIn).mockResolvedValue({
+        id: 'user-id',
+        email: 'test@example.com',
+        name: 'Test User',
+        familyName: 'User',
+        givenName: 'Test',
+        imageUrl: '',
+        serverAuthCode: '',
+        authentication: {
+          accessToken: 'access-token',
+          idToken: '',
+        },
+      });
+
+      await expect(service.loginWithGoogle()).rejects.toThrow();
+    });
   });
 
   describe('logout()', () => {
-    it('powinien wywołać signOut i przekierować na login', async () => {
+    it('powinien wywołać signOut i przekierować na login na webie', async () => {
       (signOut as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       await service.logout();
 
+      expect(signOut).toHaveBeenCalledWith(expect.any(Object));
+      expect(navigateSpy).toHaveBeenCalledWith('/login', { animated: false });
+    });
+
+    it('powinien wywołać GoogleAuth.signOut i signOut na platformie natywnej', async () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+      (signOut as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+      await service.logout();
+
+      expect(GoogleAuth.signOut).toHaveBeenCalled();
       expect(signOut).toHaveBeenCalledWith(expect.any(Object));
       expect(navigateSpy).toHaveBeenCalledWith('/login', { animated: false });
     });
