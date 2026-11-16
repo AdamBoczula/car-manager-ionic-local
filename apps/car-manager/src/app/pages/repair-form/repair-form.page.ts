@@ -1,5 +1,6 @@
 // spec: docs/specs/05-car-management.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
+// bugfix: docs/bugs/05-decimal-input-comma-dot.md
 import { Component, inject, signal, computed, NgZone } from '@angular/core';
 import { NavController } from '@ionic/angular';
 import {
@@ -25,6 +26,11 @@ import { RepairService } from '../../core/services/repair.service';
 import { CarService } from '../../core/services/car.service';
 import { SpeechService } from '../../core/services/speech.service';
 import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
+import {
+  formatDecimalInput,
+  parseDecimal,
+  handleDecimalKeyDown,
+} from '../../core/utils/decimal-input.util';
 
 addIcons({ mic });
 
@@ -83,10 +89,12 @@ addIcons({ mic });
           <ion-item>
             <ion-label position="stacked">Kwota (PLN)</ion-label>
             <ion-input
-              type="number"
-              [value]="amount()"
-              (ionInput)="amount.set($any($event).detail.value ? +$any($event).detail.value : 0)"
-              placeholder="0.00"
+              type="text"
+              inputmode="decimal"
+              [value]="amountRaw()"
+              (ionInput)="onAmountInput($any($event).detail.value)"
+              (keydown)="onDecimalKeyDown($event)"
+              placeholder="0,00"
               aria-label="Kwota w PLN"
             />
           </ion-item>
@@ -101,7 +109,7 @@ addIcons({ mic });
             <ion-label position="stacked">Przebieg (km)</ion-label>
             <ion-input
               type="number"
-              [value]="mileage()"
+              [value]="mileage() || ''"
               (ionInput)="mileage.set($any($event).detail.value ? +$any($event).detail.value : 0)"
               placeholder="0"
               aria-label="Przebieg w kilometrach"
@@ -201,19 +209,20 @@ addIcons({ mic });
   styleUrl: './repair-form.page.scss',
 })
 export class RepairFormPage {
-  private readonly repairService = inject(RepairService);
+  // Public dependencies & state (member-ordering: public before private)
   readonly carService = inject(CarService);
-  private readonly navController = inject(NavController);
-  private readonly zone = inject(NgZone);
   readonly speechService = inject(SpeechService);
 
   // Form fields
   readonly date = signal(new Date().toISOString().split('T')[0]);
-  readonly amount = signal(0);
+  readonly amountRaw = signal('');
   readonly mileage = signal(0);
   readonly location = signal('');
   readonly description = signal('');
   readonly mechanicNote = signal('');
+
+  // Parsed decimal value
+  readonly amount = computed(() => parseDecimal(this.amountRaw()));
 
   // Toast
   readonly toastOpen = signal(false);
@@ -245,6 +254,19 @@ export class RepairFormPage {
       !this.descriptionError(),
   );
 
+  // Private dependencies
+  private readonly repairService = inject(RepairService);
+  private readonly navController = inject(NavController);
+  private readonly zone = inject(NgZone);
+
+  onAmountInput(value: string | null | undefined): void {
+    this.amountRaw.set(formatDecimalInput(value, 2));
+  }
+
+  onDecimalKeyDown(event: KeyboardEvent): void {
+    handleDecimalKeyDown(event);
+  }
+
   async handleSubmit(event?: Event): Promise<void> {
     event?.preventDefault();
 
@@ -268,7 +290,9 @@ export class RepairFormPage {
       });
 
       this.showToast('Naprawa zapisana!', 'success');
-      this.zone.run(() => this.navController.navigateForward('/dashboard'));
+      this.zone.run(() => {
+        void this.navController.navigateForward('/dashboard');
+      });
     } catch (err) {
       console.error('Failed to save repair:', err);
       this.showToast('Nie udało się zapisać naprawy.', 'danger');

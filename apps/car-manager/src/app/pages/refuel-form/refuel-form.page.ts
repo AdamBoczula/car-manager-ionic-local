@@ -1,5 +1,6 @@
 // spec: docs/specs/05-car-management.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
+// bugfix: docs/bugs/05-decimal-input-comma-dot.md
 import { Component, inject, signal, computed, NgZone } from '@angular/core';
 import { NavController } from '@ionic/angular';
 import {
@@ -23,6 +24,11 @@ import {
 import { RefuelService } from '../../core/services/refuel.service';
 import { CarService } from '../../core/services/car.service';
 import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
+import {
+  formatDecimalInput,
+  parseDecimal,
+  handleDecimalKeyDown,
+} from '../../core/utils/decimal-input.util';
 
 @Component({
   selector: 'app-refuel-form',
@@ -80,10 +86,12 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
           <ion-item>
             <ion-label position="stacked">Kwota (PLN)</ion-label>
             <ion-input
-              type="number"
-              [value]="amount()"
-              (ionInput)="amount.set($any($event).detail.value ? +$any($event).detail.value : 0)"
-              placeholder="0.00"
+              type="text"
+              inputmode="decimal"
+              [value]="amountRaw()"
+              (ionInput)="onAmountInput($any($event).detail.value)"
+              (keydown)="onDecimalKeyDown($event)"
+              placeholder="0,00"
               aria-label="Kwota w PLN"
             />
           </ion-item>
@@ -98,7 +106,7 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
             <ion-label position="stacked">Przebieg (km)</ion-label>
             <ion-input
               type="number"
-              [value]="mileage()"
+              [value]="mileage() || ''"
               (ionInput)="mileage.set($any($event).detail.value ? +$any($event).detail.value : 0)"
               placeholder="0"
               aria-label="Przebieg w kilometrach"
@@ -114,10 +122,12 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
           <ion-item>
             <ion-label position="stacked">Ilość litrów (opcjonalnie)</ion-label>
             <ion-input
-              type="number"
-              [value]="liters()"
-              (ionInput)="liters.set($any($event).detail.value ? +$any($event).detail.value : 0)"
-              placeholder="0.00"
+              type="text"
+              inputmode="decimal"
+              [value]="litersRaw()"
+              (ionInput)="onLitersInput($any($event).detail.value)"
+              (keydown)="onDecimalKeyDown($event)"
+              placeholder="0,00"
               aria-label="Ilość litrów (opcjonalnie)"
             />
           </ion-item>
@@ -185,19 +195,21 @@ import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-s
   styleUrl: './refuel-form.page.scss',
 })
 export class RefuelFormPage {
-  private readonly refuelService = inject(RefuelService);
+  // Public dependencies & state (member-ordering: public before private)
   readonly carService = inject(CarService);
-  private readonly navController = inject(NavController);
-  private readonly zone = inject(NgZone);
 
   // Form fields — signals
   readonly date = signal(new Date().toISOString().split('T')[0]);
-  readonly amount = signal(0);
+  readonly amountRaw = signal('');
+  readonly litersRaw = signal('');
   readonly mileage = signal(0);
-  readonly liters = signal(0);
   readonly isVerva = signal(false);
   readonly isSkipped = signal(false);
   readonly skippedReason = signal('');
+
+  // Parsed decimal values
+  readonly amount = computed(() => parseDecimal(this.amountRaw()));
+  readonly liters = computed(() => parseDecimal(this.litersRaw()));
 
   // Toast
   readonly toastOpen = signal(false);
@@ -214,6 +226,23 @@ export class RefuelFormPage {
   );
 
   readonly isFormValid = computed(() => !this.amountError() && !this.mileageError());
+
+  // Private dependencies
+  private readonly refuelService = inject(RefuelService);
+  private readonly navController = inject(NavController);
+  private readonly zone = inject(NgZone);
+
+  onAmountInput(value: string | null | undefined): void {
+    this.amountRaw.set(formatDecimalInput(value, 2));
+  }
+
+  onLitersInput(value: string | null | undefined): void {
+    this.litersRaw.set(formatDecimalInput(value, 2));
+  }
+
+  onDecimalKeyDown(event: KeyboardEvent): void {
+    handleDecimalKeyDown(event);
+  }
 
   async handleSubmit(event?: Event): Promise<void> {
     event?.preventDefault();
@@ -239,7 +268,9 @@ export class RefuelFormPage {
       });
 
       this.showToast('Tankowanie zapisane!', 'success');
-      this.zone.run(() => this.navController.navigateForward('/dashboard'));
+      this.zone.run(() => {
+        void this.navController.navigateForward('/dashboard');
+      });
     } catch (err) {
       console.error('Failed to save refuel:', err);
       this.showToast('Nie udało się zapisać tankowania.', 'danger');

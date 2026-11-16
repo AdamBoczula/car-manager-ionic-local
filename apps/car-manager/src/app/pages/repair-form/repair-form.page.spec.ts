@@ -2,6 +2,7 @@
 // covers: docs/specs/repair/02-repair-crud.md#AC-3, docs/specs/repair/02-repair-crud.md#AC-4, docs/specs/repair/02-repair-crud.md#AC-5
 // covers: docs/specs/05-car-management.md#AC-13
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
+// covers: docs/bugs/05-decimal-input-comma-dot.md
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import type { Routes } from '@angular/router';
@@ -285,5 +286,44 @@ describe('RepairFormPage', () => {
 
     // Should not call add when no active car
     expect(mockRepairSvc.add).not.toHaveBeenCalled();
+  });
+
+  // covers: docs/bugs/05-decimal-input-comma-dot.md
+  it('powinien akceptować przecinek i kropkę w kwocie bez czyszczenia wartości', async () => {
+    const mockRepairSvc = createMockRepairService();
+    const mockCarSvc = createMockCarService({ activeCarId: 'car-abc' });
+    const mockSpeechSvc = createMockSpeechService();
+    const user = userEvent.setup();
+
+    await render(RepairFormPage, {
+      providers: [
+        provideRouter(routes),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RepairService, useValue: mockRepairSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: SpeechService, useValue: mockSpeechSvc },
+        { provide: NavController, useValue: mockNavController },
+      ],
+    });
+
+    const amountInput = screen.getByLabelText('Kwota w PLN');
+    await user.type(amountInput, '1500.50');
+    expect(amountInput).toHaveValue('1500,50');
+
+    await user.type(screen.getByLabelText('Przebieg w kilometrach'), '65000');
+    await user.type(screen.getByLabelText('Miejsce naprawy'), 'AutoSerwis');
+    await user.type(screen.getByLabelText('Opis wykonanych prac'), 'Test naprawy');
+
+    await user.click(screen.getByTestId('submit-repair-button'));
+
+    expect(mockRepairSvc.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carId: 'car-abc',
+        amount: 1500.5,
+        mileage: 65000,
+        location: 'AutoSerwis',
+        description: 'Test naprawy',
+      }),
+    );
   });
 });
