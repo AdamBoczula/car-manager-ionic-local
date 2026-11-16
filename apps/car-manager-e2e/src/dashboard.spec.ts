@@ -87,10 +87,17 @@ test.describe('Dashboard – Panel główny', () => {
     await expect(page.locator('[data-testid="fab-repair"]')).toBeVisible();
   });
 
-  test('should have a logout button', async ({ page }) => {
+  test('should have a logout button and show confirmation dialog when clicked', async ({
+    page,
+  }) => {
     await navigateToDashboard(page);
     await waitForIonicPage(page);
     await expect(page.locator('[data-testid="logout-button"]')).toBeVisible();
+    await page.locator('[data-testid="logout-button"]').click();
+    await expect(page.locator('ion-alert')).toBeVisible();
+    await expect(page.locator('ion-alert .alert-message')).toContainText(
+      'Czy na pewno chcesz się wylogować z aplikacji?',
+    );
   });
 });
 

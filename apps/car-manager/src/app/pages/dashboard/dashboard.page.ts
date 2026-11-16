@@ -3,7 +3,7 @@
 import type { OnInit, OnDestroy } from '@angular/core';
 import { Component, inject, signal, computed, effect, DestroyRef, NgZone } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { NavController } from '@ionic/angular';
+import { AlertController, NavController } from '@ionic/angular';
 import {
   IonHeader,
   IonToolbar,
@@ -232,6 +232,7 @@ export class DashboardPage implements OnInit, OnDestroy {
   readonly refuelService = inject(RefuelService);
   readonly repairService = inject(RepairService);
   private readonly navController = inject(NavController);
+  private readonly alertController = inject(AlertController);
   private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -352,6 +353,24 @@ export class DashboardPage implements OnInit, OnDestroy {
   }
 
   async handleLogout(): Promise<void> {
-    await this.authService.logout();
+    const alert = await this.alertController.create({
+      header: 'Wylogowanie',
+      message: 'Czy na pewno chcesz się wylogować z aplikacji?',
+      buttons: [
+        {
+          text: 'Anuluj',
+          role: 'cancel',
+        },
+        {
+          text: 'Wyloguj',
+          role: 'confirm',
+          handler: () => {
+            void this.authService.logout();
+          },
+        },
+      ],
+    });
+
+    await alert.present();
   }
 }
