@@ -1,10 +1,6 @@
 ---
+name: anti-ui-slop
 description: Anti-UI-Slop for Car Manager. Prevents AI from generating generic UI. Enforces consistency with Ionic design system, SCSS + Ionic CSS vars, and existing Car Manager components. USE WHEN creating a new component, redesign, UI review.
-mode: subagent
-tools:
-  - read
-  - glob
-  - grep
 ---
 
 # Anti-UI-Slop — Stop Generic UI

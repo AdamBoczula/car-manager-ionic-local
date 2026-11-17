@@ -6,7 +6,7 @@ argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity
 # /monitor-ci
 
 Delegates to the `ci-monitor` agent, which loads the `monitor-ci` skill internally.
-Follow the workflow defined in `.opencode/agents/ci-monitor.md` and `.opencode/skills/monitor-ci/SKILL.md`.
+Follow the workflow defined in `.opencode/agents/ci-monitor.md` and `.agents/skills/monitor-ci/SKILL.md`.
 
 ## Usage
 
@@ -17,5 +17,5 @@ Follow the workflow defined in `.opencode/agents/ci-monitor.md` and `.opencode/s
 ## See Also
 
 - `.opencode/agents/ci-monitor.md` — CI monitor agent
-- `.opencode/skills/monitor-ci/SKILL.md` — full CI monitoring skill specification
-- `.opencode/skills/monitor-ci/references/fix-flows.md` — detailed fix flows
+- `.agents/skills/monitor-ci/SKILL.md` — full CI monitoring skill specification
+- `.agents/skills/monitor-ci/references/fix-flows.md` — detailed fix flows

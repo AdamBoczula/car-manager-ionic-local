@@ -45,7 +45,7 @@ Key optimizations:
 
 For **bug fixes** and **small refactors**, use the simpler workflow below (Mandatory Agent Workflow).
 
-To activate the Business Analyst skill, invoke `.opencode/skills/business-analyst.md`.
+To activate the Business Analyst role, invoke the `analyst` agent (`.opencode/agents/analyst.md`).
 
 ### SDD Traceability Rules
 

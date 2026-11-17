@@ -82,12 +82,26 @@ This project uses **7 main agents** (each with specific skills assigned to them)
 
 ### Globally Available Skills (for main agent — me)
 
+All skills live in **`.agents/skills/`** — the IDE-agnostic Agent Skills standard path
+(OpenCode, Antigravity, Cursor, Cline, Codex, Gemini CLI, GitHub Copilot, Zed, and others
+all read this directory natively).
+
 | Skill                 | When to Use                                                               |
 | --------------------- | ------------------------------------------------------------------------- |
 | `nx`                  | Exploring workspace, running tasks, scaffolding, plugins, package linking |
 | `nx-import`           | Importing external repositories into the workspace                        |
 | `conventional-commit` | Generating conventional commit messages (end of each implementation)      |
 | `anti-ui-slop`        | UI guardrail — enforcing Ionic design system consistency                  |
+| `angular-developer`   | Angular 22 best practices — signals, `resource`, forms, DI, routing, a11y |
+| `angular-new-app`     | Scaffolding a new Angular app with modern CLI conventions                 |
+
+External skills are sourced from `angular/skills` and tracked in `skills-lock.json`.
+Restore or update them with:
+
+```bash
+npx skills experimental_install   # restore from skills-lock.json
+npx skills update                 # update installed skills
+```
 
 ---
 

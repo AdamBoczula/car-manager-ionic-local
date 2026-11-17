@@ -1,10 +1,6 @@
 ---
+name: conventional-commit
 description: Generates conventional commit messages for Car Manager. Analyzes changes and creates formatted commit descriptions. USE WHEN you want to generate a proper commit message.
-mode: subagent
-tools:
-  - read
-  - glob
-  - grep
 ---
 
 # Conventional Commit — Generator

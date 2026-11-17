@@ -189,7 +189,7 @@ Raport zapisywany jest w `docs/qa/YYYY-MM-DD-qa-report.md`.
 - `docs/specs/02-spec-template.md` – szablon speca
 - `docs/specs/03-spec-glossary.md` – słownik pojęć
 - `docs/adr/adr-template.md` – szablon ADR
-- `.opencode/skills/business-analyst.md` – definicja skillu analityka
+- `.opencode/agents/analyst.md` – definicja agenta analityka
 - `docs/ai/02-agent-operating-model.md` – role agenta i permission model
 - `docs/ai/03-testing-quality-gates.md` – quality gates i manual QA checklist
 - `.opencode/agents/qa-coordinator.md` – QA Coordinator (faza [4b])
