@@ -1,6 +1,11 @@
 ---
 name: nx
-description: 'Explore, run tasks, generate code, find plugins, and link packages in the Nx workspace. USE WHEN: exploring projects/targets/dependencies, running build/test/lint/serve tasks, scaffolding apps/libs, finding/installing plugins, or fixing workspace package resolution errors. DO NOT USE FOR: importing external repositories (use nx-import skill instead).'
+description: >-
+  Explore, run tasks, generate code, find plugins, and link packages in the Nx
+  workspace. Use when exploring projects/targets/dependencies, running
+  build/test/lint/serve tasks, scaffolding apps/libs, finding/installing plugins,
+  or fixing workspace package resolution errors. Do not use for importing external
+  repositories (use nx-import instead).
 ---
 
 # Nx Workspace Skill
@@ -100,12 +105,16 @@ When importing from sibling packages causes "cannot find module" or TS2307 error
 pnpm add <package> --filter <consumer> --workspace
 ```
 
-Result: `"<package>": "workspace:*"` in consumer's `package.json`
+Example: `libs/orders` imports `libs/products`:
+
+```bash
+pnpm add @my-org/products --filter @my-org/orders --workspace
+```
 
 ### npm
 
 ```bash
-npm install <package> --workspace <consumer>
+npm install <package> -w <consumer>
 ```
 
 ### yarn
@@ -117,11 +126,11 @@ yarn workspace <consumer> add <package>
 ### bun
 
 ```bash
-cd packages/<consumer> && bun add <package>
+bun add <package> --filter <consumer>
 ```
 
-**Debug steps for resolution errors:**
+If the package manager fails:
 
-1. Check if dependency is declared in consumer's `package.json`
-2. If not, add it using the appropriate command above
-3. Run install (`pnpm install` / `npm install`)
+1. Check `package.json` in consumer package for the dependency
+2. Check `tsconfig.base.json` for paths mapping
+3. Run `nx sync` to re-sync project graph and tsconfig paths

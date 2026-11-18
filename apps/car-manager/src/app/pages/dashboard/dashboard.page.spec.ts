@@ -4,7 +4,7 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideIonicAngular, NavController } from '@ionic/angular';
+import { provideIonicAngular, NavController, AlertController } from '@ionic/angular';
 import { signal } from '@angular/core';
 import { DashboardPage } from './dashboard.page';
 import { AuthService } from '../../core/services/auth.service';
@@ -176,11 +176,18 @@ describe('DashboardPage', () => {
         startListening: vi.fn().mockResolvedValue(undefined),
         stopListening: vi.fn(),
       },
+      alertMock: {
+        present: vi.fn().mockResolvedValue(undefined),
+      },
+      alertController: {
+        create: vi.fn(),
+      },
     };
   }
 
   async function setup() {
     const mocks = createMocks();
+    mocks.alertController.create.mockResolvedValue(mocks.alertMock);
     const navControllerMock = {
       navigateForward: vi.fn(),
       navigateRoot: vi.fn().mockResolvedValue(true),
@@ -193,6 +200,7 @@ describe('DashboardPage', () => {
         provideRouter([]),
         provideIonicAngular({ mode: 'md' }),
         { provide: NavController, useValue: navControllerMock },
+        { provide: AlertController, useValue: mocks.alertController },
         { provide: AuthService, useValue: mocks.authService },
         { provide: StorageService, useValue: mocks.storageService },
         { provide: SyncService, useValue: mocks.syncService },
@@ -515,7 +523,7 @@ describe('DashboardPage', () => {
   // ── Logout ──
 
   describe('wylogowanie', () => {
-    it('powinien wywołać authService.logout() po kliknięciu przycisku wyloguj', async () => {
+    it('powinien wyświetlić popup potwierdzenia po kliknięciu przycisku wyloguj', async () => {
       const { mocks } = await setup();
       await renderAndWait();
 
@@ -525,7 +533,59 @@ describe('DashboardPage', () => {
       (logoutBtn as HTMLElement).click();
       await fixture.whenStable();
 
+      expect(mocks.alertController.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          header: 'Wylogowanie',
+          message: 'Czy na pewno chcesz się wylogować z aplikacji?',
+        }),
+      );
+      expect(mocks.alertMock.present).toHaveBeenCalled();
+      expect(mocks.authService.logout).not.toHaveBeenCalled();
+    });
+
+    it('powinien wywołać authService.logout() po potwierdzeniu w popupie', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      const logoutBtn = fixture.nativeElement.querySelector('[data-testid="logout-button"]');
+      (logoutBtn as HTMLElement).click();
+      await fixture.whenStable();
+
+      const alertConfig = mocks.alertController.create.mock.calls[0][0];
+      const confirmButton = alertConfig.buttons?.find(
+        (b: unknown) =>
+          typeof b === 'object' && b !== null && ('role' in b ? b.role === 'confirm' : false),
+      );
+      expect(confirmButton).toBeDefined();
+
+      confirmButton.handler();
       expect(mocks.authService.logout).toHaveBeenCalled();
+    });
+
+    it('nie powinien wywoływać authService.logout() po anulowaniu', async () => {
+      const { mocks } = await setup();
+      await renderAndWait();
+
+      const logoutBtn = fixture.nativeElement.querySelector('[data-testid="logout-button"]');
+      (logoutBtn as HTMLElement).click();
+      await fixture.whenStable();
+
+      const alertConfig = mocks.alertController.create.mock.calls[0][0];
+      const cancelButton = alertConfig.buttons?.find(
+        (b: unknown) =>
+          typeof b === 'object' && b !== null && ('role' in b ? b.role === 'cancel' : false),
+      );
+      expect(cancelButton).toBeDefined();
+      if (
+        typeof cancelButton === 'object' &&
+        cancelButton !== null &&
+        'handler' in cancelButton &&
+        typeof cancelButton.handler === 'function'
+      ) {
+        cancelButton.handler();
+      }
+
+      expect(mocks.authService.logout).not.toHaveBeenCalled();
     });
   });
 

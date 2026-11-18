@@ -1,4 +1,4 @@
-// covers: docs/bugs/05-sheet-modal-offscreen-submit.md
+// covers: docs/bugs/06-sheet-modal-offscreen-submit.md
 //
 // Regression test for the bottom sheet that opened at breakpoint 0.55 with
 // breakpoints [0, 0.55] — no higher breakpoint existed, so the sheet could not

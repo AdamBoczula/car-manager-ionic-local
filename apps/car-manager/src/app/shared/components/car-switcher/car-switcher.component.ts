@@ -1,5 +1,6 @@
 // spec: docs/specs/05-car-management.md
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
+// bugfix: docs/bugs/06-sheet-modal-offscreen-submit.md
 import { Component, inject, input, output, signal, viewChild, NgZone } from '@angular/core';
 import {
   AlertController,

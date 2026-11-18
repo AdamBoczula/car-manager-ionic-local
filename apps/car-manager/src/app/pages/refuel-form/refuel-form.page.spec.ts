@@ -5,6 +5,7 @@
 // covers: docs/specs/refuel/02-refuel-crud.md#AC-8 (skip toggle reveals reason field)
 // covers: docs/specs/05-car-management.md#AC-13
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
+// covers: docs/bugs/05-decimal-input-comma-dot.md
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import type { Routes } from '@angular/router';
@@ -273,5 +274,46 @@ describe('RefuelFormPage', () => {
 
     // Should not call add when there's no active car
     expect(mockRefuelSvc.add).not.toHaveBeenCalled();
+  });
+
+  // covers: docs/bugs/05-decimal-input-comma-dot.md
+  it('should accept comma and dot in decimal fields without clearing value', async () => {
+    const mockRefuelSvc = createMockRefuelService();
+    const mockCarSvc = createMockCarService({ activeCarId: 'car-abc' });
+    const user = userEvent.setup();
+
+    await render(RefuelFormPage, {
+      providers: [
+        provideRouter(baseRoutes),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: mockRefuelSvc },
+        { provide: CarService, useValue: mockCarSvc },
+        { provide: NavController, useValue: mockNavController() },
+      ],
+    });
+
+    const amountInput = screen.getByLabelText('Kwota w PLN');
+    const mileageInput = screen.getByLabelText('Przebieg w kilometrach');
+    const litersInput = screen.getByLabelText('Ilość litrów (opcjonalnie)');
+
+    // Type with comma in amount, dot in liters
+    await user.type(amountInput, '123,45');
+    await user.type(mileageInput, '125000');
+    await user.type(litersInput, '45.20');
+
+    // Values should not be cleared
+    expect(amountInput).toHaveValue('123,45');
+    expect(litersInput).toHaveValue('45,20');
+
+    await user.click(screen.getByText('Zapisz tankowanie'));
+
+    expect(mockRefuelSvc.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carId: 'car-abc',
+        amount: 123.45,
+        mileage: 125000,
+        liters: 45.2,
+      }),
+    );
   });
 });

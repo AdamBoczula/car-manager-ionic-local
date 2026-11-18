@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "851248035684",
+    "project_id": "carmanager-local",
+    "storage_bucket": "carmanager-local.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:851248035684:android:8d9a2c6f3dd53827cd6c71",
+        "android_client_info": {
+          "package_name": "com.carmanager.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "851248035684-pfndrnl9122f5oipihe3m0be2lcancao.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.carmanager.app",
+            "certificate_hash": "1bb11d65f820bd463264546c63caa6ca4a12e8ce"
+          }
+        },
+        {
+          "client_id": "851248035684-8f0ie453ptbfg0ubv98t0cv2fi2n9r66.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDR5CznBSDAUDendu4WZifbeAahaN2i0M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "851248035684-8f0ie453ptbfg0ubv98t0cv2fi2n9r66.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

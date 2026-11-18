@@ -2,6 +2,8 @@
 import { Injectable, inject, signal, computed, DestroyRef, NgZone } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavController } from '@ionic/angular';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -9,7 +11,7 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
+  signInWithCredential,
   getRedirectResult,
   type User,
 } from 'firebase/auth';
@@ -94,12 +96,23 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
 
     try {
-      // Prefer redirect on mobile (Capacitor WebView doesn't support popup)
-      const isMobile = /android|iphone|ipad/i.test(navigator.userAgent);
+      if (Capacitor.isNativePlatform()) {
+        await GoogleAuth.initialize();
+        const response = await GoogleAuth.signIn();
+        const idToken = response.authentication?.idToken;
+        if (!idToken) {
+          throw new Error('Nie otrzymano tokenu identyfikacyjnego Google.');
+        }
 
-      if (isMobile) {
-        await signInWithRedirect(this.firebaseAuth, provider);
-        // Result will be picked up by handleRedirectResult on page reload
+        const credential = GoogleAuthProvider.credential(idToken);
+        const result = await signInWithCredential(this.firebaseAuth, credential);
+
+        await this.ngZone.run(async () => {
+          if (result.user) {
+            this.currentUser.set(result.user);
+            await this.navController.navigateRoot('/dashboard', { animated: false });
+          }
+        });
         return;
       }
 
@@ -113,9 +126,16 @@ export class AuthService {
         }
       });
     } catch (err: unknown) {
-      // Swallow popup-closed-by-user — user intentionally cancelled
-      const firebaseErr = err as { code?: string };
-      if (firebaseErr?.code === 'auth/popup-closed-by-user') {
+      // Swallow popup-closed-by-user or user cancel — user intentionally cancelled
+      const firebaseErr = err as { code?: string | number; message?: string } | null | undefined;
+      const code = firebaseErr?.code;
+      const message = firebaseErr?.message?.toLowerCase();
+      if (
+        code === 'auth/popup-closed-by-user' ||
+        code === '12501' ||
+        code === 12501 ||
+        message?.includes('cancel')
+      ) {
         return;
       }
       throw err;
@@ -123,6 +143,13 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await GoogleAuth.signOut();
+      } catch {
+        // Ignoruj błąd jeśli użytkownik nie był zalogowany przez Google
+      }
+    }
     await signOut(this.firebaseAuth);
     await this.navController.navigateRoot('/login', { animated: false });
   }

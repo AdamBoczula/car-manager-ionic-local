@@ -11,3 +11,14 @@ test-results/
 
 # OpenCode environment — contains secrets (e.g. GITHUB_TOKEN)
 .opencode/env
+
+# Antigravity agent logs & local env
+.agents/env
+.agents/logs/
+
+# Built Android binaries
+*.apk
+
+# Android local SDK & config
+.android-sdk/
+android/local.properties

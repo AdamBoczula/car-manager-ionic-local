@@ -17,7 +17,7 @@ See `qa-report-template.md` for the report structure.
 
 ## How to Generate
 
-Run the `/qa-review` command in OpenCode, or ask:
+Run the `/qa-review` command (in Antigravity or OpenCode), or ask:
 
 > "Przejrzyj UI/UX aplikacji"
 
@@ -30,9 +30,22 @@ The QA Coordinator will:
 
 ## Related Documentation
 
+### Antigravity / Gemini
+
+- `.agents/skills/qa-review/SKILL.md` — QA Review skill / command
+- `.agents/agents/qa-coordinator.md` — QA Coordinator workflow
+- `.agents/agents/ui-reviewer.md` — UI visual review
+- `.agents/agents/ux-analyzer.md` — UX analysis
+- `.agents/agents/a11y-auditor.md` — Accessibility audit
+- `.agents/agents/responsive-checker.md` — Responsive design check
+
+### OpenCode
+
+- `.opencode/commands/qa-review.md` — QA Review command
 - `.opencode/agents/qa-coordinator.md` — QA Coordinator workflow
 - `.opencode/agents/ui-reviewer.md` — UI visual review
 - `.opencode/agents/ux-analyzer.md` — UX analysis
 - `.opencode/agents/a11y-auditor.md` — Accessibility audit
 - `.opencode/agents/responsive-checker.md` — Responsive design check
+
 - `docs/specs/01-spec-workflow.md` — SDD pipeline with phase [4b]

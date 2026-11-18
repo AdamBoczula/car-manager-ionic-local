@@ -1,4 +1,4 @@
-# Bug: [05] — Bottom sheet „Dodaj auto” ucieka poza ekran (nie da się zapisać)
+# Bug: [06] — Bottom sheet „Dodaj auto” ucieka poza ekran (nie da się zapisać)
 
 **Status:** 🟢 Naprawiony
 **Data zgłoszenia:** 2026-11-17

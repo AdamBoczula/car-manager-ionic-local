@@ -1,7 +1,14 @@
 ---
 name: nx-import
-description: Import, merge, or combine repositories into an Nx workspace using nx import. USE WHEN the user asks to adopt Nx across repos, move projects into a monorepo, or bring code/history from another repository.
+description: >-
+  Import, merge, or combine repositories into an Nx workspace using nx import.
+  Use when the user asks to adopt Nx across repos, move projects into a monorepo,
+  or bring code/history from another repository.
 ---
+
+# Nx Import Skill
+
+Import, merge, or combine repositories into an Nx workspace using `nx import`.
 
 ## Quick Start
 
@@ -34,7 +41,7 @@ Read the nx docs if you have the tools for it.
 
 ### Directory Conventions
 
-- **Always prefer the destination's existing conventions.** Source uses `libs/`but dest uses `packages/`? Import into `packages/` (`nx import <source> packages/foo --source=libs/foo`).
+- **Always prefer the destination's existing conventions.** Source uses `libs/` but dest uses `packages/`? Import into `packages/` (`nx import <source> packages/foo --source=libs/foo`).
 - If dest has no convention (empty workspace), ask the user.
 
 ### Application vs Library Detection
@@ -58,21 +65,19 @@ Before importing, identify whether the source is an **application** or a **libra
 
 ## Common Issues
 
-See [references/COMMON-ISSUES.md](references/COMMON-ISSUES.md) for detailed common issues and fixes.
+See [references/COMMON-ISSUES.md](./references/COMMON-ISSUES.md) for detailed common issues and fixes.
 
 ## Non-Nx Source Issues
 
-See [references/NON-NX-ISSUES.md](references/NON-NX-ISSUES.md) for issues when importing non-Nx workspaces.
+See [references/NON-NX-ISSUES.md](./references/NON-NX-ISSUES.md) for issues when importing non-Nx workspaces.
 
 ## Technology-specific Guidance
 
-Identify technologies in the source repo, then read and apply the matching reference file(s).
+Identify technologies in the source repo, then read and apply the matching reference file(s):
 
-Available references:
-
-- `references/ESLINT.md` — ESLint projects: duplicate `lint`/`eslint:lint` targets, legacy `.eslintrc.*` linting generated files, flat config `.cjs` self-linting, `typescript-eslint` v7/v9 peer dep conflict, mixed ESLint v8+v9 in one workspace.
-- `references/GRADLE.md`
-- `references/JEST.md` — Jest testing: `@nx/jest/plugin` setup, jest.preset.js, testing deps by framework, tsconfig.spec.json, Jest vs Vitest coexistence, Babel transforms, CI atomization.
-- `references/NEXT.md` — Next.js projects: `@nx/next/plugin` targets, `withNx`, Next.js TS config (`noEmit`, `jsx: "preserve"`), auto-installing deps via wrong PM, non-Nx `create-next-app` imports, mixed Next.js+Vite coexistence.
-- `references/TURBOREPO.md`
-- `references/VITE.md` — Vite projects (React, Vue, or both): `@nx/vite/plugin` typecheck target, `resolve.alias`/`__dirname` fixes, framework deps, Vue-specific setup, mixed React+Vue coexistence.
+- [references/ESLINT.md](./references/ESLINT.md) — ESLint projects: duplicate `lint`/`eslint:lint` targets, legacy `.eslintrc.*` linting generated files, flat config `.cjs` self-linting, `typescript-eslint` v7/v9 peer dep conflict, mixed ESLint v8+v9 in one workspace.
+- [references/GRADLE.md](./references/GRADLE.md)
+- [references/JEST.md](./references/JEST.md) — Jest testing: `@nx/jest/plugin` setup, jest.preset.js, testing deps by framework, tsconfig.spec.json, Jest vs Vitest coexistence, Babel transforms, CI atomization.
+- [references/NEXT.md](./references/NEXT.md) — Next.js projects: `@nx/next/plugin` targets, `withNx`, Next.js TS config (`noEmit`, `jsx: "preserve"`), auto-installing deps via wrong PM, non-Nx `create-next-app` imports, mixed Next.js+Vite coexistence.
+- [references/TURBOREPO.md](./references/TURBOREPO.md)
+- [references/VITE.md](./references/VITE.md) — Vite projects (React, Vue, or both): `@nx/vite/plugin` typecheck target, `resolve.alias`/`__dirname` fixes, framework deps, Vue-specific setup, mixed React+Vue coexistence.

@@ -1,6 +1,9 @@
 ---
 name: conventional-commit
-description: Generates conventional commit messages for Car Manager. Analyzes changes and creates formatted commit descriptions. USE WHEN you want to generate a proper commit message.
+description: >-
+  Generates conventional commit messages for Car Manager. Analyzes git changes
+  and creates formatted commit descriptions according to project conventions.
+  Use when you want to generate, review, or propose a commit message.
 ---
 
 # Conventional Commit — Generator

@@ -92,6 +92,9 @@ all read this directory natively).
 | `nx-import`           | Importing external repositories into the workspace                        |
 | `conventional-commit` | Generating conventional commit messages (end of each implementation)      |
 | `anti-ui-slop`        | UI guardrail — enforcing Ionic design system consistency                  |
+| `monitor-ci`          | Nx Cloud CI monitoring & self-healing                                     |
+| `scan-secrets`        | Scanning changed files for accidentally committed secrets                 |
+| `qa-review`           | UI/UX/A11y/Responsive QA review orchestration                             |
 | `angular-developer`   | Angular 22 best practices — signals, `resource`, forms, DI, routing, a11y |
 | `angular-new-app`     | Scaffolding a new Angular app with modern CLI conventions                 |
 
