@@ -52,6 +52,13 @@
         "enabled": true,
         "timeout": 60000,
         "comment": "Firebase MCP — Firestore, Auth, emulators, security rules (firebase-tools is large, needs extra time)"
+      },
+      "ionic-framework": {
+        "type": "remote",
+        "url": "https://ionic-framework-mcp.capawesome.io/mcp",
+        "enabled": true,
+        "timeout": 30000,
+        "comment": "Ionic Framework MCP — Ionic component/API docs and best practices (Capawesome)"
       }
     }
   }
