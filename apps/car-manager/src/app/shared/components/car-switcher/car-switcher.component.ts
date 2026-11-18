@@ -107,7 +107,7 @@ import type { Car } from '../../../core/models/car.model';
       [isOpen]="isModalOpen()"
       (ionModalDidDismiss)="modalDismissed()"
       [initialBreakpoint]="0.55"
-      [breakpoints]="[0, 0.55]"
+      [breakpoints]="[0, 0.55, 0.9, 1]"
     >
       <ng-template>
         <ion-header>
@@ -199,7 +199,7 @@ import type { Car } from '../../../core/models/car.model';
       [isOpen]="isEditModalOpen()"
       (ionModalDidDismiss)="editModalDismissed()"
       [initialBreakpoint]="0.6"
-      [breakpoints]="[0, 0.6]"
+      [breakpoints]="[0, 0.6, 0.9, 1]"
     >
       <ng-template>
         <ion-header>
