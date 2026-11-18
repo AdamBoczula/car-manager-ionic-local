@@ -1,0 +1,31 @@
+# Keep line endings stable across operating systems.
+#
+# Why this file exists: Prettier enforces `endOfLine: "lf"` and ESLint reports a
+# `Delete ␍` error for every CRLF line. On Windows with `core.autocrlf=true`, git
+# checked files out as CRLF, producing ~3660 lint errors locally while CI
+# (Linux) stayed green. The blobs committed in git are already LF — this file
+# makes the Windows working tree match them.
+#
+# `eol=lf` overrides the local `core.autocrlf` setting for text files.
+* text=auto eol=lf
+
+# Binary assets must never be converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.apk binary
+*.jar binary
+*.keystore binary
+
+# Windows batch scripts require CRLF to run correctly (e.g. android/gradlew.bat).
+# `-text` leaves them untouched so git never normalizes or warns about them.
+*.bat -text
+*.cmd -text
+*.ps1 -text

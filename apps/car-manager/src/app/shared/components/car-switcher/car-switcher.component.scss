@@ -58,4 +58,41 @@
   &__delete-wrapper {
     padding-left: 8px;
   }
+
+  // bugfix: docs/bugs/10-native-keyboard-integration.md
+  // Self-sizing card modal: the host fills the screen so Ionic centres the
+  // card, the card itself is only as tall as the form (no dead space under the
+  // submit button) and is capped to the viewport, where ion-content scrolls
+  // instead of overflowing — relevant when the keyboard shrinks the viewport.
+  //
+  // `!important` is required: Ionic declares `--height: 100%` on the modal host
+  // in its own stylesheet and only a content-sized `--height` makes ion-content
+  // size itself to its content (see ion-content `readSizeToContent`).
+  &__card-modal {
+    --width: min(100%, 480px);
+    --height: auto !important;
+    --max-height: calc(100% - 32px);
+    --border-radius: 16px;
+  }
+
+  &__modal-content {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --padding-top: 8px;
+    --padding-bottom: calc(16px + var(--ion-safe-area-bottom, 0px));
+  }
+
+  &__submit {
+    margin-top: 24px;
+    margin-bottom: 8px;
+  }
+
+  &__sheet-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 24px;
+    margin-bottom: 8px;
+  }
 }

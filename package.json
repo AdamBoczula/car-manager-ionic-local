@@ -5,6 +5,7 @@
   "scripts": {
     "postinstall": "node scripts/setup-environments.js",
     "start": "nx serve car-manager",
+    "dev:phone": "node scripts/dev-phone.mjs",
     "build": "nx build car-manager",
     "lint": "nx lint car-manager",
     "lint:all": "nx run-many -t lint",
@@ -35,6 +36,7 @@
     "@capacitor/android": "^8.6.0",
     "@capacitor/core": "^8.6.0",
     "@capacitor/ios": "^8.6.0",
+    "@capacitor/keyboard": "^8.0.6",
     "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
     "@ionic/angular": "^9.0.10",
     "@ionic/core": "^9.0.10",

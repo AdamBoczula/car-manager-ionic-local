@@ -1,8 +1,9 @@
 # Bug: [06] — Bottom sheet „Dodaj auto” ucieka poza ekran (nie da się zapisać)
 
-**Status:** 🟢 Naprawiony
+**Status:** 🟡 Częściowo naprawiony — poprawka breakpointów nie wystarczyła,
+pełne rozwiązanie w [bug 09](./09-car-switcher-sheet-scroll-focus.md)
 **Data zgłoszenia:** 2026-11-17
-**Data naprawy:** 2026-11-17
+**Data naprawy:** 2026-11-17 (breakpointy) → 2026-11-18 (layout arkusza)
 **Priorytet:** P0 (krytyczny)
 **Typ:** Błąd konfiguracji UI (Ionic sheet modal)
 
@@ -107,3 +108,18 @@ arkusza przycisk „Dodaj auto" znajduje się w całości w viewportcie (widok `
   jeśli zawiera `ion-footer` z akcją — inaczej stopka może wypaść poza ekran.
 - Preferuj `--height: auto` dla arkuszy o zmiennej wysokości treści.
 - Weryfikuj arkusze na niskich viewportach (`390 × 664`, `360 × 640`).
+
+---
+
+## Uzupełnienie (2026-11-18) — dlaczego to nie było pełne rozwiązanie
+
+Dodanie breakpointów `[0, 0.55, 0.9, 1]` usuwało tylko objaw:
+
+1. Arkusz nadal **otwierał się na `0.55`** — przycisk był poza ekranem do momentu,
+   aż użytkownik sam odkryje gest przeciągnięcia uchwytu.
+2. `ion-footer` z akcją był **przypięty** do wrappera, więc `ion-content` dostawał
+   pełną wysokość (`scrollHeight === clientHeight`) i nigdy się nie przewijał.
+3. Po otwarciu klawiatury wirtualnej (viewport `390 × 360`) przycisk lądował
+   całkowicie poza ekranem — arkusz nie reagował na `focus`.
+
+Pełna analiza i poprawka: [bug 09](./09-car-switcher-sheet-scroll-focus.md).

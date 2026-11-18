@@ -1,4 +1,5 @@
 // spec: docs/specs/05-car-management.md
+// covers: docs/bugs/10-native-keyboard-integration.md
 // covers: docs/specs/05-car-management.md#AC-8, AC-9, AC-10, AC-15, AC-16, AC-17, AC-18, AC-19
 import { render, screen } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
@@ -224,6 +225,69 @@ describe('CarSwitcherComponent', () => {
       expect(emitted).toHaveBeenCalledWith({
         name: 'Basic',
       });
+    });
+
+    // bugfix: docs/bugs/10-native-keyboard-integration.md
+    it('should render both car dialogs as self-sizing card modals, not sheets', async () => {
+      const cars = [createCar()];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar: cars[0] },
+      });
+
+      // A sheet keeps ion-content at the wrapper height and only translates it,
+      // so it leaves dead space below the submit button (or pushes it off
+      // screen). The card modal is exactly as tall as the form instead.
+      const modals = Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('ion-modal'),
+      );
+
+      expect(modals.length).toBe(2);
+      for (const modal of modals) {
+        expect(modal.hasAttribute('initialbreakpoint')).toBe(false);
+        expect(modal.hasAttribute('breakpoints')).toBe(false);
+        expect(modal.classList.contains('car-switcher__card-modal')).toBe(true);
+      }
+    });
+
+    // bugfix: docs/bugs/10-native-keyboard-integration.md
+    it('should keep the add-car submit button inside the scrollable content', async () => {
+      const cars = [createCar()];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar: cars[0] },
+      });
+      fixture.componentInstance.openAddModal();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.querySelector('[data-testid="add-car-submit"]')).not.toBeNull();
+
+      // A pinned <ion-footer> takes no room from <ion-content>, which makes the
+      // content unscrollable and pushes the action below the fold.
+      const modals = Array.from(document.querySelectorAll('ion-modal'));
+      expect(modals.length).toBeGreaterThan(0);
+      for (const modal of modals) {
+        const footer =
+          modal.querySelector('ion-footer') ??
+          modal.shadowRoot?.querySelector('ion-footer') ??
+          null;
+        expect(footer).toBeNull();
+      }
+    });
+
+    // bugfix: docs/bugs/10-native-keyboard-integration.md
+    it('should hide the native keyboard when the add-car dialog is cancelled', async () => {
+      const cars = [createCar()];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar: cars[0] },
+      });
+
+      const hide = vi.fn().mockResolvedValue(undefined);
+      const component = fixture.componentInstance;
+      Object.defineProperty(component, 'keyboard', { value: { hide }, configurable: true });
+
+      await component.dismissKeyboard();
+
+      expect(hide).toHaveBeenCalledTimes(1);
     });
 
     it('should reset all fields on cancel', async () => {

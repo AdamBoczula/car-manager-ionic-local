@@ -12,6 +12,7 @@ import './core/firebase';
 import { appRoutes } from './app.routes';
 import { StorageService } from './core/services/storage.service';
 import { MigrationService } from './core/services/migration.service';
+import { KeyboardService } from './core/services/keyboard.service';
 
 /**
  * APP_INITIALIZER: sekwencja startowa aplikacji.
@@ -19,15 +20,19 @@ import { MigrationService } from './core/services/migration.service';
  *
  * 1. Inicjalizacja Ionic Storage
  * 2. Migracja schematu danych (jeśli potrzebna)
- * 3. Reszta aplikacji (Auth, CarService, Dashboard) ładuje się później
+ * 3. Nasłuch klawiatury natywnej (brak efektu w przeglądarce)
+ * 4. Reszta aplikacji (Auth, CarService, Dashboard) ładuje się później
  */
 function initializeApp(
   storageService: StorageService,
   migrationService: MigrationService,
+  keyboardService: KeyboardService,
 ): () => Promise<void> {
   return async () => {
     await storageService.init();
     await migrationService.run();
+    // bugfix: docs/bugs/10-native-keyboard-integration.md
+    await keyboardService.init();
   };
 }
 
@@ -52,7 +57,7 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initializeApp,
-      deps: [StorageService, MigrationService],
+      deps: [StorageService, MigrationService, KeyboardService],
       multi: true,
     },
   ],

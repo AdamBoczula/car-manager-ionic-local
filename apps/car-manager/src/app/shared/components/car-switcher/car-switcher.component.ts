@@ -1,6 +1,7 @@
 // spec: docs/specs/05-car-management.md
 // bugfix: docs/bugs/03-list-car-switcher-and-repair-back.md
 // bugfix: docs/bugs/06-sheet-modal-offscreen-submit.md
+// bugfix: docs/bugs/10-native-keyboard-integration.md
 import { Component, inject, input, output, signal, viewChild, NgZone } from '@angular/core';
 import {
   AlertController,
@@ -17,12 +18,12 @@ import {
   IonButtons,
   IonContent,
   IonInput,
-  IonFooter,
   IonNote,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { chevronDown, checkmark, add, copyOutline, create, trash } from 'ionicons/icons';
 import type { Car } from '../../../core/models/car.model';
+import { KeyboardService } from '../../../core/services/keyboard.service';
 
 @Component({
   selector: 'app-car-switcher',
@@ -41,7 +42,6 @@ import type { Car } from '../../../core/models/car.model';
     IonButtons,
     IonContent,
     IonInput,
-    IonFooter,
     IonNote,
   ],
   template: `
@@ -104,22 +104,31 @@ import type { Car } from '../../../core/models/car.model';
     </ion-popover>
 
     <!-- Add car modal -->
+    <!-- bugfix: docs/bugs/10-native-keyboard-integration.md
+         Rendered as a self-sizing card modal, not a bottom sheet: a sheet keeps
+         ion-content at the full wrapper height and only translates the wrapper,
+         so it either leaves dead space under the submit button or pushes the
+         button off-screen. The card is exactly as tall as the form, and the
+         native keyboard resize (adjustResize + resizeOnFullScreen) keeps it
+         above the keyboard. -->
     <ion-modal
+      #addCarModal
       [isOpen]="isModalOpen()"
       (ionModalDidDismiss)="modalDismissed()"
-      [initialBreakpoint]="0.55"
-      [breakpoints]="[0, 0.55, 0.9, 1]"
+      class="car-switcher__card-modal"
     >
       <ng-template>
         <ion-header>
           <ion-toolbar>
             <ion-title>Dodaj nowe auto</ion-title>
             <ion-buttons slot="end">
-              <ion-button (click)="cancelModal()" aria-label="Anuluj"> Anuluj </ion-button>
+              <ion-button (click)="cancelModal(); dismissKeyboard()" aria-label="Anuluj">
+                Anuluj
+              </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
-        <ion-content class="ion-padding">
+        <ion-content class="car-switcher__modal-content">
           <ion-input
             label="Nazwa auta"
             labelPlacement="stacked"
@@ -179,39 +188,41 @@ import type { Car } from '../../../core/models/car.model';
               <span class="car-switcher__vin-copied" role="status">Skopiowano!</span>
             }
           </div>
+
+          <ion-button
+            expand="block"
+            [disabled]="!newCarName().trim()"
+            (click)="addCar()"
+            class="car-switcher__submit"
+            data-testid="add-car-submit"
+          >
+            Dodaj auto
+          </ion-button>
         </ion-content>
-        <ion-footer>
-          <ion-toolbar>
-            <ion-button
-              expand="block"
-              [disabled]="!newCarName().trim()"
-              (click)="addCar()"
-              data-testid="add-car-submit"
-            >
-              Dodaj auto
-            </ion-button>
-          </ion-toolbar>
-        </ion-footer>
       </ng-template>
     </ion-modal>
 
     <!-- Edit car modal -->
+    <!-- bugfix: docs/bugs/10-native-keyboard-integration.md — same self-sizing
+         card layout as the add-car modal. -->
     <ion-modal
+      #editCarModal
       [isOpen]="isEditModalOpen()"
       (ionModalDidDismiss)="editModalDismissed()"
-      [initialBreakpoint]="0.6"
-      [breakpoints]="[0, 0.6, 0.9, 1]"
+      class="car-switcher__card-modal"
     >
       <ng-template>
         <ion-header>
           <ion-toolbar>
             <ion-title>Edytuj auto</ion-title>
             <ion-buttons slot="end">
-              <ion-button (click)="cancelEditModal()" aria-label="Zamknij"> Zamknij </ion-button>
+              <ion-button (click)="cancelEditModal(); dismissKeyboard()" aria-label="Zamknij">
+                Zamknij
+              </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
-        <ion-content class="ion-padding">
+        <ion-content class="car-switcher__modal-content">
           <ion-input
             label="Nazwa auta"
             labelPlacement="stacked"
@@ -255,31 +266,27 @@ import type { Car } from '../../../core/models/car.model';
             aria-label="Numer VIN"
             data-testid="edit-car-vin-input"
           />
-        </ion-content>
-        <ion-footer>
-          <ion-toolbar>
-            <ion-note slot="start" class="car-switcher__delete-wrapper">
-              <ion-button
-                fill="clear"
-                color="danger"
-                size="small"
-                (click)="deleteEditingCar()"
-                data-testid="delete-car-button"
-              >
-                <ion-icon name="trash" slot="start" />
-                Usuń auto
-              </ion-button>
-            </ion-note>
+
+          <div class="car-switcher__sheet-actions">
             <ion-button
-              slot="end"
+              fill="clear"
+              color="danger"
+              size="small"
+              (click)="deleteEditingCar()"
+              data-testid="delete-car-button"
+            >
+              <ion-icon name="trash" slot="start" />
+              Usuń auto
+            </ion-button>
+            <ion-button
               [disabled]="!editCarName().trim()"
               (click)="saveEdit()"
               data-testid="save-edit-button"
             >
               Zapisz
             </ion-button>
-          </ion-toolbar>
-        </ion-footer>
+          </div>
+        </ion-content>
       </ng-template>
     </ion-modal>
   `,
@@ -323,6 +330,7 @@ export class CarSwitcherComponent {
 
   private readonly alertController = inject(AlertController);
   private readonly ngZone = inject(NgZone);
+  private readonly keyboard = inject(KeyboardService);
 
   // ── Add car modal state ──
 
@@ -412,6 +420,19 @@ export class CarSwitcherComponent {
     this.closePopover();
     this.isModalOpen.set(true);
     this.resetNewCarForm();
+  }
+
+  /**
+   * Dismiss the native keyboard.
+   *
+   * bugfix: docs/bugs/10-native-keyboard-integration.md
+   *
+   * Called when a card modal is closed from its chrome (Anuluj / Zamknij) so the
+   * keyboard does not stay on screen above the dashboard. No-op on web, where
+   * closing the modal already blurs the field.
+   */
+  async dismissKeyboard(): Promise<void> {
+    await this.keyboard.hide();
   }
 
   /** Cancel the add car modal. */
