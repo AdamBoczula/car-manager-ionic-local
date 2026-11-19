@@ -1,9 +1,12 @@
 # Bug: [06] — Bottom sheet „Dodaj auto” ucieka poza ekran (nie da się zapisać)
 
-**Status:** 🟡 Częściowo naprawiony — poprawka breakpointów nie wystarczyła,
-pełne rozwiązanie w [bug 09](./09-car-switcher-sheet-scroll-focus.md)
+**Status:** 🟢 Zamknięty — przycisk akcji jest dziś w `ion-content` karty o wysokości
+treści, więc problem „poza ekranem / pod klawiaturą” nie może wystąpić. Rozwiązanie
+z [bug 09](./09-car-switcher-sheet-scroll-focus.md) (breakpointy) było niepełne,
+docelowe jest w [bug 10](./10-native-keyboard-integration.md). Otwarte pozostaje
+wyłącznie manual QA na urządzeniu (zablokowane przez [bug 11](./11-broken-android-build.md)).
 **Data zgłoszenia:** 2026-11-17
-**Data naprawy:** 2026-11-17 (breakpointy) → 2026-11-18 (layout arkusza)
+**Data naprawy:** 2026-11-17 (breakpointy) → 2026-11-18 (layout arkusza) → 2026-11-18 (karta o wysokości treści)
 **Priorytet:** P0 (krytyczny)
 **Typ:** Błąd konfiguracji UI (Ionic sheet modal)
 
@@ -123,3 +126,28 @@ Dodanie breakpointów `[0, 0.55, 0.9, 1]` usuwało tylko objaw:
    całkowicie poza ekranem — arkusz nie reagował na `focus`.
 
 Pełna analiza i poprawka: [bug 09](./09-car-switcher-sheet-scroll-focus.md).
+
+## Zamknięcie (2026-11-19) — kontrakt, którego dziś pilnują testy
+
+Arkusz nie jest już arkuszem: oba dialogi to **modale-karty o wysokości treści**,
+a przycisk akcji siedzi **w `ion-content`**, nie w `ion-footer`
+(rozwiązanie: [bug 10](./10-native-keyboard-integration.md)). Tym samym żaden z
+trzech objawów powyżej nie może wystąpić — nie ma breakpointu startowego,
+`ion-content` scrolluje się sam, a `adjustResize` + `resizeOnFullScreen` kurczą
+kartę nad klawiaturą.
+
+Kontrakt pilnowany testami:
+
+| Warstwa   | Plik                                                                                     | Co sprawdza                                                                                                |
+| --------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Component | `apps/car-manager/src/app/shared/components/car-switcher/car-switcher.component.spec.ts` | brak `breakpoints` / `initialBreakpoint` / `expandToScroll`, brak `ion-footer`, akcja w `ion-content`      |
+| E2E       | `apps/car-manager-e2e/src/car-switcher-sheet.spec.ts`                                    | to samo na żywej stronie: `modal.breakpoints === []`, `initialBreakpoint === 0`                            |
+| E2E       | `apps/car-manager-e2e/src/car-switcher-sheet-scroll.spec.ts`                             | `390 × 664`: karta bez scrolla i akcja widoczna od otwarcia; `390 × 360`: karta w ekranie, akcja osiągalna |
+
+**Naprawione pliki (stan końcowy):**
+
+| Plik                                                                                  | Zmiana                                                                                      |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `apps/car-manager/src/app/shared/components/car-switcher/car-switcher.component.ts`   | `ion-footer` → przycisk w `ion-content`; brak breakpointów (od buga 10)                     |
+| `apps/car-manager/src/app/shared/components/car-switcher/car-switcher.component.scss` | `__card-modal` / `__modal-content` — karta o wysokości treści (od buga 10)                  |
+| `apps/car-manager-e2e/src/car-switcher-sheet.spec.ts`                                 | przepisany na kontrakt karty (wcześniej asertował breakpoint `≥ 0.9` — czerwony po bugu 10) |
