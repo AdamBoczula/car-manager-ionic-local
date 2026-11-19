@@ -249,7 +249,27 @@ describe('CarSwitcherComponent', () => {
       }
     });
 
-    // bugfix: docs/bugs/10-native-keyboard-integration.md
+    // covers: docs/bugs/10-native-keyboard-integration.md#AC-9
+    it('should give both card modals an accessible name', async () => {
+      const cars = [createCar()];
+      const { fixture } = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar: cars[0] },
+      });
+
+      // Ionic inherits `aria-label` from <ion-modal> onto its internal
+      // role="dialog" wrapper — that is the node axe checks, and without a name
+      // it reports aria-dialog-name (serious) for every open modal.
+      const labels = Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('ion-modal'),
+      ).map(
+        (modal) =>
+          modal.shadowRoot?.querySelector('[role="dialog"]')?.getAttribute('aria-label') ?? null,
+      );
+
+      expect(labels).toEqual(['Dodaj nowe auto', 'Edytuj auto']);
+    });
+
+    // covers: docs/bugs/10-native-keyboard-integration.md#AC-6
     it('should keep the add-car submit button inside the scrollable content', async () => {
       const cars = [createCar()];
       const { fixture } = await render(CarSwitcherComponent, {
@@ -259,7 +279,13 @@ describe('CarSwitcherComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      expect(document.querySelector('[data-testid="add-car-submit"]')).not.toBeNull();
+      const submit = document.querySelector('[data-testid="add-car-submit"]');
+      expect(submit).not.toBeNull();
+
+      // The action belongs to <ion-content>, so it scrolls with the form.
+      const content = submit!.closest('ion-content');
+      expect(content).not.toBeNull();
+      expect(content!.contains(submit)).toBe(true);
 
       // A pinned <ion-footer> takes no room from <ion-content>, which makes the
       // content unscrollable and pushes the action below the fold.
@@ -274,20 +300,21 @@ describe('CarSwitcherComponent', () => {
       }
     });
 
-    // bugfix: docs/bugs/10-native-keyboard-integration.md
-    it('should hide the native keyboard when the add-car dialog is cancelled', async () => {
+    // covers: docs/bugs/10-native-keyboard-integration.md#AC-6
+    it('should keep the edit-car actions inside the scrollable content', async () => {
       const cars = [createCar()];
       const { fixture } = await render(CarSwitcherComponent, {
         componentInputs: { cars, activeCar: cars[0] },
       });
+      fixture.componentInstance.openEditModal(cars[0], new Event('click'));
+      fixture.detectChanges();
+      await fixture.whenStable();
 
-      const hide = vi.fn().mockResolvedValue(undefined);
-      const component = fixture.componentInstance;
-      Object.defineProperty(component, 'keyboard', { value: { hide }, configurable: true });
-
-      await component.dismissKeyboard();
-
-      expect(hide).toHaveBeenCalledTimes(1);
+      for (const testId of ['save-edit-button', 'delete-car-button']) {
+        const action = document.querySelector(`[data-testid="${testId}"]`);
+        expect(action).not.toBeNull();
+        expect(action!.closest('ion-content')?.contains(action)).toBe(true);
+      }
     });
 
     it('should reset all fields on cancel', async () => {
@@ -311,10 +338,129 @@ describe('CarSwitcherComponent', () => {
     });
   });
 
-  describe('activeCarName', () => {
-    it('should return the active car name when set', () => {
-      // Access via rendered component's method
-      expect(true).toBe(true); // tested via rendering tests above
+  // ── Native keyboard dismissal ──
+  // bugfix: docs/bugs/10-native-keyboard-integration.md
+
+  // covers: docs/bugs/10-native-keyboard-integration.md#AC-8
+  describe('keyboard dismissal on every close path', () => {
+    async function renderWithSpy() {
+      const cars = [createCar()];
+      const result = await render(CarSwitcherComponent, {
+        componentInputs: { cars, activeCar: cars[0] },
+      });
+      const hide = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(result.fixture.componentInstance, 'keyboard', {
+        value: { hide },
+        configurable: true,
+      });
+      return { ...result, cars, hide };
+    }
+
+    /**
+     * The dialog chrome by visible label. Stencil's role mapping is not stubbed
+     * here, so `getByRole` cannot see these buttons.
+     */
+    function closeButton(label: 'Anuluj' | 'Zamknij'): HTMLElement {
+      const visible = Array.from(document.querySelectorAll<HTMLElement>('ion-button')).filter(
+        (el) => el.textContent?.trim() === label,
+      );
+      // Each `<ion-modal>` is teleported into its own host, so an earlier test in
+      // this file can leave a copy behind — the last (most recent) one is live.
+      expect(visible.length).toBeGreaterThan(0);
+      return visible[visible.length - 1];
+    }
+
+    it('should hide the keyboard when Anuluj is clicked', async () => {
+      const { fixture, hide } = await renderWithSpy();
+      fixture.componentInstance.openAddModal();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      await userEvent.click(closeButton('Anuluj'));
+      await fixture.whenStable();
+
+      expect(hide).toHaveBeenCalledTimes(1);
+      expect(fixture.componentInstance.isModalOpen()).toBe(false);
+    });
+
+    it('should hide the keyboard when Zamknij is clicked', async () => {
+      const { fixture, hide, cars } = await renderWithSpy();
+      fixture.componentInstance.openEditModal(cars[0], new Event('click'));
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      await userEvent.click(closeButton('Zamknij'));
+      await fixture.whenStable();
+
+      expect(hide).toHaveBeenCalledTimes(1);
+      expect(fixture.componentInstance.isEditModalOpen()).toBe(false);
+    });
+
+    it('should hide the keyboard when the add-car dialog is dismissed by the backdrop', async () => {
+      const { fixture, hide } = await renderWithSpy();
+
+      fixture.componentInstance.modalDismissed();
+
+      expect(hide).toHaveBeenCalledTimes(1);
+    });
+
+    it('should hide the keyboard when the edit-car dialog is dismissed by the backdrop', async () => {
+      const { fixture, hide } = await renderWithSpy();
+
+      fixture.componentInstance.editModalDismissed();
+
+      expect(hide).toHaveBeenCalledTimes(1);
+    });
+
+    /**
+     * Reproduce the real close sequence: the action switches `isOpen` off and
+     * Ionic then fires `ionModalDidDismiss`, where the keyboard is dismissed.
+     */
+    it('should hide the keyboard after saving a new car', async () => {
+      const { fixture, hide } = await renderWithSpy();
+      fixture.componentInstance.openAddModal();
+      fixture.componentInstance.newCarName.set('Toyota');
+
+      fixture.componentInstance.addCar();
+      expect(fixture.componentInstance.isModalOpen()).toBe(false);
+      fixture.componentInstance.modalDismissed();
+
+      expect(hide).toHaveBeenCalledTimes(1);
+    });
+
+    it('should hide the keyboard after saving an edit', async () => {
+      const { fixture, hide, cars } = await renderWithSpy();
+      fixture.componentInstance.openEditModal(cars[0], new Event('click'));
+      fixture.componentInstance.editCarName.set('Honda');
+
+      fixture.componentInstance.saveEdit();
+      expect(fixture.componentInstance.isEditModalOpen()).toBe(false);
+      fixture.componentInstance.editModalDismissed();
+
+      expect(hide).toHaveBeenCalledTimes(1);
+    });
+
+    it('should hide the keyboard after deleting a car', async () => {
+      const { fixture, hide, cars } = await renderWithSpy();
+      fixture.componentInstance.openEditModal(cars[0], new Event('click'));
+
+      fixture.componentInstance.deleteEditingCar();
+      expect(fixture.componentInstance.isEditModalOpen()).toBe(false);
+      fixture.componentInstance.editModalDismissed();
+
+      expect(hide).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not hide the keyboard while the dialog is still open', async () => {
+      const { fixture, hide } = await renderWithSpy();
+      fixture.componentInstance.openAddModal();
+      // Empty name — the dialog stays open, so the keyboard must stay too.
+      fixture.componentInstance.newCarName.set('   ');
+
+      fixture.componentInstance.addCar();
+
+      expect(hide).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.isModalOpen()).toBe(true);
     });
   });
 

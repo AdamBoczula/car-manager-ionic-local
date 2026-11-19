@@ -115,6 +115,7 @@ import { KeyboardService } from '../../../core/services/keyboard.service';
       #addCarModal
       [isOpen]="isModalOpen()"
       (ionModalDidDismiss)="modalDismissed()"
+      aria-label="Dodaj nowe auto"
       class="car-switcher__card-modal"
     >
       <ng-template>
@@ -122,9 +123,7 @@ import { KeyboardService } from '../../../core/services/keyboard.service';
           <ion-toolbar>
             <ion-title>Dodaj nowe auto</ion-title>
             <ion-buttons slot="end">
-              <ion-button (click)="cancelModal(); dismissKeyboard()" aria-label="Anuluj">
-                Anuluj
-              </ion-button>
+              <ion-button (click)="cancelModal()" aria-label="Anuluj">Anuluj</ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
@@ -209,6 +208,7 @@ import { KeyboardService } from '../../../core/services/keyboard.service';
       #editCarModal
       [isOpen]="isEditModalOpen()"
       (ionModalDidDismiss)="editModalDismissed()"
+      aria-label="Edytuj auto"
       class="car-switcher__card-modal"
     >
       <ng-template>
@@ -216,9 +216,7 @@ import { KeyboardService } from '../../../core/services/keyboard.service';
           <ion-toolbar>
             <ion-title>Edytuj auto</ion-title>
             <ion-buttons slot="end">
-              <ion-button (click)="cancelEditModal(); dismissKeyboard()" aria-label="Zamknij">
-                Zamknij
-              </ion-button>
+              <ion-button (click)="cancelEditModal()" aria-label="Zamknij">Zamknij</ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
@@ -267,7 +265,7 @@ import { KeyboardService } from '../../../core/services/keyboard.service';
             data-testid="edit-car-vin-input"
           />
 
-          <div class="car-switcher__sheet-actions">
+          <div class="car-switcher__form-actions">
             <ion-button
               fill="clear"
               color="danger"
@@ -427,9 +425,10 @@ export class CarSwitcherComponent {
    *
    * bugfix: docs/bugs/10-native-keyboard-integration.md
    *
-   * Called when a card modal is closed from its chrome (Anuluj / Zamknij) so the
-   * keyboard does not stay on screen above the dashboard. No-op on web, where
-   * closing the modal already blurs the field.
+   * Called from the `ionModalDidDismiss` handlers, which fire on every close
+   * path — Anuluj / Zamknij, a backdrop tap, save and delete — so the keyboard
+   * never stays on screen above the dashboard. No-op on web, where closing the
+   * dialog already blurs the field.
    */
   async dismissKeyboard(): Promise<void> {
     await this.keyboard.hide();
@@ -441,10 +440,11 @@ export class CarSwitcherComponent {
     this.resetNewCarForm();
   }
 
-  /** Handles modal dismissal (backdrop). */
+  /** Handles modal dismissal (backdrop, or after a successful save). */
   modalDismissed(): void {
     this.isModalOpen.set(false);
     this.resetNewCarForm();
+    void this.dismissKeyboard();
   }
 
   /** Set new car name from ionInput event. */
@@ -509,10 +509,11 @@ export class CarSwitcherComponent {
     this.resetEditForm();
   }
 
-  /** Handles edit modal dismissal (backdrop). */
+  /** Handles edit modal dismissal (backdrop, or after a successful save/delete). */
   editModalDismissed(): void {
     this.isEditModalOpen.set(false);
     this.resetEditForm();
+    void this.dismissKeyboard();
   }
 
   /** Save the edited car data and emit. */
