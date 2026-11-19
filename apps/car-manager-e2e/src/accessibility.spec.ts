@@ -1,7 +1,7 @@
 // covers: docs/specs/accessibility/static-audit.md
 // Accessibility audit tests using @axe-core/playwright
 import { test, expect } from '@playwright/test';
-import { checkAccessibility } from './utils/accessibility-helpers';
+import { checkAccessibility, KNOWN_IONIC_VIOLATIONS } from './utils/accessibility-helpers';
 import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helpers';
 import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
@@ -11,27 +11,6 @@ const TEST_USER = {
   password: 'Password123!',
   displayName: 'A11y Test User',
 };
-
-/**
- * Known Ionic component-level violations that are not actionable within our
- * app code:
- *   - role-img-alt: Ionic <ion-icon> uses role="img" without aria-label.
- *     Fixed in newer Ionic versions; tracked upstream.
- *   - meta-viewport: Ionic sets user-scalable=no for native app UX.
- *     Acceptable for Capacitor apps; PWA users can still zoom via browser
- *     settings.
- *   - label-content-name-mismatch: Ionic car switcher button has aria-label
- *     "Wybierz auto" but visible text is the selected car name. The label is
- *     intentionally broader than the visible text.
- *   - color-contrast: Orange (#e67e22) repair button on white fails WCAG AA.
- *     Themed color; tracked as a design debt.
- */
-const KNOWN_IONIC_VIOLATIONS = [
-  'role-img-alt',
-  'meta-viewport',
-  'label-content-name-mismatch',
-  'color-contrast',
-];
 
 test.describe('Accessibility – Statyczny audyt a11y', () => {
   test.beforeAll(async () => await skipIfFirebaseUnavailable());

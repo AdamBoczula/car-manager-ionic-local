@@ -1,9 +1,19 @@
 // covers: docs/bugs/06-sheet-modal-offscreen-submit.md
+// covers: docs/bugs/10-native-keyboard-integration.md#AC-6
 //
-// Regression test for the bottom sheet that opened at breakpoint 0.55 with
-// breakpoints [0, 0.55] — no higher breakpoint existed, so the sheet could not
-// be expanded and the "Dodaj auto" button rendered ~294px below the viewport
-// with no way to reach it.
+// Regression test for the add-car dialog on the worst-case phone viewport.
+//
+// History: the dialog used to be a bottom sheet that opened at breakpoint 0.55
+// with breakpoints [0, 0.55] — no higher breakpoint existed, so the sheet could
+// not be expanded and "Dodaj auto" rendered ~294px below the viewport. A later
+// fix added higher breakpoints, and the dialog is now a self-sizing card modal
+// with no breakpoints at all (docs/bugs/10).
+//
+// The contract asserted here is the current one: the dialog has no breakpoint
+// configuration and still puts the submit button fully on screen — the original
+// user-facing symptom of bug 06. Layout details and keyboard behaviour live in
+// `car-switcher-sheet-scroll.spec.ts`; this spec only drives the Firebase-backed
+// dashboard.
 //
 // Requires the Firebase Auth Emulator for reliable IndexedDB seeding.
 // Run locally with: `npx firebase emulators:start`
@@ -12,14 +22,14 @@ import { navigateToDashboard, waitForIonicPage } from './utils/navigation-helper
 import { seedAuthUser, clearAuthState, skipIfFirebaseUnavailable } from './utils/auth-helpers';
 import { clearStorage } from './utils/db-helpers';
 
-/** Short phone viewport — the worst case for a sheet modal footer. */
+/** Short phone viewport — the worst case for a dialog submit button. */
 const PHONE_VIEWPORT = { width: 390, height: 664 } as const;
 
-test.describe('Car switcher – sheet modal reachability', () => {
+test.describe('Car switcher – add-car dialog reachability', () => {
   test.use({ viewport: PHONE_VIEWPORT });
   test.beforeAll(async () => await skipIfFirebaseUnavailable());
 
-  async function openAddCarSheet(page: Page): Promise<void> {
+  async function openAddCarDialog(page: Page): Promise<void> {
     await clearAuthState(page).catch(() => {});
     await clearStorage(page).catch(() => {});
     await seedAuthUser(page, {
@@ -42,46 +52,48 @@ test.describe('Car switcher – sheet modal reachability', () => {
     await page.waitForTimeout(1000);
   }
 
-  test('add-car sheet can be expanded so the submit button is on-screen', async ({ page }) => {
-    await openAddCarSheet(page);
+  test('add-car dialog shows the submit button without expanding anything', async ({ page }) => {
+    await openAddCarDialog(page);
 
+    // No expand gesture, no programmatic breakpoint call: the button must be
+    // reachable immediately.
     const submit = page.locator('[data-testid="add-car-submit"]');
     await expect(submit).toBeVisible({ timeout: 10000 });
-
-    // Expand the sheet to its top breakpoint — the action a user would take
-    // by dragging the handle, driven through Ionic's public API for determinism.
-    await page.evaluate(async () => {
-      const modal = document.querySelector('ion-modal.show-modal') as HTMLElement & {
-        setCurrentBreakpoint?: (breakpoint: number) => Promise<void>;
-      };
-      await modal?.setCurrentBreakpoint?.(1);
-    });
-    await page.waitForTimeout(1000);
+    await expect(submit).toBeInViewport({ ratio: 1 });
 
     const box = await submit.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.y + box!.height).toBeLessThanOrEqual(PHONE_VIEWPORT.height);
   });
 
-  test('add-car sheet exposes a higher breakpoint than its initial one', async ({ page }) => {
-    await openAddCarSheet(page);
+  // covers: docs/bugs/10-native-keyboard-integration.md#AC-6
+  test('add-car dialog no longer relies on breakpoints', async ({ page }) => {
+    await openAddCarDialog(page);
 
-    // Guard against the original config `[0, 0.55]`, which left no room to grow.
-    const breakpoints = await page.evaluate(() => {
+    // Bug 06 was fixed by adding breakpoints; bug 10 replaced the sheet with a
+    // content-sized card, so a breakpoint configuration is now the regression.
+    const config = await page.evaluate(() => {
       const modal = document.querySelector('ion-modal.show-modal') as HTMLElement & {
         breakpoints?: number[];
-      };
-      return modal?.breakpoints ?? [];
-    });
-
-    const initial = await page.evaluate(() => {
-      const modal = document.querySelector('ion-modal.show-modal') as HTMLElement & {
         initialBreakpoint?: number;
+        expandToScroll?: boolean;
       };
-      return modal?.initialBreakpoint ?? 0;
+      return {
+        found: modal !== null,
+        hasBreakpointsProp: modal?.breakpoints !== undefined,
+        hasInitialBreakpointProp: modal?.initialBreakpoint !== undefined,
+        // Ionic defaults this to `true` on ion-modal; it only has an effect when
+        // breakpoints are set. Recorded here so a future default flip is noticed.
+        expandToScroll: modal?.expandToScroll,
+      };
     });
 
-    expect(breakpoints.some((b) => b > initial)).toBe(true);
-    expect(breakpoints.some((b) => b >= 0.9)).toBe(true);
+    // `found` guards the rest: a missing modal would make every property
+    // `undefined` and pass vacuously.
+    expect(config.found).toBe(true);
+    // Assert the properties are absent, not merely falsy — bug 06 was "fixed" by
+    // adding breakpoints, so a breakpoint configuration is now the regression.
+    expect(config.hasBreakpointsProp).toBe(false);
+    expect(config.hasInitialBreakpointProp).toBe(false);
   });
 });

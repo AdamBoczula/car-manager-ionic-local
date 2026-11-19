@@ -1,4 +1,4 @@
-import { test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 /**
@@ -284,9 +284,17 @@ export async function seedAuthUser(page: Page, user: AuthUserInput = {}): Promis
     await page.goto('/add-car');
     const activeAddCar = page.locator('app-add-car.ion-page:not(.ion-page-hidden)');
     await activeAddCar.waitFor({ state: 'visible', timeout: 10_000 });
-    await activeAddCar.getByTestId('car-name-input').locator('input').fill('Auto testowe');
-    await activeAddCar.getByTestId('car-name-input').locator('input').press('Enter');
-    await page.waitForURL(/\/dashboard(?:[/?#]|$)/, { timeout: 10_000 });
+
+    // Under full-suite parallelism (many Vite workers, one auth emulator) the
+    // form can still be hydrating when the dialog opens, so the Enter keypress
+    // sometimes lands before the submit handler is bound and nothing navigates.
+    // Retry the submit instead of failing on a timing race.
+    await expect(async () => {
+      const nameInput = activeAddCar.getByTestId('car-name-input').locator('input');
+      await nameInput.fill('Auto testowe');
+      await nameInput.press('Enter');
+      await expect(page).toHaveURL(/\/dashboard(?:[/?#]|$)/, { timeout: 5_000 });
+    }).toPass({ timeout: 20_000 });
   }
 
   return { uid, email, displayName, password };

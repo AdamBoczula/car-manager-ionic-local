@@ -13,7 +13,13 @@
 //
 // It does NOT need the Firebase emulator — a throwaway account is created
 // through the register UI.
+//
+// Scope: everything here runs in Chromium. The simulated keyboard shrinks the
+// viewport, which does NOT exercise Android's adjustResize or the Capacitor
+// keyboard plugin — that half is covered by manual QA on a device
+// (see docs/bugs/10-native-keyboard-integration.md#otwarte-kwestie).
 import { test, expect, type Page } from '@playwright/test';
+import { checkAccessibility, KNOWN_IONIC_VIOLATIONS } from './utils/accessibility-helpers';
 
 /** Short phone viewport — the worst case for a dialog with a submit button. */
 const PHONE_VIEWPORT = { width: 390, height: 664 } as const;
@@ -50,8 +56,11 @@ test.describe('Car switcher – add-car dialog usability on a phone', () => {
     await expect(popover).toBeVisible({ timeout: 5000 });
     await popover.getByText('Dodaj auto', { exact: true }).click();
     await expect(page.getByTestId('new-car-name-input')).toBeVisible({ timeout: 5000 });
-    // Let the enter transition settle so measurements are final.
-    await page.waitForTimeout(600);
+    // Wait for the enter transition instead of a fixed delay: the card must be
+    // settled (animated and laid out) before it is measured.
+    await expect
+      .poll(async () => (await dialogMetrics(page)).wrapper?.height ?? 0, { timeout: 5000 })
+      .toBeGreaterThan(0);
   }
 
   /** Dialog geometry (Ionic renders the wrapper and scroller in shadow DOM). */
@@ -137,13 +146,22 @@ test.describe('Car switcher – add-car dialog usability on a phone', () => {
     // Simulated Android keyboard: the viewport shrinks (adjustResize).
     await page.getByTestId('new-car-name-input').locator('input').click();
     await page.setViewportSize(PHONE_WITH_KEYBOARD);
-    await page.waitForTimeout(1000);
 
-    const metrics = await dialogMetrics(page);
-
-    // The card is clamped to what is left of the screen instead of overflowing.
-    expect(metrics.wrapper!.top).toBeGreaterThanOrEqual(0);
-    expect(metrics.wrapper!.bottom).toBeLessThanOrEqual(PHONE_WITH_KEYBOARD.height);
+    // The card re-lays out on the smaller viewport — poll until it fits.
+    await expect
+      .poll(
+        async () => {
+          const { wrapper, viewportHeight } = await dialogMetrics(page);
+          return (
+            wrapper !== null &&
+            wrapper.top >= 0 &&
+            wrapper.bottom <= viewportHeight + 0.5 &&
+            viewportHeight === PHONE_WITH_KEYBOARD.height
+          );
+        },
+        { timeout: 5000 },
+      )
+      .toBe(true);
 
     // The focused field is still on screen — the user sees what they type.
     await expect(page.getByTestId('new-car-name-input')).toBeInViewport({ ratio: 1 });
@@ -158,5 +176,12 @@ test.describe('Car switcher – add-car dialog usability on a phone', () => {
     // No horizontal padding regression: fields must not hug the screen edge.
     const inputBox = await page.getByTestId('new-car-name-input').boundingBox();
     expect(inputBox!.x).toBeGreaterThan(4);
+  });
+
+  test('the add-car dialog passes the accessibility audit @a11y', async ({ page }) => {
+    await signUpWithOneCar(page);
+    await openAddCarDialog(page);
+
+    await checkAccessibility(page, { disabledRules: KNOWN_IONIC_VIOLATIONS });
   });
 });
