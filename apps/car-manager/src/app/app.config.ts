@@ -1,5 +1,5 @@
 import type { ApplicationConfig } from '@angular/core';
-import { provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
+import { inject, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withRouterConfig } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { IonicRouteStrategy } from '@ionic/angular';
@@ -15,25 +15,26 @@ import { MigrationService } from './core/services/migration.service';
 import { KeyboardService } from './core/services/keyboard.service';
 
 /**
- * APP_INITIALIZER: sekwencja startowa aplikacji.
- * Kolejność gwarantowana — wszystkie kroki w jednej fabryce.
+ * Startup sequence, run once before the first route activates.
  *
- * 1. Inicjalizacja Ionic Storage
- * 2. Migracja schematu danych (jeśli potrzebna)
- * 3. Nasłuch klawiatury natywnej (brak efektu w przeglądarce)
- * 4. Reszta aplikacji (Auth, CarService, Dashboard) ładuje się później
+ * Order matters — everything happens in a single initializer:
+ *
+ * 1. Ionic Storage init
+ * 2. Data schema migration (if needed)
+ * 3. Native keyboard listeners (no-op in the browser)
+ * 4. The rest of the app (Auth, CarService, Dashboard) boots afterwards
  */
-function initializeApp(
-  storageService: StorageService,
-  migrationService: MigrationService,
-  keyboardService: KeyboardService,
-): () => Promise<void> {
-  return async () => {
+function initializeApp(): Promise<void> {
+  const storageService = inject(StorageService);
+  const migrationService = inject(MigrationService);
+  const keyboardService = inject(KeyboardService);
+
+  return (async () => {
     await storageService.init();
     await migrationService.run();
     // bugfix: docs/bugs/10-native-keyboard-integration.md
     await keyboardService.init();
-  };
+  })();
 }
 
 export const appConfig: ApplicationConfig = {
@@ -53,12 +54,7 @@ export const appConfig: ApplicationConfig = {
         }),
     },
 
-    // ── Startup: Storage.init() → MigrationService.run() → Aplikacja ──
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeApp,
-      deps: [StorageService, MigrationService, KeyboardService],
-      multi: true,
-    },
+    // ── Startup: Storage.init() → MigrationService.run() → app ──
+    provideAppInitializer(initializeApp),
   ],
 };

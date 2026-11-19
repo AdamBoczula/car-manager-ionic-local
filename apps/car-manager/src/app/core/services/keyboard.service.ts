@@ -19,7 +19,13 @@ import { Keyboard } from '@capacitor/keyboard';
  */
 @Service()
 export class KeyboardService {
-  /** `true` while the native keyboard is on screen (always `false` on web). */
+  /**
+   * `true` while the native keyboard is on screen (always `false` on web).
+   *
+   * Public contract for any future consumer (sticky footers, scroll padding).
+   * No component reads it today; it is the only signal a consumer needs to
+   * react to the keyboard without duplicating the Capacitor listeners.
+   */
   readonly isKeyboardVisible = signal(false);
 
   /** Height of the on-screen keyboard in CSS pixels (`0` when closed). */
@@ -37,6 +43,8 @@ export class KeyboardService {
 
     if (!Capacitor.isPluginAvailable('Keyboard')) return;
 
+    // Each call is isolated: a listener that fails to register must not stop
+    // the iOS preferences from being applied, and vice versa.
     try {
       await Keyboard.addListener('keyboardDidShow', (info) => {
         this.isKeyboardVisible.set(true);
@@ -46,15 +54,24 @@ export class KeyboardService {
         this.isKeyboardVisible.set(false);
         this.keyboardHeight.set(0);
       });
-
-      if (Capacitor.getPlatform() === 'ios') {
-        // Short forms (car sheet, login) do not need the accessory bar, and
-        // disabling WebView scrolling keeps the header pinned while typing.
-        await Keyboard.setAccessoryBarVisible({ isVisible: false });
-        await Keyboard.setScroll({ isDisabled: true });
-      }
     } catch {
-      // Some platforms ship a keyboard engine without the full plugin API.
+      // Some platforms ship a keyboard engine without the event API.
+    }
+
+    if (Capacitor.getPlatform() !== 'ios') return;
+
+    // Short forms (car dialog, login) do not need the accessory bar.
+    try {
+      await Keyboard.setAccessoryBarVisible({ isVisible: false });
+    } catch {
+      // Not implemented on this iOS plugin version.
+    }
+
+    // Keeping WebView scrolling off keeps the header pinned while typing.
+    try {
+      await Keyboard.setScroll({ isDisabled: true });
+    } catch {
+      // Not implemented on this iOS plugin version.
     }
   }
 

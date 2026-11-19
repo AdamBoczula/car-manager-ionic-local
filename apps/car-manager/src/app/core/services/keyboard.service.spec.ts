@@ -136,4 +136,25 @@ describe('KeyboardService', () => {
     await expect(service.hide()).resolves.toBeUndefined();
     expect(service.isKeyboardVisible()).toBe(false);
   });
+
+  // covers: docs/bugs/10-native-keyboard-integration.md#AC-3
+  it('should still apply the iOS preferences when a listener fails to register', async () => {
+    getPlatform.mockReturnValue('ios');
+    addListener.mockRejectedValue(new Error('no event API'));
+
+    await service.init();
+
+    expect(setAccessoryBarVisible).toHaveBeenCalledWith({ isVisible: false });
+    expect(setScroll).toHaveBeenCalledWith({ isDisabled: true });
+  });
+
+  // covers: docs/bugs/10-native-keyboard-integration.md#AC-3
+  it('should keep going when one iOS preference fails', async () => {
+    getPlatform.mockReturnValue('ios');
+    setAccessoryBarVisible.mockRejectedValue(new Error('no accessory bar'));
+
+    await expect(service.init()).resolves.toBeUndefined();
+
+    expect(setScroll).toHaveBeenCalledWith({ isDisabled: true });
+  });
 });
