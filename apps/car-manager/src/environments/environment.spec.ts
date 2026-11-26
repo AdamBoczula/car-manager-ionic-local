@@ -18,6 +18,10 @@ describe('Environment configuration', () => {
       expect(environment.production).toBe(false);
     });
 
+    it('should have Google Auth webClientId configured', () => {
+      expect(environment.googleAuth?.webClientId).toBeTruthy();
+    });
+
     it('should match Environment interface shape', () => {
       const env: Environment = environment;
       expect(env).toBeDefined();

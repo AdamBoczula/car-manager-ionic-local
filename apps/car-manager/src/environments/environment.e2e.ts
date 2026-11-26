@@ -15,6 +15,9 @@ export const environment: Environment = {
     appId: '1:851248035684:web:99224ebb831a9930cd6c71',
     measurementId: 'G-2XKNELD8WR',
   },
+  googleAuth: {
+    webClientId: '851248035684-8f0ie453ptbfg0ubv98t0cv2fi2n9r66.apps.googleusercontent.com',
+  },
   // Use Firebase Auth + Firestore emulators in E2E tests
   useEmulators: {
     host: 'localhost',

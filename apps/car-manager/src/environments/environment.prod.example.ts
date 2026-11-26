@@ -22,4 +22,7 @@ export const environment: Environment = {
     messagingSenderId: 'TUTAJ_WPISZ_SENDER_ID',
     appId: 'TUTAJ_WPISZ_APP_ID',
   },
+  googleAuth: {
+    webClientId: 'TUTAJ_WPISZ_WEB_CLIENT_ID.apps.googleusercontent.com',
+  },
 };

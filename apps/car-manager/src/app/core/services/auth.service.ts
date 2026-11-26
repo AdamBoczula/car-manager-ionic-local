@@ -3,7 +3,7 @@ import { Injectable, inject, signal, computed, DestroyRef, NgZone } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavController } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -16,6 +16,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { auth } from '../firebase';
 
 @Injectable({ providedIn: 'root' })
@@ -23,6 +24,7 @@ export class AuthService {
   private readonly firebaseAuth = auth;
   private readonly navController = inject(NavController);
   private readonly ngZone = inject(NgZone);
+  private socialLoginInitialized = false;
 
   /** Current Firebase user (null if not logged in). */
   readonly currentUser = signal<User | null>(null);
@@ -97,9 +99,14 @@ export class AuthService {
 
     try {
       if (Capacitor.isNativePlatform()) {
-        await GoogleAuth.initialize();
-        const response = await GoogleAuth.signIn();
-        const idToken = response.authentication?.idToken;
+        await this.ensureSocialLoginInitialized();
+        const response = await SocialLogin.login({
+          provider: 'google',
+          options: {
+            scopes: ['email', 'profile'],
+          },
+        });
+        const idToken = response.result.responseType === 'online' ? response.result.idToken : null;
         if (!idToken) {
           throw new Error('Nie otrzymano tokenu identyfikacyjnego Google.');
         }
@@ -132,6 +139,7 @@ export class AuthService {
       const message = firebaseErr?.message?.toLowerCase();
       if (
         code === 'auth/popup-closed-by-user' ||
+        code === 'USER_CANCELLED' ||
         code === '12501' ||
         code === 12501 ||
         message?.includes('cancel')
@@ -145,12 +153,36 @@ export class AuthService {
   async logout(): Promise<void> {
     if (Capacitor.isNativePlatform()) {
       try {
-        await GoogleAuth.signOut();
+        await this.ensureSocialLoginInitialized();
+        await SocialLogin.logout({ provider: 'google' });
       } catch {
-        // Ignoruj błąd jeśli użytkownik nie był zalogowany przez Google
+        // Ignore error if user was not signed in with Google
       }
     }
     await signOut(this.firebaseAuth);
     await this.navController.navigateRoot('/login', { animated: false });
+  }
+
+  private async ensureSocialLoginInitialized(): Promise<void> {
+    if (this.socialLoginInitialized) {
+      return;
+    }
+
+    const webClientId = environment.googleAuth?.webClientId;
+    if (!webClientId) {
+      throw new Error('Brak konfiguracji Google Web Client ID.');
+    }
+
+    const iOSClientId = environment.googleAuth?.iOSClientId;
+    await SocialLogin.initialize({
+      google: {
+        webClientId,
+        ...(iOSClientId ? { iOSClientId, iOSServerClientId: webClientId } : {}),
+        mode: 'online',
+        // Only idToken is needed for Firebase Auth; avoids Android AuthorizationClient hang on stock BridgeActivity.
+        skipAuthOnlyAuthorizationAfterSignIn: true,
+      },
+    });
+    this.socialLoginInitialized = true;
   }
 }
