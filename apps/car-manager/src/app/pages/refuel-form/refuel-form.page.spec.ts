@@ -17,6 +17,11 @@ import { Timestamp } from 'firebase/firestore';
 import { RefuelFormPage } from './refuel-form.page';
 import { RefuelService } from '../../core/services/refuel.service';
 import { CarService } from '../../core/services/car.service';
+import {
+  ReceiptOcrService,
+  type ReceiptScanOutcome,
+} from '../../core/services/receipt-ocr.service';
+import { RefuelDraftService } from '../../core/services/refuel-draft.service';
 import type { Refuel } from '../../core/models/refuel.model';
 import type { Car } from '../../core/models/car.model';
 
@@ -40,7 +45,7 @@ function createMockRefuelService(overrides?: Partial<RefuelService>) {
       date: '2026-01-15',
       amount: 250,
       mileage: 125000,
-      isVerva: false,
+      isPremium: false,
       isSkipped: false,
       createdBy: 'user-1',
       createdAt: { seconds: 1767211200, nanoseconds: 0 },
@@ -71,6 +76,33 @@ function mockNavController() {
   };
 }
 
+function createMockReceiptOcrService(overrides?: {
+  isSupported?: boolean;
+  isScanning?: boolean;
+  outcome?: ReceiptScanOutcome;
+}) {
+  return {
+    isSupported: signal(overrides?.isSupported ?? true),
+    isScanning: signal(overrides?.isScanning ?? false),
+    scanReceipt: vi.fn().mockResolvedValue(
+      overrides?.outcome ?? {
+        status: 'success',
+        message: 'Odczytano paragon. Sprawdź dane i wpisz przebieg.',
+        result: {
+          rawText: 'VERVA ON 40,00 x 6,50 260,00A',
+          matchedFields: ['date', 'amount', 'liters', 'isPremium'],
+          draft: {
+            date: '2026-11-24',
+            amount: 260,
+            liters: 40,
+            isPremium: true,
+          },
+        },
+      },
+    ),
+  } as unknown as ReceiptOcrService;
+}
+
 const baseRoutes: Routes = [{ path: 'refuel-list', component: class Dummy {} }];
 
 describe('RefuelFormPage', () => {
@@ -93,7 +125,7 @@ describe('RefuelFormPage', () => {
     expect(screen.getByLabelText('Kwota w PLN')).toBeInTheDocument();
     expect(screen.getByLabelText('Przebieg w kilometrach')).toBeInTheDocument();
     expect(screen.getByLabelText('Ilość litrów (opcjonalnie)')).toBeInTheDocument();
-    expect(screen.getByLabelText('Verva?')).toBeInTheDocument();
+    expect(screen.getByLabelText('Paliwo premium?')).toBeInTheDocument();
     expect(screen.getByText('Pomiń wpis')).toBeInTheDocument();
     expect(screen.getByText('Zapisz tankowanie')).toBeInTheDocument();
   });
@@ -150,7 +182,7 @@ describe('RefuelFormPage', () => {
         amount: 250,
         mileage: 125000,
         liters: 40,
-        isVerva: false,
+        isPremium: false,
         isSkipped: false,
       }),
     );
@@ -183,7 +215,7 @@ describe('RefuelFormPage', () => {
     expect(screen.getByLabelText('Powód pominięcia')).toBeInTheDocument();
   });
 
-  it('should include Verva flag and skip reason when submitted', async () => {
+  it('should include isPremium flag and skip reason when submitted', async () => {
     const mockRefuelSvc = createMockRefuelService();
     const mockCarSvc = createMockCarService();
     const user = userEvent.setup();
@@ -201,8 +233,8 @@ describe('RefuelFormPage', () => {
     await user.type(screen.getByLabelText('Kwota w PLN'), '300');
     await user.type(screen.getByLabelText('Przebieg w kilometrach'), '130000');
 
-    const vervaToggle = screen.getByLabelText('Verva?');
-    await user.click(vervaToggle);
+    const premiumToggle = screen.getByLabelText('Paliwo premium?');
+    await user.click(premiumToggle);
 
     const skipCheckbox = screen.getByText('Pomiń wpis');
     await user.click(skipCheckbox);
@@ -214,7 +246,7 @@ describe('RefuelFormPage', () => {
 
     expect(mockRefuelSvc.add).toHaveBeenCalledWith(
       expect.objectContaining({
-        isVerva: true,
+        isPremium: true,
         isSkipped: true,
         skippedReason: 'Ktoś inny zatankował',
       }),
@@ -315,5 +347,111 @@ describe('RefuelFormPage', () => {
         liters: 45.2,
       }),
     );
+  });
+
+  // covers: docs/specs/refuel/03-receipt-ocr.md#AC-5
+  it('should prefill form from RefuelDraftService once on init', async () => {
+    const draftSvc = new RefuelDraftService();
+    draftSvc.setDraft(
+      { date: '2026-11-20', amount: 275.5, liters: 42.1, isPremium: true },
+      'Odczytano paragon.',
+      'success',
+    );
+
+    const { fixture } = await render(RefuelFormPage, {
+      providers: [
+        provideRouter(baseRoutes),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: createMockRefuelService() },
+        { provide: CarService, useValue: createMockCarService() },
+        { provide: NavController, useValue: mockNavController() },
+        { provide: ReceiptOcrService, useValue: createMockReceiptOcrService() },
+        { provide: RefuelDraftService, useValue: draftSvc },
+      ],
+    });
+
+    expect(screen.getByLabelText('Data tankowania')).toHaveValue('2026-11-20');
+    expect(screen.getByLabelText('Kwota w PLN')).toHaveValue('275,50');
+    expect(screen.getByLabelText('Ilość litrów (opcjonalnie)')).toHaveValue('42,10');
+    expect(fixture.componentInstance.isPremium()).toBe(true);
+    expect(draftSvc.consumeDraft()).toBeNull();
+  });
+
+  // covers: docs/specs/refuel/03-receipt-ocr.md#AC-4
+  it('should scan receipt on form and preserve previously entered mileage', async () => {
+    const mockOcrSvc = createMockReceiptOcrService({ isSupported: true });
+    const user = userEvent.setup();
+
+    const { fixture } = await render(RefuelFormPage, {
+      providers: [
+        provideRouter(baseRoutes),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: createMockRefuelService() },
+        { provide: CarService, useValue: createMockCarService() },
+        { provide: NavController, useValue: mockNavController() },
+        { provide: ReceiptOcrService, useValue: mockOcrSvc },
+      ],
+    });
+
+    const mileageInput = screen.getByLabelText('Przebieg w kilometrach');
+    await user.type(mileageInput, '125400');
+
+    await user.click(screen.getByTestId('scan-receipt-button'));
+
+    expect(mockOcrSvc.scanReceipt).toHaveBeenCalled();
+    expect(screen.getByLabelText('Data tankowania')).toHaveValue('2026-11-24');
+    expect(screen.getByLabelText('Kwota w PLN')).toHaveValue('260,00');
+    expect(screen.getByLabelText('Ilość litrów (opcjonalnie)')).toHaveValue('40,00');
+    expect(fixture.componentInstance.isPremium()).toBe(true);
+    expect(fixture.componentInstance.mileage()).toBe(125400);
+    expect(fixture.componentInstance.toastOpen()).toBe(true);
+  });
+
+  // covers: docs/specs/refuel/03-receipt-ocr.md#AC-8
+  it('should hide scan receipt button when OCR is not supported (web)', async () => {
+    await render(RefuelFormPage, {
+      providers: [
+        provideRouter(baseRoutes),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: createMockRefuelService() },
+        { provide: CarService, useValue: createMockCarService() },
+        { provide: NavController, useValue: mockNavController() },
+        {
+          provide: ReceiptOcrService,
+          useValue: createMockReceiptOcrService({ isSupported: false }),
+        },
+      ],
+    });
+
+    expect(screen.queryByTestId('scan-receipt-button')).not.toBeInTheDocument();
+  });
+
+  // covers: docs/specs/refuel/03-receipt-ocr.md#AC-6, AC-7
+  it('should handle cancelled and error/empty scan outcomes cleanly', async () => {
+    const cancelledOcr = createMockReceiptOcrService({ outcome: { status: 'cancelled' } });
+    const user = userEvent.setup();
+
+    const { fixture } = await render(RefuelFormPage, {
+      providers: [
+        provideRouter(baseRoutes),
+        provideIonicAngular({ mode: 'md' }),
+        { provide: RefuelService, useValue: createMockRefuelService() },
+        { provide: CarService, useValue: createMockCarService() },
+        { provide: NavController, useValue: mockNavController() },
+        { provide: ReceiptOcrService, useValue: cancelledOcr },
+      ],
+    });
+
+    await user.click(screen.getByTestId('scan-receipt-button'));
+    expect(fixture.componentInstance.toastOpen()).toBe(false);
+
+    vi.mocked(cancelledOcr.scanReceipt).mockResolvedValueOnce({
+      status: 'error',
+      message: 'Brak uprawnień do aparatu.',
+    });
+    await user.click(screen.getByTestId('scan-receipt-button'));
+    expect(fixture.componentInstance.toastOpen()).toBe(true);
+    expect(fixture.componentInstance.toastColor()).toBe('danger');
+    expect(fixture.componentInstance.toastMessage()).toBe('Brak uprawnień do aparatu.');
   });
 });

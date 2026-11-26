@@ -128,7 +128,7 @@ describe('RefuelService', () => {
         amount: 300,
         mileage: 51000,
         liters: 40,
-        isVerva: false,
+        isPremium: false,
         isSkipped: false,
         createdBy: 'test-uid-123',
       } as Refuel);
@@ -143,7 +143,7 @@ describe('RefuelService', () => {
           amount: 200,
           mileage: 50000,
           liters: 38,
-          isVerva: false,
+          isPremium: false,
           isSkipped: false,
           createdBy: 'u1',
           createdAt: Timestamp.now(),
@@ -156,7 +156,7 @@ describe('RefuelService', () => {
         amount: 300,
         mileage: 51000,
         liters: 40,
-        isVerva: false,
+        isPremium: false,
         isSkipped: false,
       });
 
@@ -166,7 +166,7 @@ describe('RefuelService', () => {
         amount: 300,
         mileage: 51000,
         liters: 40,
-        isVerva: false,
+        isPremium: false,
         isSkipped: false,
       });
 
@@ -184,7 +184,7 @@ describe('RefuelService', () => {
           amount: 300,
           mileage: 51000,
           liters: 40,
-          isVerva: false,
+          isPremium: false,
           isSkipped: false,
         }),
       ).rejects.toThrow('User must be logged in');
@@ -200,7 +200,7 @@ describe('RefuelService', () => {
         amount: 300,
         mileage: 51000,
         liters: 40,
-        isVerva: false,
+        isPremium: false,
         isSkipped: false,
         createdBy: 'test-uid-123',
       } as Refuel);
@@ -211,7 +211,7 @@ describe('RefuelService', () => {
         amount: 300,
         mileage: 51000,
         liters: 40,
-        isVerva: false,
+        isPremium: false,
         isSkipped: false,
       });
 

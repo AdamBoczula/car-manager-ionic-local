@@ -29,7 +29,7 @@ const mockRefuel: Refuel = {
   amount: 250,
   mileage: 125000,
   liters: 40,
-  isVerva: false,
+  isPremium: false,
   isSkipped: false,
   consumption: 6.25,
   createdBy: 'user-1',
@@ -44,7 +44,7 @@ const mockRefuel2: Refuel = {
   mileage: 125500,
   liters: 42,
   consumption: 8.4,
-  isVerva: true,
+  isPremium: true,
 };
 
 const mockCar: Car = {
@@ -131,7 +131,7 @@ describe('RefuelListPage', () => {
     expect(screen.getByText('125000 km')).toBeInTheDocument();
     expect(screen.getByText('40 L')).toBeInTheDocument();
     expect(screen.getByText('Spalanie: 6.25 L/100km')).toBeInTheDocument();
-    expect(screen.getByText('Verva')).toBeInTheDocument();
+    expect(screen.getByText('Premium')).toBeInTheDocument();
     expect(screen.getByText('20.01.2026')).toBeInTheDocument();
   });
 

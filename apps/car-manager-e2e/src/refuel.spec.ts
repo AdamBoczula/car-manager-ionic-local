@@ -69,8 +69,9 @@ test.describe('Refuel – Formularz tankowania', () => {
     const inputCount = await page.locator('ion-input').count();
     expect(inputCount).toBeGreaterThanOrEqual(4);
 
-    // Verva toggle
+    // Premium fuel toggle
     await expect(page.locator('ion-toggle')).toBeVisible();
+    await expect(page.locator('ion-item:has-text("Paliwo premium?")')).toBeVisible();
 
     // Pomiń checkbox — .first() to avoid strict mode violation from Ionic stacked pages
     await expect(

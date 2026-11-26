@@ -13,6 +13,11 @@ import { SyncService } from '../../core/services/sync.service';
 import { CarService } from '../../core/services/car.service';
 import { RefuelService } from '../../core/services/refuel.service';
 import { RepairService } from '../../core/services/repair.service';
+import {
+  ReceiptOcrService,
+  type ReceiptScanOutcome,
+} from '../../core/services/receipt-ocr.service';
+import { RefuelDraftService } from '../../core/services/refuel-draft.service';
 import type { Car } from '../../core/models/car.model';
 import type { Refuel } from '../../core/models/refuel.model';
 import type { Repair } from '../../core/models/repair.model';
@@ -38,7 +43,7 @@ function createMockRefuels(): Refuel[] {
       amount: 180.5,
       mileage: 55000,
       liters: 30,
-      isVerva: false,
+      isPremium: false,
       isSkipped: false,
       createdBy: 'u1',
       createdAt: Timestamp.now(),
@@ -50,7 +55,7 @@ function createMockRefuels(): Refuel[] {
       amount: 200,
       mileage: 54200,
       liters: 35,
-      isVerva: true,
+      isPremium: true,
       isSkipped: false,
       createdBy: 'u1',
       createdAt: Timestamp.now(),
@@ -61,7 +66,7 @@ function createMockRefuels(): Refuel[] {
       date: '2025-10-15',
       amount: 150,
       mileage: 53000,
-      isVerva: false,
+      isPremium: false,
       isSkipped: false,
       createdBy: 'u1',
       createdAt: Timestamp.now(),
@@ -73,7 +78,7 @@ function createMockRefuels(): Refuel[] {
       amount: 170,
       mileage: 51800,
       liters: 28,
-      isVerva: false,
+      isPremium: false,
       isSkipped: false,
       createdBy: 'u1',
       createdAt: Timestamp.now(),
@@ -182,11 +187,34 @@ describe('DashboardPage', () => {
       alertController: {
         create: vi.fn(),
       },
+      receiptOcrService: {
+        isSupported: signal(true),
+        isScanning: signal(false),
+        scanReceipt: vi.fn<() => Promise<ReceiptScanOutcome>>().mockResolvedValue({
+          status: 'success',
+          message: 'Odczytano paragon. Sprawdź dane i wpisz przebieg.',
+          result: {
+            rawText: 'VERVA ON 40,00 x 6,50 260,00A',
+            matchedFields: ['date', 'amount', 'liters', 'isPremium'],
+            draft: {
+              date: '2026-11-24',
+              amount: 260,
+              liters: 40,
+              isPremium: true,
+            },
+          },
+        }),
+      },
+      refuelDraftService: {
+        setDraft: vi.fn(),
+        consumeDraft: vi.fn(),
+      },
     };
   }
 
-  async function setup() {
+  async function setup(ocrSupported = true) {
     const mocks = createMocks();
+    mocks.receiptOcrService.isSupported.set(ocrSupported);
     mocks.alertController.create.mockResolvedValue(mocks.alertMock);
     const navControllerMock = {
       navigateForward: vi.fn(),
@@ -207,6 +235,8 @@ describe('DashboardPage', () => {
         { provide: CarService, useValue: mocks.carService },
         { provide: RefuelService, useValue: mocks.refuelService },
         { provide: RepairService, useValue: mocks.repairService },
+        { provide: ReceiptOcrService, useValue: mocks.receiptOcrService },
+        { provide: RefuelDraftService, useValue: mocks.refuelDraftService },
       ],
     }).compileComponents();
 
@@ -358,15 +388,15 @@ describe('DashboardPage', () => {
       expect(item.textContent).toContain('55000');
     });
 
-    it('powinien pokazać odznakę Verva dla tankowania premium', async () => {
+    it('powinien pokazać odznakę Premium dla tankowania premium', async () => {
       const { mocks } = await setup();
-      refuelServiceRefuels.set([createMockRefuels()[1]]); // r2 has isVerva=true
+      refuelServiceRefuels.set([createMockRefuels()[1]]); // r2 has isPremium=true
       await renderAndWait();
 
       const item = fixture.nativeElement.querySelector(
         '[data-testid="recent-refuel-item"]',
       ) as HTMLElement;
-      expect(item.textContent).toContain('Verva');
+      expect(item.textContent).toContain('Premium');
     });
 
     it('powinien wyświetlić spalanie gdy consumption jest dostępne', async () => {
@@ -699,6 +729,72 @@ describe('DashboardPage', () => {
       expect(navigateSpy).toHaveBeenCalledWith('/dashboard', {
         animated: false,
       });
+    });
+  });
+
+  // ── Receipt OCR scan (docs/specs/refuel/03-receipt-ocr.md) ──
+
+  describe('skanowanie paragonu (OCR)', () => {
+    // covers: docs/specs/refuel/03-receipt-ocr.md#AC-8
+    it('nie powinien pokazywać przycisków skanowania na platformie web (isSupported=false)', async () => {
+      await setup(false);
+      await renderAndWait();
+
+      expect(fixture.nativeElement.querySelector('[data-testid="btn-scan-receipt"]')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="fab-scan-receipt"]')).toBeNull();
+    });
+
+    // covers: docs/specs/refuel/03-receipt-ocr.md#AC-5
+    it('powinien zapisać draft i nawigować do /refuel-form po udanym skanowaniu', async () => {
+      const { mocks } = await setup(true);
+      await renderAndWait();
+
+      const navigateSpy = vi.spyOn(navController, 'navigateForward');
+      const scanBtn = fixture.nativeElement.querySelector(
+        '[data-testid="btn-scan-receipt"]',
+      ) as HTMLElement;
+      expect(scanBtn).toBeTruthy();
+
+      scanBtn.click();
+      await fixture.whenStable();
+
+      expect(mocks.receiptOcrService.scanReceipt).toHaveBeenCalled();
+      expect(mocks.refuelDraftService.setDraft).toHaveBeenCalledWith(
+        {
+          date: '2026-11-24',
+          amount: 260,
+          liters: 40,
+          isPremium: true,
+        },
+        'Odczytano paragon. Sprawdź dane i wpisz przebieg.',
+        'success',
+      );
+      expect(navigateSpy).toHaveBeenCalledWith('/refuel-form');
+    });
+
+    // covers: docs/specs/refuel/03-receipt-ocr.md#AC-6, AC-7
+    it('nie powinien nawigować przy anulowaniu i powinien pokazać toast przy błędzie OCR', async () => {
+      const { mocks } = await setup(true);
+      await renderAndWait();
+
+      const navigateSpy = vi.spyOn(navController, 'navigateForward');
+      mocks.receiptOcrService.scanReceipt.mockResolvedValueOnce({ status: 'cancelled' });
+
+      await fixture.componentInstance.handleScanReceipt();
+      expect(mocks.refuelDraftService.setDraft).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.toastOpen()).toBe(false);
+
+      mocks.receiptOcrService.scanReceipt.mockResolvedValueOnce({
+        status: 'error',
+        message: 'Brak uprawnień do aparatu.',
+      });
+
+      await fixture.componentInstance.handleScanReceipt();
+      expect(navigateSpy).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.toastOpen()).toBe(true);
+      expect(fixture.componentInstance.toastColor()).toBe('danger');
+      expect(fixture.componentInstance.toastMessage()).toBe('Brak uprawnień do aparatu.');
     });
   });
 });

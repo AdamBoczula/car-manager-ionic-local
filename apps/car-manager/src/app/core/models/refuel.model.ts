@@ -1,3 +1,4 @@
+// spec: docs/specs/refuel/03-receipt-ocr.md
 import type { Timestamp } from 'firebase/firestore';
 
 /**
@@ -10,10 +11,29 @@ export interface Refuel {
   amount: number; // zapłacona kwota (PLN)
   mileage: number; // przebieg (km)
   liters?: number; // opcjonalnie – ilość litrów
-  isVerva: boolean; // czy tankowano paliwo premium (Verva)
+  isPremium: boolean; // czy tankowano paliwo premium
   isSkipped: boolean; // pominięty wpis (ktoś zatankował bez wiedzy)
   skippedReason?: string; // powód pominięcia
   consumption?: number; // l/100km – wyliczane automatycznie po zapisie
   createdBy: string; // uid użytkownika
   createdAt: Timestamp;
+}
+
+/**
+ * Tymczasowy szkic tankowania (np. z OCR paragonu) do wstępnego wypełnienia formularza.
+ */
+export interface RefuelDraft {
+  date?: string; // YYYY-MM-DD
+  amount?: number;
+  liters?: number;
+  isPremium?: boolean;
+}
+
+/**
+ * Wynik parsowania tekstu OCR polskiego paragonu za tankowanie.
+ */
+export interface ReceiptScanResult {
+  draft: RefuelDraft;
+  rawText: string;
+  matchedFields: (keyof RefuelDraft)[];
 }

@@ -95,6 +95,7 @@ ion-fab-button[data-testid='fab-main'] {
 
 // Ensure FAB list buttons have visible icons on all backgrounds
 ion-fab-button[color='primary'],
+ion-fab-button[color='secondary'],
 ion-fab-button[color='tertiary'] {
   --color: #ffffff;
 }

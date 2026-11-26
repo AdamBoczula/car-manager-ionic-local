@@ -1,6 +1,8 @@
 // spec: docs/specs/05-car-management.md
+// spec: docs/specs/refuel/03-receipt-ocr.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
 // bugfix: docs/bugs/05-decimal-input-comma-dot.md
+import type { OnInit } from '@angular/core';
 import { Component, inject, signal, computed, NgZone } from '@angular/core';
 import { NavController } from '@ionic/angular';
 import {
@@ -17,12 +19,19 @@ import {
   IonTextarea,
   IonLabel,
   IonButton,
+  IonIcon,
+  IonSpinner,
   IonFooter,
   IonToast,
   IonNote,
 } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { camera } from 'ionicons/icons';
 import { RefuelService } from '../../core/services/refuel.service';
 import { CarService } from '../../core/services/car.service';
+import { ReceiptOcrService } from '../../core/services/receipt-ocr.service';
+import { RefuelDraftService } from '../../core/services/refuel-draft.service';
+import type { RefuelDraft } from '../../core/models/refuel.model';
 import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
 import {
   formatDecimalInput,
@@ -48,6 +57,8 @@ import {
     IonTextarea,
     IonLabel,
     IonButton,
+    IonIcon,
+    IonSpinner,
     IonFooter,
     IonToast,
     IonNote,
@@ -70,6 +81,27 @@ import {
 
     <ion-content>
       <form class="refuel-form" (submit)="handleSubmit($event)">
+        @if (receiptOcrService.isSupported()) {
+          <div class="refuel-form__scan-bar">
+            <ion-button
+              type="button"
+              expand="block"
+              fill="outline"
+              [disabled]="receiptOcrService.isScanning()"
+              (click)="handleScanReceipt()"
+              aria-label="Skanuj paragon za tankowanie"
+              data-testid="scan-receipt-button"
+            >
+              @if (receiptOcrService.isScanning()) {
+                <ion-spinner name="crescent" slot="start" />
+                Skanowanie paragonu...
+              } @else {
+                <ion-icon name="camera" slot="start" />
+                Skanuj paragon
+              }
+            </ion-button>
+          </div>
+        }
         <ion-list>
           <!-- Data -->
           <ion-item>
@@ -132,14 +164,14 @@ import {
             />
           </ion-item>
 
-          <!-- Verva -->
+          <!-- Paliwo premium -->
           <ion-item>
-            <ion-label>Verva?</ion-label>
+            <ion-label>Paliwo premium?</ion-label>
             <ion-toggle
-              [checked]="isVerva()"
-              (ionChange)="isVerva.set($any($event).detail.checked)"
+              [checked]="isPremium()"
+              (ionChange)="isPremium.set($any($event).detail.checked)"
               justify="space-between"
-              aria-label="Verva?"
+              aria-label="Paliwo premium?"
             />
           </ion-item>
 
@@ -194,16 +226,17 @@ import {
   `,
   styleUrl: './refuel-form.page.scss',
 })
-export class RefuelFormPage {
+export class RefuelFormPage implements OnInit {
   // Public dependencies & state (member-ordering: public before private)
   readonly carService = inject(CarService);
+  readonly receiptOcrService = inject(ReceiptOcrService);
 
   // Form fields — signals
   readonly date = signal(new Date().toISOString().split('T')[0]);
   readonly amountRaw = signal('');
   readonly litersRaw = signal('');
   readonly mileage = signal(0);
-  readonly isVerva = signal(false);
+  readonly isPremium = signal(false);
   readonly isSkipped = signal(false);
   readonly skippedReason = signal('');
 
@@ -214,7 +247,7 @@ export class RefuelFormPage {
   // Toast
   readonly toastOpen = signal(false);
   readonly toastMessage = signal('');
-  readonly toastColor = signal<'success' | 'danger'>('success');
+  readonly toastColor = signal<'success' | 'warning' | 'danger'>('success');
 
   // Validation errors (computed)
   readonly amountError = computed(() =>
@@ -229,8 +262,39 @@ export class RefuelFormPage {
 
   // Private dependencies
   private readonly refuelService = inject(RefuelService);
+  private readonly refuelDraftService = inject(RefuelDraftService);
   private readonly navController = inject(NavController);
   private readonly zone = inject(NgZone);
+
+  constructor() {
+    addIcons({ camera });
+  }
+
+  ngOnInit(): void {
+    this.applyPendingDraft();
+  }
+
+  ionViewWillEnter(): void {
+    this.applyPendingDraft();
+  }
+
+  async handleScanReceipt(): Promise<void> {
+    const outcome = await this.receiptOcrService.scanReceipt();
+    if (outcome.status === 'cancelled') return;
+
+    if (outcome.status === 'empty') {
+      this.showToast(outcome.message, 'warning');
+      return;
+    }
+
+    if (outcome.status === 'error') {
+      this.showToast(outcome.message, 'danger');
+      return;
+    }
+
+    this.applyDraft(outcome.result.draft);
+    this.showToast(outcome.message, outcome.status === 'success' ? 'success' : 'warning');
+  }
 
   onAmountInput(value: string | null | undefined): void {
     this.amountRaw.set(formatDecimalInput(value, 2));
@@ -262,7 +326,7 @@ export class RefuelFormPage {
         amount: this.amount(),
         mileage: this.mileage(),
         liters: this.liters() > 0 ? this.liters() : undefined,
-        isVerva: this.isVerva(),
+        isPremium: this.isPremium(),
         isSkipped: this.isSkipped(),
         skippedReason: this.isSkipped() ? this.skippedReason().trim() || undefined : undefined,
       });
@@ -296,7 +360,32 @@ export class RefuelFormPage {
     }
   }
 
-  private showToast(message: string, color: 'success' | 'danger'): void {
+  private applyPendingDraft(): void {
+    const pending = this.refuelDraftService.consumeDraft();
+    if (!pending) return;
+
+    this.applyDraft(pending.draft);
+    if (pending.message) {
+      this.showToast(pending.message, pending.toastColor ?? 'success');
+    }
+  }
+
+  private applyDraft(draft: RefuelDraft): void {
+    if (draft.date) {
+      this.date.set(draft.date);
+    }
+    if (draft.amount != null && draft.amount > 0) {
+      this.amountRaw.set(formatDecimalInput(draft.amount.toFixed(2), 2));
+    }
+    if (draft.liters != null && draft.liters > 0) {
+      this.litersRaw.set(formatDecimalInput(draft.liters.toFixed(2), 2));
+    }
+    if (draft.isPremium != null) {
+      this.isPremium.set(draft.isPremium);
+    }
+  }
+
+  private showToast(message: string, color: 'success' | 'warning' | 'danger'): void {
     this.toastMessage.set(message);
     this.toastColor.set(color);
     this.toastOpen.set(true);

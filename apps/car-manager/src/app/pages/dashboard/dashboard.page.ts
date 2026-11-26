@@ -1,4 +1,5 @@
 // spec: docs/specs/05-car-management.md
+// spec: docs/specs/refuel/03-receipt-ocr.md
 // bugfix: docs/bugs/02-router-navigate-in-ionic.md
 import type { OnInit, OnDestroy } from '@angular/core';
 import { Component, inject, signal, computed, effect, DestroyRef, NgZone } from '@angular/core';
@@ -20,15 +21,18 @@ import {
   IonList,
   IonItem,
   IonNote,
+  IonToast,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { add, carSport, construct, logOut, chevronForward } from 'ionicons/icons';
+import { add, camera, carSport, construct, logOut, chevronForward } from 'ionicons/icons';
 import { AuthService } from '../../core/services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
 import { SyncService } from '../../core/services/sync.service';
 import { CarService } from '../../core/services/car.service';
 import { RefuelService } from '../../core/services/refuel.service';
 import { RepairService } from '../../core/services/repair.service';
+import { ReceiptOcrService } from '../../core/services/receipt-ocr.service';
+import { RefuelDraftService } from '../../core/services/refuel-draft.service';
 import { CarSwitcherComponent } from '../../shared/components/car-switcher/car-switcher.component';
 import { formatPln } from '../../core/utils/consumption.util';
 
@@ -53,6 +57,7 @@ import { formatPln } from '../../core/utils/consumption.util';
     IonList,
     IonItem,
     IonNote,
+    IonToast,
     CarSwitcherComponent,
   ],
   template: `
@@ -101,6 +106,20 @@ import { formatPln } from '../../core/utils/consumption.util';
               Dodaj napraw&#x119;
             </ion-button>
           </div>
+          @if (receiptOcrService.isSupported()) {
+            <ion-button
+              expand="block"
+              fill="outline"
+              color="secondary"
+              [disabled]="receiptOcrService.isScanning()"
+              (click)="handleScanReceipt()"
+              aria-label="Skanuj paragon za tankowanie"
+              data-testid="btn-scan-receipt"
+            >
+              <ion-icon name="camera" slot="start" />
+              {{ receiptOcrService.isScanning() ? 'Skanowanie paragonu...' : 'Skanuj paragon' }}
+            </ion-button>
+          }
 
           <!-- Recent refuels -->
           <div class="recent-section">
@@ -134,8 +153,8 @@ import { formatPln } from '../../core/utils/consumption.util';
                         <p class="consumption-info">Spalanie: {{ refuel.consumption }} L/100km</p>
                       }
                     </ion-label>
-                    @if (refuel.isVerva) {
-                      <ion-note slot="end" color="primary">Verva</ion-note>
+                    @if (refuel.isPremium) {
+                      <ion-note slot="end" color="primary">Premium</ion-note>
                     }
                   </ion-item>
                 }
@@ -202,6 +221,17 @@ import { formatPln } from '../../core/utils/consumption.util';
           <ion-icon name="add" />
         </ion-fab-button>
         <ion-fab-list side="top">
+          @if (receiptOcrService.isSupported()) {
+            <ion-fab-button
+              [disabled]="receiptOcrService.isScanning()"
+              (click)="handleScanReceipt()"
+              color="secondary"
+              data-testid="fab-scan-receipt"
+              aria-label="Skanuj paragon"
+            >
+              <ion-icon name="camera" />
+            </ion-fab-button>
+          }
           <ion-fab-button
             (click)="navigateTo('/refuel-form')"
             color="primary"
@@ -221,22 +251,29 @@ import { formatPln } from '../../core/utils/consumption.util';
         </ion-fab-list>
       </ion-fab>
     </ion-content>
+
+    <ion-toast
+      [isOpen]="toastOpen()"
+      [message]="toastMessage()"
+      [color]="toastColor()"
+      [duration]="3000"
+      (didDismiss)="toastOpen.set(false)"
+    />
   `,
   styleUrl: './dashboard.page.scss',
 })
 export class DashboardPage implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
-  private readonly storage = inject(StorageService);
   readonly sync = inject(SyncService);
   readonly carService = inject(CarService);
   readonly refuelService = inject(RefuelService);
   readonly repairService = inject(RepairService);
-  private readonly navController = inject(NavController);
-  private readonly alertController = inject(AlertController);
-  private readonly zone = inject(NgZone);
-  private readonly destroyRef = inject(DestroyRef);
+  readonly receiptOcrService = inject(ReceiptOcrService);
 
   readonly storageReady = signal(false);
+  readonly toastOpen = signal(false);
+  readonly toastMessage = signal('');
+  readonly toastColor = signal<'success' | 'warning' | 'danger'>('danger');
 
   /** Last 5 refuels sorted by date descending (newest first). */
   readonly recentRefuels = computed(() => this.refuelService.refuels().slice(0, 5));
@@ -244,9 +281,17 @@ export class DashboardPage implements OnInit, OnDestroy {
   /** Last 5 repairs sorted by date descending (newest first). */
   readonly recentRepairs = computed(() => this.repairService.repairs().slice(0, 5));
 
+  private readonly storage = inject(StorageService);
+  private readonly refuelDraftService = inject(RefuelDraftService);
+  private readonly navController = inject(NavController);
+  private readonly alertController = inject(AlertController);
+  private readonly zone = inject(NgZone);
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor() {
     addIcons({
       add,
+      camera,
       carSport,
       construct,
       logOut,
@@ -350,6 +395,22 @@ export class DashboardPage implements OnInit, OnDestroy {
     this.zone.run(() => {
       this.navController.navigateForward(path);
     });
+  }
+
+  async handleScanReceipt(): Promise<void> {
+    const outcome = await this.receiptOcrService.scanReceipt();
+    if (outcome.status === 'cancelled') return;
+
+    if (outcome.status === 'empty' || outcome.status === 'error') {
+      this.toastMessage.set(outcome.message);
+      this.toastColor.set(outcome.status === 'empty' ? 'warning' : 'danger');
+      this.toastOpen.set(true);
+      return;
+    }
+
+    const toastColor = outcome.status === 'success' ? 'success' : 'warning';
+    this.refuelDraftService.setDraft(outcome.result.draft, outcome.message, toastColor);
+    this.navigateTo('/refuel-form');
   }
 
   async handleLogout(): Promise<void> {

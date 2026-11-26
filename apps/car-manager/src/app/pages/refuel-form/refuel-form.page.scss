@@ -1,6 +1,10 @@
 // spec: docs/specs/refuel/02-refuel-crud.md
 
 .refuel-form {
+  &__scan-bar {
+    padding: 12px 16px 4px;
+  }
+
   &__error-note {
     display: block;
     padding: 0 16px 8px;

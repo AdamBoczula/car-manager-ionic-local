@@ -95,7 +95,7 @@ interface Refuel {
   amount: number; // zapłacona kwota
   mileage: number; // przebieg (km)
   liters?: number; // opcjonalnie – ilość litrów
-  isVerva: boolean; // czy tankowano Vervę / paliwo premium
+  isPremium: boolean; // czy tankowano paliwo premium
   isSkipped: boolean; // pominięty wpis (ktoś zatankował bez wiedzy)
   skippedReason?: string; // powód pominięcia
   consumption?: number; // l/100km – wyliczane automatycznie
@@ -152,7 +152,7 @@ Login → Dashboard → [Lista tankowań] → [Formularz tankowania]
 - **Data** – date picker, domyślnie dzisiejsza
 - **Kwota** – number input
 - **Przebieg** – number input
-- **Verva?** – toggle switch
+- **Paliwo premium?** – toggle switch
 - **Ilość litrów** – opcjonalnie (jeśli znana)
 - **Pomiń wpis** – checkbox z polem na powód (np. "Żona tankowała, nie powiedziała")
 - Automatyczne wyliczenie spalania widoczne po zapisie (lub komunikat "Brak danych do wyliczenia")
@@ -292,6 +292,7 @@ Gdy zajdzie potrzeba:
 - [ ] Powiadomienia push (przypomnienie o przeglądzie)
 - [ ] Dark mode – automatyczny lub wymuszony
 - [ ] Przypomnienia serwisowe – na podstawie przebiegu lub daty
+- [ ] Wsparcie WebMCP (wystawienie tools przez `document.modelContext` w PWA, np. pre-fill formularza tankowania dla agentów AI w przeglądarce)
 
 ### Faza 5 – Deployment i testy natywne
 
@@ -303,11 +304,12 @@ Gdy zajdzie potrzeba:
 ## 11. Pomysły dodatkowe (do rozważenia)
 
 1. **Przypomnienia serwisowe** – na podstawie przebiegu lub daty (np. wymiana oleju co 15k km / rok).
-2. **Skanowanie paragonów** – OCR z aparatu, auto-uzupełnianie kwoty i daty.
+2. **Skanowanie paragonów (tankowanie)** – OCR z aparatu (ML Kit na urządzeniu), auto-uzupełnianie kwoty, litrów, daty i paliwa premium w podglądzie formularza.
 3. **Eksport roczny** – PDF z podsumowaniem kosztów do rozliczenia.
 4. **Widget na ekran główny** – szybkie dodanie tankowania bez otwierania apki (Android).
 5. **Dark mode** – automatyczny lub wymuszony.
 6. **Tryb oszczędzania danych** – mniej sync w tle, tylko manualny refresh.
+7. **WebMCP (PWA)** – wystawienie strukturalnych narzędzi (tools) dla agentów AI w przeglądarce (`document.modelContext`), korzystających ze wspólnego mechanizmu pre-fillingu formularza.
 
 ---
 
@@ -321,4 +323,4 @@ Gdy zajdzie potrzeba:
 
 ---
 
-_Ostatnia aktualizacja: 04.11.2026_
+_Ostatnia aktualizacja: 25.11.2026_

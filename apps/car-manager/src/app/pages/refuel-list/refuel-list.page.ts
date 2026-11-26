@@ -129,8 +129,8 @@ import { formatPln } from '../../core/utils/consumption.util';
                   @if (refuel.consumption != null) {
                     <p>Spalanie: {{ refuel.consumption }} L/100km</p>
                   }
-                  @if (refuel.isVerva) {
-                    <p class="refuel-list__verva">Verva</p>
+                  @if (refuel.isPremium) {
+                    <p class="refuel-list__premium">Premium</p>
                   }
                 </ion-label>
               </ion-item>
