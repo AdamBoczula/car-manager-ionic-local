@@ -1,7 +1,8 @@
 # Bug: [11] — `npm run build:android` / `deploy:android` nie działają (rozjazd `capacitor.config.ts` ↔ `android/`)
 
-**Status:** 🔴 Otwarty — wykryty przy naprawie [buga 10](./10-native-keyboard-integration.md), świadomie **poza zakresem** tamtej poprawki
+**Status:** 🟢 Naprawiony — 2026-11-25
 **Data zgłoszenia:** 2026-11-19
+**Data naprawy:** 2026-11-25
 **Priorytet:** P2 (średni) — blokuje build i instalację APK, ale nie web/PWA
 **Typ:** Błąd konfiguracji / tooling (Capacitor CLI 8.6 w monorepo Nx)
 **Powiązane:** [bug 08](./08-broken-root-capacitor-config.md) (uszkodzony config w root), [bug 10](./10-native-keyboard-integration.md)
@@ -80,6 +81,33 @@ aktualizacją wtyczek, więc `npm run build:android` nigdy nie dojdzie do
    (używa `loadConfig()`/`getPlugins()`/`installGradlePlugins()` z CLI).
    Nie rozwiązuje kopiowania `webDir` ani `adjustResize` z configu.
 
+## Rozwiązanie
+
+Wybrano **kierunek 2 (root jako jedyne źródło prawdy)** oraz usunięto blokady kompilacji Gradle na Linuksie:
+
+1. **Rozszerzona diagnoza:**
+   - W commicie `aeb7604` rootowy `capacitor.config.ts` był symlinkiem gita (`mode 120000`) wskazującym na `apps/car-manager/capacitor.config.ts`. Na Windowsie symlink zmaterializował się jako plik z samą ścieżką (co wywołało [buga 08](./08-broken-root-capacitor-config.md)) i został usunięty.
+   - `android/gradlew` był zapisany w repo z uprawnieniami `100644` (bez bitu wykonywalności `+x`), co powodowało `Permission denied` na Linuksie.
+   - `android/build.gradle` w bloku `allprojects { afterEvaluate { ... } }` narzucał `JavaVersion.VERSION_17`, co kolidowało z `kotlin { jvmToolchain(21) }` wymaganym przez `@capacitor/camera@8.2.6` (Capacitor 8).
+2. **Zastosowana poprawka:**
+   - Przeniesiono `capacitor.config.ts` do roota repozytorium jako **zwykły plik** (`mode 100644`) obok `android/` i `dist/car-manager/browser` (jedyne źródło prawdy, bez duplikatu w `apps/car-manager/`).
+   - Usunięto `apps/car-manager/capacitor.config.ts` oraz tymczasowe obejście `scripts/capacitor-gradle-sync.mjs`.
+   - Nadano bit wykonywalności dla `android/gradlew` (`chmod +x`, `100755`).
+   - Usunięto przestarzałe nadpisanie `JavaVersion.VERSION_17` z `android/build.gradle`.
+   - Zaktualizowano `eslint.config.mjs` (przeniesiono wpis w `ignores` na rootowy `capacitor.config.ts`) oraz `knip.json` (usunięto ręczny `ignore` dla `apps/car-manager/capacitor.config.ts`).
+   - Dodano test regresyjny `apps/car-manager/src/capacitor-config.spec.ts` (weryfikuje brak symlinka, brak duplikatu w `apps/car-manager/`, wynik `npx cap config --json`, spójność wtyczek Androida w Gradle oraz `+x` na `android/gradlew`).
+
+## Weryfikacja
+
+- `npx cap config --json` — wczytuje `<repo>/capacitor.config.ts`, `webDir: "dist/car-manager/browser"`, `android.platformDirAbs: "<repo>/android"`, zawiera konfigurację `SocialLogin` i `Keyboard.resizeOnFullScreen: true`.
+- `JAVA_HOME=/home/adam/.jdks/temurin-21 ANDROID_HOME=/home/adam/Android/Sdk npm run deploy:android` — pełny pipeline przeszedł end-to-end:
+  - `nx build car-manager` zbudował paczkę produkcyjną,
+  - `npx cap sync android` skopiował zasoby do `android/app/src/main/assets/public`, wygenerował `capacitor.config.json` i `capacitor.plugins.json` oraz zsynchronizował wszystkie 5 wtyczek (`@capacitor-community/speech-recognition`, `@capacitor-mlkit/text-recognition`, `@capacitor/camera`, `@capacitor/keyboard`, `@capgo/capacitor-social-login`),
+  - `./gradlew assembleDebug` zakończył się `BUILD SUCCESSFUL in 55s` i zapisał `car-manager.apk` w rootcie repo,
+  - `adb install -r` zainstalował APK (`Success`) i uruchomił `com.carmanager.app/.MainActivity` na urządzeniu Samsung Galaxy S24 (`SM_S921B`, `R3CXC01ANZP`).
+- `npm exec nx test car-manager` — **32 pliki / 382 testy przeszły** (w tym `src/capacitor-config.spec.ts`).
+- `npm run quality` — `lint` (0 błędów), `format:check` (Prettier OK), `knip` (brak problemów) i `duplication` (`jscpd`) zakończone kodem `0`.
+
 ## Zapobieganie
 
 - Po każdej zmianie `capacitor.config.ts` sprawdź, czy `android/` i skrypty
@@ -88,12 +116,18 @@ aktualizacją wtyczek, więc `npm run build:android` nigdy nie dojdzie do
   brak builda Androida nie był niczym sygnalizowany.
 - Wtyczka Capacitora **działa** dopiero po wpisie `:capacitor-<id>` w obu
   plikach Gradle; brak wpisu nie daje błędu kompilacji.
+- Na hoście budującym APK muszą być dostępne: `ANDROID_HOME` (lub lokalny gitignorowany `android/local.properties`) oraz JDK 21 wymagane przez Capacitor 8.
 
 ## Pliki
 
-| Plik                                   | Zmiana                                                    |
-| -------------------------------------- | --------------------------------------------------------- |
-| `package.json`                         | skrypty `build:android` / `install:phone` (root-relative) |
-| `apps/car-manager/capacitor.config.ts` | config (`webDir: 'dist/car-manager/browser'`)             |
-| `android/`                             | platforma Capacitora w root repo                          |
-| `scripts/capacitor-gradle-sync.mjs`    | obejście: regeneracja wpisów Gradle (dodane przy bugu 10) |
+| Plik                                            | Zmiana                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------- |
+| `capacitor.config.ts`                           | **dodany** w root repo jako zwykły plik (przeniesiony z aplikacji)        |
+| `apps/car-manager/capacitor.config.ts`          | **usunięty** — usunięto rozjazd ścieżek względem `android/`               |
+| `scripts/capacitor-gradle-sync.mjs`             | **usunięty** — obejście zbędne po naprawie `npx cap sync android`         |
+| `android/gradlew`                               | nadano uprawnienia wykonywania (`100755`)                                 |
+| `android/build.gradle`                          | usunięto wymuszenie `JavaVersion.VERSION_17` kolidujące z JDK 21          |
+| `eslint.config.mjs`                             | zaktualizowano `ignores` z `apps/car-manager/capacitor.config.ts` na root |
+| `knip.json`                                     | usunięto ręczny `ignore` dla `apps/car-manager/capacitor.config.ts`       |
+| `apps/car-manager/src/capacitor-config.spec.ts` | **dodany** — test regresyjny konfiguracji Capacitor i spójności Gradle    |
+| `docs/bugs/11-broken-android-build.md`          | aktualizacja statusu, rozwiązania, weryfikacji i tabeli plików            |

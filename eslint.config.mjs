@@ -21,7 +21,7 @@ export default tseslint.config(
       'android/',
       'ios/',
       '*.log',
-      'apps/car-manager/capacitor.config.ts',
+      'capacitor.config.ts',
       'apps/car-manager/scripts/',
       '*.spec.backup.ts',
     ],
